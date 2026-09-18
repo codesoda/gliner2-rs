@@ -1,0 +1,11 @@
+target/
+.DS_Store
+.aislop/
+
+# ONNX exports are large binaries — hosted on Hugging Face instead.
+# Fetch with: python3 scripts/download_models.py
+/onnx/
+/models/
+
+# Private working notes.
+/plan.md
