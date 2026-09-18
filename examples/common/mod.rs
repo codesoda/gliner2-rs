@@ -12,9 +12,6 @@ pub struct ModelPaths {
 
 pub fn repo_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .unwrap()
-        .to_path_buf()
 }
 
 pub fn model_paths_from_args(default_onnx_rel: &str) -> ModelPaths {
