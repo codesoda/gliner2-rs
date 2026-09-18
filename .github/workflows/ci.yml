@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cache cargo registry and build artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build (lib, tests, examples)
+        run: cargo build --all-targets --verbose
+
+      # ONNX model weights aren't committed to this repo (see README) and
+      # every model-dependent test/example skips itself cleanly when it
+      # can't find `onnx/`/`models/` locally, so this runs the full test
+      # suite without needing to download any model files.
+      - name: Test
+        run: cargo test --all-targets --verbose
+
+      - name: Clippy (non-blocking)
+        run: cargo clippy --all-targets
+        continue-on-error: true

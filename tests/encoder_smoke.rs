@@ -37,6 +37,12 @@ fn encoder_runs_on_real_tokens() -> Result<()> {
 fn convert_known_subwords() -> Result<()> {
     let root = model_root();
     let model_dir = root.join("models/gliner2-base-v1");
+
+    if !model_dir.exists() {
+        eprintln!("SKIP: missing {}", model_dir.display());
+        return Ok(());
+    }
+
     let tokenizer = RuntimeTokenizer::from_dir(&model_dir)?;
 
     let (ids, mask) = tokenizer.convert_subwords(["[P]", "[SEP_TEXT]"].iter().copied())?;
@@ -49,6 +55,12 @@ fn convert_known_subwords() -> Result<()> {
 fn special_token_ids_match_expected() -> Result<()> {
     let root = model_root();
     let model_dir = root.join("models/gliner2-base-v1");
+
+    if !model_dir.exists() {
+        eprintln!("SKIP: missing {}", model_dir.display());
+        return Ok(());
+    }
+
     let tokenizer = RuntimeTokenizer::from_dir(&model_dir)?;
 
     // Explicit IDs pulled from special_tokens_map.json/vocab.

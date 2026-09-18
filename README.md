@@ -1,10 +1,73 @@
 # gliner2-rs
 
+[![CI](https://github.com/codesoda/gliner2-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/codesoda/gliner2-rs/actions/workflows/ci.yml)
+
 Rust inference for [GLiNER2](https://github.com/fastino-ai/GLiNER2) via ONNX
 Runtime — a Rust crate that runs entity extraction, classification, and
 structured extraction from ONNX exports of the Python `gliner2` models,
 without a Python dependency at inference time. Also includes the Python
 export scripts used to produce those ONNX files.
+
+## Using this from your own Rust project
+
+This crate isn't published to crates.io — depend on it directly from GitHub.
+Pin to a tag rather than a branch so your build doesn't move out from under
+you; see [Tags & versioning](#tags--versioning) for what's available.
+
+```toml
+# Cargo.toml
+[dependencies]
+gliner2-rs = { git = "https://github.com/codesoda/gliner2-rs", tag = "v0.1.0" }
+```
+
+You'll also need the ONNX model files locally — they're not part of the
+crate (see [Models](#models) below). Point your code at wherever you
+downloaded them:
+
+```rust
+use gliner2_rs::pipeline::Gliner2Pipeline;
+
+fn main() -> anyhow::Result<()> {
+    let pipeline = Gliner2Pipeline::new(
+        "path/to/gliner2-base-v1",                 // model_dir (tokenizer files)
+        "path/to/gliner2-base-v1/encoder.onnx",     // encoder ONNX
+        "path/to/gliner2-base-v1/extractor_padded.onnx", // extractor ONNX
+    )?;
+
+    let labels = vec!["person".to_string(), "organization".to_string()];
+    let matches = pipeline.extract_entities(
+        "Alice joined Acme Corp last week.",
+        &labels,
+        0.5, // confidence threshold
+    )?;
+
+    for m in matches {
+        println!("{}: {:?}", m.label, m.spans);
+    }
+    Ok(())
+}
+```
+
+See `examples/` in this repo (`tutorial_1_classification.rs` through
+`tutorial_11_adapter_switching.rs`) for classification, structured/JSON
+extraction, relation extraction, validators, and LoRA adapters.
+
+### Tags & versioning
+
+Tagged releases live at `vX.Y.Z` and match the version in `Cargo.toml`.
+Check [existing tags](https://github.com/codesoda/gliner2-rs/tags) or
+`git ls-remote --tags https://github.com/codesoda/gliner2-rs` for what's
+available. Every tag is built and tested by [CI](.github/workflows/ci.yml)
+before/after being pushed. To pin a specific commit instead of a tag, use
+`rev = "<sha>"` in place of `tag = "..."`.
+
+### CI
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) builds the crate
+(lib, tests, examples), then runs `cargo test` on every push to `main`,
+every `v*` tag, and every pull request. No model weights are required —
+model-dependent tests detect a missing `onnx/`/`models/` directory and skip
+themselves, so CI stays fast without pulling multi-gigabyte ONNX files.
 
 ## Layout
 
