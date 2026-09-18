@@ -24,15 +24,28 @@ Hugging Face rather than committed here, since they're large binaries:
 
 👉 https://huggingface.co/codesoda/gliner2-onnx
 
+Downloading them is a manual, opt-in step — nothing in this crate fetches
+models automatically. Pick one:
+
+**Rust (no Python required):**
+
+```bash
+cargo run --example download_models -- --model all     # both models
+cargo run --example download_models -- --model base    # just gliner2-base-v1
+```
+
+**Python:**
+
 ```bash
 pip install huggingface_hub
 python3 scripts/download_models.py          # both models
 python3 scripts/download_models.py --model base
 ```
 
-This populates `./onnx/gliner2-base-v1/` and `./onnx/gliner2-large-v1/`
-(each with `encoder.onnx`, `extractor.onnx`/`extractor_padded.onnx`, and
-`classifier.onnx`), which is the layout the examples expect.
+Either way, this populates `./onnx/gliner2-base-v1/` and
+`./onnx/gliner2-large-v1/` (each with `encoder.onnx`,
+`extractor.onnx`/`extractor_padded.onnx`, and `classifier.onnx`), which is
+the layout the examples expect.
 
 ## Rust usage
 
