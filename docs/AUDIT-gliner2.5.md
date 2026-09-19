@@ -30,8 +30,8 @@ An unexecuted script, model-skipping test, or planned artifact does not pass a g
 | M1 common exports | real fp32 encoder/classifier export + numerical validation, state-dict key verification | M1: parent34 encoder cases/20 classifier comparisons pass original tolerance; recursive fp32/finite/opset17 audit; `docs/evidence/m1.json` |
 | M2 marginals graph | `scripts/export/export_boundary_marginals.py`, `validate_boundary_marginals.py`, dynamic L/Q, actual ORT comparisons | Accepted: parent24 head/6 bypass + dynamic/B2 checks, recursive fp32/finite audit; prefix-only adjudication + gated scorer sensitivity; `docs/evidence/m2.json` |
 | M2 Rust | `src/boundary/marginals.rs`, named I/O/threading consistent with orp/ort, committed-subset parity test | Accepted: subset/full30 corpus, pre-native L0/Q0 guards, no erroneous combined-length4096 cap; full model/no-model gates pass |
-| M3 pool | `src/boundary/pool.rs`, top-k/quota/rank/dedup/order, exact indices/mask/compat for every fixture | Pending |
-| M3 ties | root-cause evidence for any tie exception and Astra-written adjudication; no silent tolerance weakening | Pending |
+| M3 pool | `src/boundary/pool.rs`, top-k/quota/rank/dedup/order, exact indices/mask/compat for every fixture | Accepted:24 frozen real +9 synthetic bit-exact, debug/release; actual ORT-to-pool exact discrete parity on24 cases; `docs/evidence/m3.json` |
+| M3 ties | root-cause evidence for any tie exception and Astra-written adjudication; no silent tolerance weakening | No exception needed: source-faithful stable sorts/tie rules and fixed AArch64 reduction grouping; exact frozen compatibility preserved |
 | M4 scorer | `export_boundary_scorer.py`, explicit indices/mask/compat, null/count/candidate states; actual dynamic ORT tests | Pending |
 | M4 decoder | `src/boundary/decode.rs`: temperature/threshold/abstention/all overlap policies, half-open spans, Unicode offsets/order/dtypes | Pending |
 | M4 API/parity | entity + classification + combined extract; exact labels/spans, <=1e-3 confidence error on all fixtures | Pending |

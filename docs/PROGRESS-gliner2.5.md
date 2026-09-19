@@ -268,3 +268,22 @@ prompt-to-evidence checklist. Model-free test success is not model parity.
   the pool and all M4 preparations. Next accept/commit M3 separately, then
   integrate M4 high-level entities/classification and end-to-end parity.
   No usable2.5 pipeline or release tag is claimed yet.
+
+## M3 — accepted after frozen and actual-ORT integration gates
+
+- Parent final debug/release reruns pass all6 pool tests, including24 real
+  frozen cases with bit-exact floats/indices/order/masks and nine synthetic
+  upstream cases. Actual ORT marginal outputs preserve exact candidate selection
+  on all24 cases; floating proposal/compatibility values pass original numerical
+  tolerances. No tie, order or frozen-compatibility exception was needed.
+- Parent regenerated the32,444-byte synthetic vectors byte-identically using
+  the pinned upstream. Source review confirms stable endpoint selection,
+  start-major pairing, literal quota reservation/dedup and zero padding.
+- Same unchanged workspace fmt/strict Clippy/no-model and strict all-model gates
+  pass; final pool tests rerun after M2 acceptance. Evidence:
+  `docs/evidence/m3.json`. Commit includes only pool/module/vector/test changes
+  and this acceptance record; M4 code remains separately uncommitted.
+- Next: integrate reviewed scorer/decoder with boundary preprocessing and
+  source-faithful classification selection, replace the high-level scaffold,
+  and prove formatted entity/classification parity. M4–M7 and explicit sparse
+  scoring remain open; do not describe this branch as a finished2.5 release.

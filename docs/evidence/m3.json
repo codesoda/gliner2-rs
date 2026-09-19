@@ -1,0 +1,46 @@
+{
+  "milestone": "M3",
+  "status": "accepted_after_parent_review",
+  "upstream_commit": "d7c727458bf6929bc9ef5ee04e13c3f717a7c455",
+  "reference_platform": "PyTorch2.8 CPUfp32 AArch64",
+  "reduction_contract": "Fixed four-lane/four-way cascade grouping on all Rust hosts; no host-native SIMD-dependent reassociation",
+  "frozen_stage": {
+    "real_cases": 24,
+    "synthetic_cases": 9,
+    "indices_order_mask": "exact",
+    "compatibility_proposal_logits": "bit-exact",
+    "debug": "passed",
+    "release": "passed",
+    "tolerance_exception": "none"
+  },
+  "actual_onnx_marginals_to_rust_pool": {
+    "real_cases": 24,
+    "indices_order_mask": "exact",
+    "compatibility_proposal_logits": {"atol": 0.0001, "rtol": 0.001, "status": "passed"},
+    "debug": "passed",
+    "release": "passed"
+  },
+  "robustness": ["zero queries require caller bypass", "malformed shapes return errors", "nonfinite inputs rejected", "finite-input arithmetic overflow rejected"],
+  "vectors": {
+    "path": "fixtures/pool-test-vectors.json",
+    "bytes": 32444,
+    "sha256": "68bb4b52fe258274d6b35a1520e5e230c6fc9378bbf32bc8972881e421f9db7d",
+    "parent_regeneration": "byte-identical using pinned upstream DocumentCandidatePool"
+  },
+  "parent_gates": {
+    "fmt": "passed",
+    "strict_clippy": "passed",
+    "no_models": "passed",
+    "strict_v2_and_boundary_models_full_fixtures": "passed with zero skips",
+    "pool_suite": "6 tests passed in debug and release"
+  },
+  "local_logs": [
+    "/tmp/gliner25-work/m3-parent-final-debug.log",
+    "/tmp/gliner25-work/m3-parent-final-release.log",
+    "/tmp/gliner25-work/m3-ort-pool-parent.log",
+    "/tmp/gliner25-work/m2-parent-final-clippy.log",
+    "/tmp/gliner25-work/m2-parent-final-no-models.log",
+    "/tmp/gliner25-work/m2-parent-final-all-models.log"
+  ],
+  "scope_limit": "Candidate pool only; no high-level boundary pipeline or release claim. Native x86 PyTorch regeneration may differ from the normative AArch64 frozen oracle."
+}
