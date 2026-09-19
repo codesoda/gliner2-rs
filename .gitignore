@@ -7,5 +7,11 @@ target/
 /onnx/
 /models/
 
+# Python export/parity environments and generated heavyweight oracle data.
+/scripts/export/env/.venv/
+/scripts/**/__pycache__/
+*.py[cod]
+/fixtures/gliner2.5-base-v1/
+
 # Private working notes.
 /plan.md

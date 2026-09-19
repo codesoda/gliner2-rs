@@ -106,3 +106,68 @@ prompt-to-evidence checklist. Model-free test success is not model parity.
   exports and actual numerical validation; review all generated evidence.
 - M2–M7 and public explicit scoring remain unimplemented/unverified. Goal is
   still open. M0 acceptance does not constitute a working 2.5 release.
+
+## M1 — generated and independently reproduced (initial review entry)
+
+### Done / measured
+
+- Sol generated all30 real upstream cases with no oracle errors, including
+  1000/2000/3000-word texts (1014/2012/3014 subword input lengths).
+- Parent independently reran the full upstream corpus into a separate directory:
+  **all30 NPZ files are byte-identical**, and Python/UTF-8 formatted outputs
+  match for all30 cases. This is actual repeated inference, not merely checking
+  that NPZ serialization is deterministic.
+- Parent numerically validated encoder ONNX on all30 corpus inputs plus four
+  generated variable-length/batch cases. Maximum absolute error6.444007e-5;
+  existing atol1e-4/rtol1e-3 passes. Large relative maxima occur near zero.
+- Classifier validation on generated row counts and real classification states:
+  maximum absolute error2.861023e-6; same original tolerances pass.
+- Full fixtures125MB remain ignored. Proposed committed subset1,785,134bytes
+  covers Unicode/entity, classificationQ0, and relation inputs.
+- Parent reran Rust fmt/clippy/no-model and strict-v2-model suites successfully.
+  Independent logs/reports are `/tmp/gliner25-work/m1-parent-*`.
+
+### Review gaps being fixed before accepting M1
+
+- Verifier must reject duplicate/missing manifest cases and incorrect array/stage
+  metadata, not trust the case_count field or caller-controlled invocation flags.
+- Generator must verify source-model hashes and installed upstream commit rather
+  than stamping constant provenance for arbitrary --model-dir; actual seed must
+  propagate into per-case provenance.
+- Partial export manifests must identify Rust ort crate version, not only Python
+  ORT; subset size limit must include its final manifest. Add tampering tests.
+- These tooling gaps do not invalidate the independently reproduced actual
+  tensors, but must be resolved before M1 is accepted as reproducible tooling.
+
+### Next
+
+- Sol is implementing the targeted review fixes. M2 marginal graph and Rust
+  loader preparation has started against the verified tensors; M3 pure Rust
+  pool preparation is separate. Gates/commits remain ordered after review.
+- A parent preflight demonstrated scalar f32 compatibility reduction differs
+  from PyTorch SIMD by at most2.861023e-6 on the observed selected candidates.
+  M3 must measure actual Rust behavior and prove exact discrete pool identities;
+  **no tolerance change or discrete-order exception is approved yet**.
+
+## M1 — accepted after review fixes
+
+- Hardened verifier now checks unique complete case coverage, actual array/stage
+  presence, routing equality, metadata and source provenance. Eight model-free
+  tampering/provenance tests pass. Validator explicitly limits its claim to
+  structural integrity; independent full oracle reproduction is separate.
+- Generator validates source-file hashes and installed Git revision; seed
+  propagation and record-stage metadata fixed. Source hashes, ort crate version
+  and complete subset size are recorded. All shared exporter/reference loads
+  now require the pinned upstream installation.
+- Parent reran the hardened verifier/unit tests/lock check and source identity
+  checks. Repairs changed only JSON provenance descriptions, not the independently
+  reproduced30 NPZ files or formatted output values.
+- Both graphs independently pass recursive finite-value/FP32/opset17 audit and
+  onnx.checker. Parent numerical results and coverage are recorded in
+  `docs/evidence/m1.json`. No tolerance relaxation was needed.
+- `scripts/parity/README.md` now gives fresh-checkpoint download, pinned setup,
+  generation, structural validation, actual reproduction and ONNX validation
+  commands. Runtime Python dependency remains absent.
+- Next: review M2 actual marginal graph/loader parity, then M3 candidate pool.
+  Work on those is in progress and will be committed separately only after gates.
+  All later feature/bundle/publication requirements remain open.

@@ -23,11 +23,11 @@ An unexecuted script, model-skipping test, or planned artifact does not pass a g
 | M0 v2 compatibility | `SpanPipeline` and old alias; existing methods/examples unchanged | M0: source reviewed; model-backed suite and six tutorial result snapshots preserved |
 | M0 preprocessing | config max_len word truncation, default none for v2 / 4096 boundary; query marker enumeration including `[R]` | M0: `src/preprocessing.rs`, `src/embeddings.rs`, unit tests and model-backed `tests/truncation_e2e.rs` |
 | M0 artifact paths | consistent crate-root defaults and explicit overrides; no silent model test skips with artifacts | M0: `tests/common/mod.rs`, `GLINER2_TEST_ROOT`, strict `GLINER2_REQUIRE_MODELS=1`; model run has zero skips |
-| M1 Python environment | uv `scripts/export/env`, pinned gliner2/torch/dependencies; ignored venv | Pending |
-| M1 golden generator | `scripts/parity/gen_boundary_goldens.py`; actual upstream checkpoint inference | Pending |
-| M1 corpus/tensors | `.npz` + JSON: hidden/text/query, marginals/projections, pool indices/mask/compat, pair/null/count, final spans/confidence | Pending |
-| M1 fixture size | ignored full `fixtures/gliner2.5-base-v1/`, committed representative subset <=2 MB, reproducibility hashes | Pending |
-| M1 common exports | real fp32 encoder/classifier export + numerical validation, state-dict key verification | Pending |
+| M1 Python environment | uv `scripts/export/env`, pinned gliner2/torch/dependencies; ignored venv | M1: pyproject + uv.lock, exact Git pin, locked install and source/VCS checks verified |
+| M1 golden generator | `scripts/parity/gen_boundary_goldens.py`; actual upstream checkpoint inference | M1: all30 public-oracle cases generated and independently reproduced (corrected upstream AutoExtractor loader) |
+| M1 corpus/tensors | `.npz` + JSON: hidden/text/query, marginals/projections, pool indices/mask/compat, pair/null/count, final spans/confidence | M1: complete applicable stage arrays verified, 30 identical regenerated NPZ hashes; 3 long cases included |
+| M1 fixture size | ignored full `fixtures/gliner2.5-base-v1/`, committed representative subset <=2 MB, reproducibility hashes | M1: full125MB ignored; subset1,786,618bytes including manifest; byte hashes and source identity checked |
+| M1 common exports | real fp32 encoder/classifier export + numerical validation, state-dict key verification | M1: parent34 encoder cases/20 classifier comparisons pass original tolerance; recursive fp32/finite/opset17 audit; `docs/evidence/m1.json` |
 | M2 marginals graph | `scripts/export/export_boundary_marginals.py`, `validate_boundary_marginals.py`, dynamic L/Q, actual ORT comparisons | Pending |
 | M2 Rust | `src/boundary/marginals.rs`, named I/O/threading consistent with orp/ort, committed-subset parity test | Pending |
 | M3 pool | `src/boundary/pool.rs`, top-k/quota/rank/dedup/order, exact indices/mask/compat for every fixture | Pending |
