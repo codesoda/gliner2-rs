@@ -7,7 +7,9 @@ completion until `AUDIT-gliner2.5.md` has evidence for every mandatory requireme
 
 **Phase A status: approved for M0.** Astra upstream source review completed;
 critical corrections below supersede the research prompt's inaccurate assumptions.
-No tolerance loosening has been approved.
+Astra has approved one evidence-backed marginal-prefix comparison adjustment;
+see the numerical adjudication below. All other numerical/discrete gates remain
+unchanged.
 
 ## 1. Pins and confirmed configuration
 
@@ -71,6 +73,18 @@ moved to Rust, with evidence recorded, rather than hiding errors behind an upgra
   `text[start..end]` is safe. Golden comparison explicitly converts Python
   Unicode code-point offsets to UTF-8 byte offsets; labels/text/order must match.
   Do not pretend byte positions equal Python positions on non-ASCII input.
+- Boundary classification decoding needs its own source-faithful selection:
+  upstream runtime._extract_classification_result retains multi-label hits in
+  schema order (not confidence order), and argmax ties/fallback select the first
+  label. Existing Rust decode_classification sorts multi-label hits by confidence
+  and selects the last equal maximum. Do not change that legacy v2 function;
+  add boundary-specific selection while reusing public result types and the
+  classifier ONNX wrapper. Apply classification_temperature before activation.
+- Boundary combined extraction must encode all tasks together in one prompt,
+  in upstream processor order: structures, entities, relations, classifications.
+  Do not reuse SpanPipeline::extract_internal's separate task-family passes;
+  that would change encoder context and break combined-schema parity. Preserve
+  this prompt/routing order even while a later task-family decoder is pending.
 - Add query-routing metadata: exactly one query per `[E]`, `[C]`, `[R]` marker,
   in schema order, retaining schema and field identity. `[L]` is classification
   only, `[P]` is not an extraction query. Existing legacy marker gathering
@@ -188,6 +202,39 @@ an error. Record all upstream empty-input behavior, not arbitrary empty tensors.
 Only Astra can approve a changed tolerance after root cause and sensitivity tests;
 no tie exception is pre-approved. No finite-output claim without checking arrays.
 
+### M2 numerical adjudication — centered prefix only
+
+Parent source review and independent rerun of the read-only sensitivity diagnostic
+confirmed mean-reduction/per-token ORT rounding accumulates in centered prefix
+coordinates. Merely rebuilding mean/cumsum in PyTorch from ORT logits still leaves
+54 coordinates outside the original gate; higher-precision accumulation alone is
+not sufficient. Across24 fixtures/12,640 prefix coordinates,199 fail the original
+1e-4/1e-3 gate, exclusively in1000/2000/3000-word cases. Maximum raw drift is
+0.00313687325. The smallest observed absolute envelope coefficient is
+1.0344171086582568e-6 per coordinate (on top of1e-4).
+
+Astra approves **only for ONNX `inside_prefix` comparisons**:
+`abs(actual-ref) <= 1e-4 + 1.1e-6*i + 1e-3*abs(ref)`, where `i` is the boundary
+coordinate, not the whole sequence length. Keep the original strict comparison
+available for diagnostics; untouched oracle/wrapper comparisons retain it.
+This is an empirical CPUfp32/ORT1.20 reference contract, not a universal bound.
+Each other checkpoint/provider must independently pass validation; no automatic
+further increase is authorized.
+
+The decision is conditioned on unchanged downstream gates: on all5,116 actual
+valid candidate/query pairs, restored and square-root-normalized inside evidence
+changes by at most6.103515625e-5; substituting all ORT marginal outputs into the
+unchanged learned scorer changes pair logits by at most the same amount and
+confidence by8.642673492431641e-7. The original scorer is bit-exact to saved pair
+logits; no top-1 or0.5-threshold crossings were observed. Actual ORT-to-Rust pool
+selection is exact on all24 fixtures in debug/release. Scorer atol1e-4/rtol1e-3,
+final confidence1e-3, and exact discrete selection remain unchanged.
+
+Low-level marginal runtime contract is L>=1,Q>=1: Rust rejects L=0 before ORT
+(the raw graph crashes on this input), and classification-only Q=0 bypasses the
+head. Public empty text normalizes to `.`. Validation must record these limits,
+not claim raw empty-dimension graph support.
+
 ## 5. Risk resolutions and verification
 
 1. **fp16 checkpoints:** cast the whole model to float32 before tracing; assert
@@ -209,6 +256,17 @@ no tie exception is pre-approved. No finite-output claim without checking arrays
 4. **Unicode:** byte-offset public contract plus explicit oracle conversion as
    above. Preserve original text before lowercase normalization; test combining
    marks, emoji and CJK. Determine optional character splitter from source.
+   Observed M1 oracle splits decomposed `Café` into `cafe` and the combining
+   mark. Rust regex `\\w` includes combining marks whereas Python's does not;
+   boundary preprocessing must handle that difference without changing legacy
+   span behavior. Parent source review of processor._collate_batch additionally
+   confirms a trailing `.` is appended whenever nonempty input does not end in
+   `.`, `!`, or `?`; empty input becomes `.`. Boundary encoder preprocessing
+   must reproduce that normalization (the actual empty fixture has L=1), while
+   public byte offsets must remain slice-safe for the caller's original text.
+   Do not return a span extending into synthetic punctuation. Python `\\s` also
+   recognizes U+001C–U+001F and case-insensitive `[a-z]` recognizes İ/ı/ſ/K;
+   account for these boundary-tokenizer details without changing the v2 splitter.
 5. **Experimental upstream:** immutable commit + three immutable HF revisions;
    validate architecture_version and supported flags. Every complete bundle has
    `export_manifest.json` with architecture/version/commit/revision/opset/ort,
@@ -219,9 +277,19 @@ no tie exception is pre-approved. No finite-output claim without checking arrays
    global pairs. Stable score-desc/key-asc dedup keeps first key occurrence;
    final stable priority-desc order breaks ties by span key. Invalid slots are
    [0,0], compat zero, score -1e4; pad to 192. Reproduce the exact sequence.
-   Floating compatibility reduction can differ between torch/Rust SIMD; keep
-   the original exact gate until measured evidence justifies an explicit change.
-   No set-equality or pool-order exception is approved.
+   M3 investigation found PyTorch2.8 AArch64 uses four-lane/four-way cascade
+   reduction. The Rust implementation deliberately fixes that operation grouping
+   on every host rather than using host-native SIMD width. Parent debug/release
+   tests matched all24 applicable frozen real cases bit-for-bit, including compat
+   and proposal floats. This preserves the original exact gate with no tolerance
+   exception. The reference corpus was generated on macOS arm64, CPUfp32, one
+   thread: newly generated native x86 PyTorch tensors may differ numerically.
+   Record that reference-platform contract in final bundle/validation docs; do
+   not claim bit identity to arbitrary hardware-native oracle regeneration.
+   Actual ORT-marginals-to-pool integration now matches indices/order/masks on
+   all24 applicable real fixtures in debug and release; compatibility/proposal
+   floats pass the original numerical gate. No set-equality or pool-order
+   exception is approved.
 7. **ONNX attention/export:** preserve full graph-affecting flags (directional,
    rotary, content, 8-head compatibility). Dynamic-shape multi-length tests are
    mandatory, not single dummy-input export success. Rust wrappers follow ort

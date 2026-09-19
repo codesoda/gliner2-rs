@@ -28,8 +28,8 @@ An unexecuted script, model-skipping test, or planned artifact does not pass a g
 | M1 corpus/tensors | `.npz` + JSON: hidden/text/query, marginals/projections, pool indices/mask/compat, pair/null/count, final spans/confidence | M1: complete applicable stage arrays verified, 30 identical regenerated NPZ hashes; 3 long cases included |
 | M1 fixture size | ignored full `fixtures/gliner2.5-base-v1/`, committed representative subset <=2 MB, reproducibility hashes | M1: full125MB ignored; subset1,786,618bytes including manifest; byte hashes and source identity checked |
 | M1 common exports | real fp32 encoder/classifier export + numerical validation, state-dict key verification | M1: parent34 encoder cases/20 classifier comparisons pass original tolerance; recursive fp32/finite/opset17 audit; `docs/evidence/m1.json` |
-| M2 marginals graph | `scripts/export/export_boundary_marginals.py`, `validate_boundary_marginals.py`, dynamic L/Q, actual ORT comparisons | Pending |
-| M2 Rust | `src/boundary/marginals.rs`, named I/O/threading consistent with orp/ort, committed-subset parity test | Pending |
+| M2 marginals graph | `scripts/export/export_boundary_marginals.py`, `validate_boundary_marginals.py`, dynamic L/Q, actual ORT comparisons | Accepted: parent24 head/6 bypass + dynamic/B2 checks, recursive fp32/finite audit; prefix-only adjudication + gated scorer sensitivity; `docs/evidence/m2.json` |
+| M2 Rust | `src/boundary/marginals.rs`, named I/O/threading consistent with orp/ort, committed-subset parity test | Accepted: subset/full30 corpus, pre-native L0/Q0 guards, no erroneous combined-length4096 cap; full model/no-model gates pass |
 | M3 pool | `src/boundary/pool.rs`, top-k/quota/rank/dedup/order, exact indices/mask/compat for every fixture | Pending |
 | M3 ties | root-cause evidence for any tie exception and Astra-written adjudication; no silent tolerance weakening | Pending |
 | M4 scorer | `export_boundary_scorer.py`, explicit indices/mask/compat, null/count/candidate states; actual dynamic ORT tests | Pending |

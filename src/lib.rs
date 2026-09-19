@@ -1,5 +1,6 @@
 pub mod adapters;
 pub mod api;
+pub mod boundary;
 pub mod classification;
 pub mod classifier;
 pub mod config;

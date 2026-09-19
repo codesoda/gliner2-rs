@@ -62,8 +62,11 @@ prompt-to-evidence checklist. Model-free test success is not model parity.
 - Exporter dependency compatibility (upstream declares transformers<5 despite
   checkpoint metadata5.8.0), finite-mask attention lowering and long-sequence
   memory require actual experiments in M1/M2.
-- HF publication credentials have not been checked. Ask for input if absent
-  before the M7 upload; GitHub authentication is available.
+- HF publication prerequisite checked after M1: no credential is configured.
+  Public downloads work; M7 upload to codesoda/gliner2-onnx will require local
+  authentication with a repository-authorized write token. User was informed;
+  interactive clarification UI failed, so authentication is not assumed.
+  GitHub authentication/push works. Implementation continues meanwhile.
 - Optional M8 helpers are not implemented or advertised. Public explicit-span
   primitive remains in required deliverables because downstream use needs it.
 
@@ -171,3 +174,97 @@ prompt-to-evidence checklist. Model-free test success is not model parity.
 - Next: review M2 actual marginal graph/loader parity, then M3 candidate pool.
   Work on those is in progress and will be committed separately only after gates.
   All later feature/bundle/publication requirements remain open.
+
+## M3 — independent source review and frozen-stage verification underway
+
+- Sol ported literal shared-pool stable sorts/quota priorities/dedup/padding and
+  reproduced the pinned PyTorch2.8 AArch64 four-lane cascade reduction, instead
+  of accepting the earlier scalar-fold error. Parent inspected the actual code.
+- Parent ran all24 applicable real fixtures and nine synthetic upstream vectors
+  in both debug and optimized builds: indices/order/masks, compatibility and
+  proposal logits all bit-exact. **No tolerance relaxation needed.**
+- Synthetic generator independently reproduced the committed32,444-byte JSON
+  vector file. Parent removed its developer-specific upstream checkout default;
+  regeneration now uses the same locked, verified installed upstream as M1.
+- Parent added rejection/tests for arithmetic overflow from finite input values
+  and clarified diagnostics. Final rerun awaits M2's in-progress Rust wrapper:
+  a concurrent mid-edit build hit its PostProcessor error-type mismatch, sent
+  to the owning agent rather than modifying its file concurrently.
+- M3 is not yet accepted/committed: M2 must finish first. Reference-platform/
+  reduction decisions and the observed Unicode splitter difference are in the plan.
+
+## M2/M3 — resumed parent review
+
+- Added a Rust pre-inference L=0 guard: ORT1.20.1 was observed to segfault on
+  that low-level graph input. Empty public text will normalize to `"."` upstream.
+  Removed the incorrect graph-level4096 limit: original words are capped before
+  choice prefixes, so a larger graph input is legal. Three model-free regression
+  tests cover L=0 rejection, L=4097 validation and classification-only bypass.
+- Replaced M3 test's source-file inclusion with the public boundary module.
+  Added actual ORT-marginals-to-Rust-pool integration across all24 applicable
+  full fixtures. **All indices/order/masks match exactly in debug and release**;
+  compatibility/proposal floats pass the original1e-4/1e-3 numerical gate.
+  Frozen-input bit-exact and nine synthetic cases still pass, including the
+  newly added finite-input overflow rejection tests.
+- Parent fmt and strict Clippy pass; the committed marginal subset also passes
+  with the actual graph. Logs: `/tmp/gliner25-work/m3-ort-pool-parent.log`,
+  `m3-ort-pool-parent-release.log`, `m2-m3-parent-clippy.log`,
+  `m2-parent-subset.log` in the same directory.
+- M2 remains blocked on centered inside-prefix drift for1000/2000/3000-word
+  cases (maximum absolute errors approximately0.00109/0.00164/0.00314).
+  No tolerance relaxation has been approved. A read-only numerical investigation
+  is measuring restored downstream interval evidence and scorer sensitivity;
+  all other marginal outputs already pass the original tolerances.
+- No milestone acceptance, release tag, or completion is claimed by these checks.
+
+## M2 adjudication / M4 preparation
+
+- Parent independently reran the completed numerical diagnostic after reading
+  its complete script. Across24 fixtures/5,116 valid candidate-query pairs,
+  unchanged upstream scorer reproduces saved pair logits bit-exactly; substituting
+  all ORT marginals changes pair logits by at most6.103515625e-5 and confidences
+  by8.642673492431641e-7. No top-1 or0.5-threshold changes. Parent log:
+  `/tmp/gliner25-work/m2-parent-drift.log`.
+- Mean restoration and sqrt(length) normalization explain the smaller downstream
+  effect. Rebuilding mean/cumsum alone does not fix strict raw-prefix parity.
+  Astra approved only coordinate-aware prefix atol `1e-4 + 1.1e-6*i`, retaining
+  rtol1e-3 and all other original gates. Rationale and limits are in the plan.
+  Targeted implementation is adding repeatable sensitivity gates, strict-prefix
+  diagnostic mode, full Rust head-corpus coverage and unit tests. M2 still awaits
+  those gates and review; this is not an acceptance entry.
+- Separate Sol preparations produced the M4 shared-scorer export/validator and
+  pure Rust decoder/oracle vectors. Parent reviewed scorer wrapper and complete
+  validator, then independently reran all24 frozen cases: pair maximum error
+  9.3460083e-5, candidate states9.536743e-7, null1.4305115e-6,
+  count4.172325e-7; original tolerances pass. Dynamic/B2 tests pass. Raw Q0
+  Python probe works; C0 crashes and requires caller bypass. Logs/report:
+  `/tmp/gliner25-work/m4-parent-scorer.{log,json}`.
+- Parent reviewed complete pure decoder against the actual upstream overlap and
+  entity decode source, independently passed its debug/release tests, and
+  regenerated its9,729-byte oracle vector file byte-identically. Typed Rust
+  scorer/integrated-head tests and boundary-only tokenizer preparation are
+  delegated next. Preparations remain outside M2/M3 commit scope. No boundary
+  high-level pipeline is usable yet.
+- Background agent result delivery was not available for several completed IDs;
+  parent recovered their final text from local output artifacts and inspected
+  actual files. Do not infer active work from a stale agent ID.
+
+## M2 — accepted after independent numerical and safety gates
+
+- Parent reviewed the hardened comparison/sensitivity validators and independently
+  reran them. All24 head/6 bypass fixtures plus dynamic/B2 cases pass the approved
+  prefix-only gate;199 original raw-prefix failures remain explicitly reported.
+  The separate sensitivity validator enforces original learned-score tolerances,
+  confidence bounds, exact saved baseline and unchanged selection decisions.
+- Six Python comparison regressions pass. Rust full marginal test passes24 head
+  and6 bypass cases. L0 rejects before native inference; the isolated Python
+  probe records the unsupported raw graph crash instead of claiming L0 support.
+- Parent fmt and strict Clippy pass. Review workspace suite (including pending
+  M3/M4 preparations):77 tests pass without models (20 explicit skips) and77
+  pass with strict v2+boundary artifacts and full fixtures (**zero skips**).
+  The combined artifact root initially lacked its fixture symlink; that run
+  correctly failed, was repaired, and the complete strict run then passed.
+- Evidence and graph hash: `docs/evidence/m2.json`. M2 commit scope excludes
+  the pool and all M4 preparations. Next accept/commit M3 separately, then
+  integrate M4 high-level entities/classification and end-to-end parity.
+  No usable2.5 pipeline or release tag is claimed yet.
