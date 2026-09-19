@@ -1,5 +1,12 @@
 use std::{env, path::PathBuf};
 
+use anyhow::anyhow;
+use gliner2_rs::{
+    Result,
+    config::{Architecture, ModelConfig},
+    pipeline::{AutoPipeline, SpanPipeline},
+};
+
 /// Resolve model/ONNX paths, with optional `--model <onnx_dir>` override.
 /// Defaults to the base ONNX bundle (`onnx/gliner2-base-v1`).
 #[allow(dead_code)] // Shared by examples that use different subsets of these paths.
@@ -9,6 +16,35 @@ pub struct ModelPaths {
     pub encoder: PathBuf,
     pub extractor: PathBuf,
     pub classifier: Option<PathBuf>,
+}
+
+/// Load either a boundary bundle or the legacy split-layout span model.
+///
+/// Architecture metadata is taken from the ONNX bundle when it contains a
+/// `config.json`; otherwise the legacy metadata/tokenizer directory is used.
+#[allow(dead_code)] // Shared by examples that do not load an inference pipeline.
+pub fn load_auto_pipeline(paths: &ModelPaths, with_classifier: bool) -> Result<AutoPipeline> {
+    let config_dir = if paths.onnx_dir.join("config.json").is_file() {
+        &paths.onnx_dir
+    } else {
+        &paths.model_dir
+    };
+
+    match ModelConfig::from_dir(config_dir)?.architecture {
+        Architecture::Boundary => AutoPipeline::from_dir(&paths.onnx_dir),
+        Architecture::Span => {
+            let pipeline = SpanPipeline::new(&paths.model_dir, &paths.encoder, &paths.extractor)?;
+            let pipeline = if with_classifier {
+                let classifier = paths.classifier.as_ref().ok_or_else(|| {
+                    anyhow!("missing classifier.onnx in {}", paths.onnx_dir.display())
+                })?;
+                pipeline.with_classifier(classifier)?
+            } else {
+                pipeline
+            };
+            Ok(AutoPipeline::Span(Box::new(pipeline)))
+        }
+    }
 }
 
 pub fn repo_root() -> PathBuf {

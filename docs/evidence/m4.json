@@ -1,0 +1,57 @@
+{
+  "milestone": "M4",
+  "status": "accepted_after_parent_review",
+  "upstream_commit": "d7c727458bf6929bc9ef5ee04e13c3f717a7c455",
+  "model_revision": "78cea040597df251eedefa9d7ee2a756af39fe64",
+  "scorer_graph_sha256": "fd8cf66d5f73de152f15d5ef3d0b8bc5d759eab18e1a5db811d61c6ab6322a2f",
+  "scorer_audit": {"opset": 17, "checker": "passed", "fp32_finite_initializers": 30, "fp32_finite_constants": 12},
+  "scorer_numerical_validation": {
+    "real_head_fixtures": 24,
+    "dynamic_synthetic_cases": 4,
+    "batch_cases": 1,
+    "atol": 0.0001,
+    "rtol": 0.001,
+    "max_abs": {"pair_logits": 0.0000934600830078125, "candidate_states": 0.00000095367431640625, "null_logits": 0.000001430511474609375, "count_log_rates": 0.0000004172325134277344},
+    "Q0_C0_L0": "Rust preflight requires caller bypass; raw Python Q0 graph works, C0 probe SIGSEGVs"
+  },
+  "formatted_pipeline_parity": {
+    "corpus_cases": 21,
+    "additional_mixed_task_cases": 2,
+    "excluded_later_milestone_cases": {"json": 5, "relations": 4},
+    "coverage_enforcement": "exact eligible corpus ID set and unconditional expected classification task keys",
+    "labels_text_order_utf8_offsets": "exact",
+    "confidence_comparisons": 49,
+    "maximum_confidence_abs_error": 0.0000057816505,
+    "confidence_atol": 0.001,
+    "encoder_context": "single mixed-task encoder invocation; Q0 skips boundary heads"
+  },
+  "parent_gates": {
+    "fmt": "passed",
+    "clippy_all_targets_all_features": "passed with -D warnings",
+    "no_model_workspace": "87 tests passed, 24 explicit skips (includes 3 pending M5 assignment tests)",
+    "strict_model_workspace": "87 tests passed, zero skips (includes 3 pending M5 assignment tests)",
+    "decoder_debug_release": "passed",
+    "actual_marginals_pool_scorer_chain": "24 cases passed",
+    "adapter_swap": "output equality across first load, second load, failed load and unload",
+    "original_full_tutorials_1_2_boundary": "parent rerun passed",
+    "original_full_tutorials_1_2_v2": "byte-identical to original baseline after excluding only load/inference timing lines"
+  },
+  "v2_tutorial_result_sha256": {
+    "tutorial_1_classification": "6d419dd4833d8f3ad02c55b387496396569c126106b76f9910d80271bbe20242",
+    "tutorial_2_ner": "51982dcfb71709747e8ff2c26f9d9a0a5ab79f9a9e46b69a01c6ca42a67ac2d4"
+  },
+  "parent_byte_identical_oracle_regeneration": {
+    "boundary-decode-vectors.json": "c4a6349769e996aba048ea6f751682324f4239076ab8835839a0ff4dac237589",
+    "boundary-token-vectors.json": "8ca5037f19aa1ac93175345f13034370fcfa8e9b02d5624dc5943b25bf1a7ea4",
+    "boundary-mixed.json": "c4e801d87180c70ef17256c9db837525ef00b18eb461fd3b29fa001edacaa9f8"
+  },
+  "compatibility_decisions": [
+    "Legacy v2 implementation and schema/result struct fields unchanged",
+    "Boundary multi-label classification stays in schema order and chooses first argmax ties",
+    "Boundary entity formatting preserves distinct duplicate occurrences",
+    "Synthetic terminal punctuation is encoder-only; exposed offsets clamp to original caller text",
+    "AutoPipeline legacy infer_raw remains span-only rather than coercing boundary output"
+  ],
+  "local_evidence_prefix": "/tmp/gliner25-work/m4-parent-",
+  "scope_limit": "Entities and classifications only. JSON/record and relation methods explicitly reject requests pending M5/M6. Explicit sparse scoring, all-model bundles, publication and release remain incomplete."
+}

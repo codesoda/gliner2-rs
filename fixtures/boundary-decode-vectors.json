@@ -1,0 +1,626 @@
+{
+  "format_version": 1,
+  "oracle": "unmodified pinned GLiNER2 overlap/group/boundary engine",
+  "upstream_commit": "d7c727458bf6929bc9ef5ee04e13c3f717a7c455",
+  "torch_version": "2.8.0",
+  "overlap_cases": [
+    {
+      "name": "weighted_not_greedy",
+      "policy": "flat",
+      "spans": [
+        [
+          0.8999999761581421,
+          0,
+          4
+        ],
+        [
+          0.6000000238418579,
+          0,
+          2
+        ],
+        [
+          0.6000000238418579,
+          2,
+          4
+        ]
+      ],
+      "expected": [
+        [
+          0.6000000238418579,
+          0,
+          2
+        ],
+        [
+          0.6000000238418579,
+          2,
+          4
+        ]
+      ]
+    },
+    {
+      "name": "allow_nested_crossing",
+      "policy": "allow",
+      "spans": [
+        [
+          0.949999988079071,
+          0,
+          6
+        ],
+        [
+          0.8999999761581421,
+          1,
+          3
+        ],
+        [
+          0.8500000238418579,
+          2,
+          5
+        ],
+        [
+          0.800000011920929,
+          6,
+          8
+        ]
+      ],
+      "expected": [
+        [
+          0.949999988079071,
+          0,
+          6
+        ],
+        [
+          0.8999999761581421,
+          1,
+          3
+        ],
+        [
+          0.8500000238418579,
+          2,
+          5
+        ],
+        [
+          0.800000011920929,
+          6,
+          8
+        ]
+      ]
+    },
+    {
+      "name": "nested_rejects_crossing",
+      "policy": "nested",
+      "spans": [
+        [
+          0.949999988079071,
+          0,
+          6
+        ],
+        [
+          0.8999999761581421,
+          1,
+          3
+        ],
+        [
+          0.8500000238418579,
+          2,
+          5
+        ],
+        [
+          0.800000011920929,
+          6,
+          8
+        ]
+      ],
+      "expected": [
+        [
+          0.949999988079071,
+          0,
+          6
+        ],
+        [
+          0.8999999761581421,
+          1,
+          3
+        ],
+        [
+          0.800000011920929,
+          6,
+          8
+        ]
+      ]
+    },
+    {
+      "name": "longest_strict_containment",
+      "policy": "longest",
+      "spans": [
+        [
+          0.949999988079071,
+          0,
+          6
+        ],
+        [
+          0.8999999761581421,
+          1,
+          3
+        ],
+        [
+          0.8500000238418579,
+          2,
+          5
+        ],
+        [
+          0.800000011920929,
+          6,
+          8
+        ]
+      ],
+      "expected": [
+        [
+          0.949999988079071,
+          0,
+          6
+        ],
+        [
+          0.800000011920929,
+          6,
+          8
+        ]
+      ]
+    },
+    {
+      "name": "disallow_nested_crossing",
+      "policy": "disallow",
+      "spans": [
+        [
+          0.949999988079071,
+          0,
+          6
+        ],
+        [
+          0.8999999761581421,
+          1,
+          3
+        ],
+        [
+          0.8500000238418579,
+          2,
+          5
+        ],
+        [
+          0.800000011920929,
+          6,
+          8
+        ]
+      ],
+      "expected": [
+        [
+          0.949999988079071,
+          0,
+          6
+        ],
+        [
+          0.800000011920929,
+          6,
+          8
+        ]
+      ]
+    },
+    {
+      "name": "exact_coordinate_duplicate",
+      "policy": "all",
+      "spans": [
+        [
+          0.4000000059604645,
+          0,
+          2
+        ],
+        [
+          0.800000011920929,
+          0,
+          2
+        ],
+        [
+          0.699999988079071,
+          2,
+          4
+        ],
+        [
+          0.699999988079071,
+          4,
+          6
+        ]
+      ],
+      "expected": [
+        [
+          0.800000011920929,
+          0,
+          2
+        ],
+        [
+          0.699999988079071,
+          2,
+          4
+        ],
+        [
+          0.699999988079071,
+          4,
+          6
+        ]
+      ]
+    },
+    {
+      "name": "equal_sum_cardinality",
+      "policy": "no-overlap",
+      "spans": [
+        [
+          1.0,
+          0,
+          4
+        ],
+        [
+          0.5,
+          0,
+          2
+        ],
+        [
+          0.5,
+          2,
+          4
+        ]
+      ],
+      "expected": [
+        [
+          0.5,
+          0,
+          2
+        ],
+        [
+          0.5,
+          2,
+          4
+        ]
+      ]
+    },
+    {
+      "name": "equal_sum_lexicographic",
+      "policy": "non_overlapping",
+      "spans": [
+        [
+          0.5,
+          0,
+          2
+        ],
+        [
+          0.5,
+          2,
+          4
+        ],
+        [
+          0.5,
+          0,
+          1
+        ],
+        [
+          0.5,
+          1,
+          4
+        ]
+      ],
+      "expected": [
+        [
+          0.5,
+          0,
+          1
+        ],
+        [
+          0.5,
+          1,
+          4
+        ]
+      ]
+    }
+  ],
+  "grouping_cases": [
+    {
+      "name": "threshold_equality_and_masks",
+      "indices": [
+        [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        [
+          [
+            0,
+            2
+          ],
+          [
+            1,
+            3
+          ],
+          [
+            3,
+            4
+          ]
+        ]
+      ],
+      "valid_mask": [
+        [
+          true,
+          false,
+          true
+        ],
+        [
+          true,
+          true,
+          true
+        ]
+      ],
+      "query_mask": [
+        true,
+        false
+      ],
+      "pair_logits": [
+        [
+          0.0,
+          9.0,
+          -0.0001
+        ],
+        [
+          9.0,
+          9.0,
+          9.0
+        ]
+      ],
+      "thresholds": [
+        0.5,
+        0.1
+      ],
+      "temperature": 1.0,
+      "expected": [
+        [
+          [
+            0.5,
+            0,
+            1
+          ]
+        ],
+        []
+      ]
+    },
+    {
+      "name": "candidate_order_preserved",
+      "indices": [
+        [
+          [
+            4,
+            5
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            2,
+            4
+          ]
+        ]
+      ],
+      "valid_mask": [
+        [
+          true,
+          true,
+          true
+        ]
+      ],
+      "query_mask": [
+        true
+      ],
+      "pair_logits": [
+        [
+          0.2,
+          2.0,
+          1.0
+        ]
+      ],
+      "thresholds": [
+        0.5
+      ],
+      "temperature": 2.0,
+      "expected": [
+        [
+          [
+            0.5249791741371155,
+            4,
+            5
+          ],
+          [
+            0.7310585975646973,
+            0,
+            1
+          ],
+          [
+            0.622459352016449,
+            2,
+            4
+          ]
+        ]
+      ]
+    },
+    {
+      "name": "zero_candidates",
+      "indices": [
+        []
+      ],
+      "valid_mask": [
+        []
+      ],
+      "query_mask": [
+        true
+      ],
+      "pair_logits": [
+        []
+      ],
+      "thresholds": [
+        0.5
+      ],
+      "temperature": 1.0,
+      "expected": [
+        []
+      ]
+    },
+    {
+      "name": "zero_queries",
+      "indices": [],
+      "valid_mask": [],
+      "query_mask": [],
+      "pair_logits": [],
+      "thresholds": [],
+      "temperature": 1.0,
+      "expected": []
+    }
+  ],
+  "entity_cases": [
+    {
+      "name": "unicode_list_with_choice_prefix",
+      "text": " Café 東京 😀 ",
+      "offsets": [
+        [
+          0,
+          7
+        ],
+        [
+          8,
+          14
+        ],
+        [
+          15,
+          20
+        ]
+      ],
+      "choice_prefix_words": 2,
+      "dtype": "list",
+      "null_probability": 0.5,
+      "policy": "allow",
+      "scored": [
+        [
+          0.9900000095367432,
+          0,
+          1
+        ],
+        [
+          0.8999999761581421,
+          2,
+          3
+        ],
+        [
+          0.800000011920929,
+          3,
+          5
+        ],
+        [
+          0.699999988079071,
+          2,
+          5
+        ],
+        [
+          0.6000000238418579,
+          5,
+          6
+        ]
+      ],
+      "expected": [
+        {
+          "text": "Café",
+          "confidence": 0.8999999761581421,
+          "start": 0,
+          "end": 7
+        },
+        {
+          "text": "東京 😀",
+          "confidence": 0.800000011920929,
+          "start": 8,
+          "end": 20
+        },
+        {
+          "text": "Café 東京 😀",
+          "confidence": 0.699999988079071,
+          "start": 0,
+          "end": 20
+        }
+      ]
+    },
+    {
+      "name": "scalar_takes_first",
+      "text": "alpha beta",
+      "offsets": [
+        [
+          0,
+          5
+        ],
+        [
+          6,
+          10
+        ]
+      ],
+      "choice_prefix_words": 0,
+      "dtype": "str",
+      "null_probability": 0.5,
+      "policy": "all",
+      "scored": [
+        [
+          0.6000000238418579,
+          0,
+          1
+        ],
+        [
+          0.8999999761581421,
+          1,
+          2
+        ]
+      ],
+      "expected": [
+        {
+          "text": "beta",
+          "confidence": 0.8999999761581421,
+          "start": 6,
+          "end": 10
+        }
+      ]
+    },
+    {
+      "name": "null_strictly_above_abstains",
+      "text": "alpha beta",
+      "offsets": [
+        [
+          0,
+          5
+        ],
+        [
+          6,
+          10
+        ]
+      ],
+      "choice_prefix_words": 0,
+      "dtype": "list",
+      "null_probability": 0.5000010132789612,
+      "policy": "flat",
+      "scored": [
+        [
+          0.8999999761581421,
+          0,
+          1
+        ]
+      ],
+      "expected": []
+    }
+  ]
+}

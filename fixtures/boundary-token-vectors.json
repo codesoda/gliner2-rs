@@ -1,0 +1,445 @@
+{
+  "format_version": 1,
+  "oracle": "unmodified pinned GLiNER2 word splitters after _collate_batch punctuation normalization",
+  "upstream_commit": "d7c727458bf6929bc9ef5ee04e13c3f717a7c455",
+  "offset_unit": "utf8_byte",
+  "cases": [
+    {
+      "name": "empty",
+      "text": "",
+      "splitter": "whitespace",
+      "max_len": 4096,
+      "choice_prefix": [],
+      "choice_prefix_words": 0,
+      "normalized_text": ".",
+      "synthetic_suffix_added": true,
+      "text_tokens": [
+        "."
+      ],
+      "original_offsets_utf8": [
+        {
+          "start": 0,
+          "end": 0,
+          "coverage": "synthetic_only"
+        }
+      ]
+    },
+    {
+      "name": "punctuationless",
+      "text": "Alpha βeta",
+      "splitter": "whitespace",
+      "max_len": 4096,
+      "choice_prefix": [],
+      "choice_prefix_words": 0,
+      "normalized_text": "Alpha βeta.",
+      "synthetic_suffix_added": true,
+      "text_tokens": [
+        "alpha",
+        "βeta",
+        "."
+      ],
+      "original_offsets_utf8": [
+        {
+          "start": 0,
+          "end": 5,
+          "coverage": "original"
+        },
+        {
+          "start": 6,
+          "end": 11,
+          "coverage": "original"
+        },
+        {
+          "start": 11,
+          "end": 11,
+          "coverage": "synthetic_only"
+        }
+      ]
+    },
+    {
+      "name": "already_punctuated",
+      "text": "Done!",
+      "splitter": "whitespace",
+      "max_len": 4096,
+      "choice_prefix": [],
+      "choice_prefix_words": 0,
+      "normalized_text": "Done!",
+      "synthetic_suffix_added": false,
+      "text_tokens": [
+        "done",
+        "!"
+      ],
+      "original_offsets_utf8": [
+        {
+          "start": 0,
+          "end": 4,
+          "coverage": "original"
+        },
+        {
+          "start": 4,
+          "end": 5,
+          "coverage": "original"
+        }
+      ]
+    },
+    {
+      "name": "combining_mark",
+      "text": "Café",
+      "splitter": "whitespace",
+      "max_len": 4096,
+      "choice_prefix": [],
+      "choice_prefix_words": 0,
+      "normalized_text": "Café.",
+      "synthetic_suffix_added": true,
+      "text_tokens": [
+        "cafe",
+        "́",
+        "."
+      ],
+      "original_offsets_utf8": [
+        {
+          "start": 0,
+          "end": 4,
+          "coverage": "original"
+        },
+        {
+          "start": 4,
+          "end": 6,
+          "coverage": "original"
+        },
+        {
+          "start": 6,
+          "end": 6,
+          "coverage": "synthetic_only"
+        }
+      ]
+    },
+    {
+      "name": "cjk",
+      "text": "東京",
+      "splitter": "whitespace",
+      "max_len": 4096,
+      "choice_prefix": [],
+      "choice_prefix_words": 0,
+      "normalized_text": "東京.",
+      "synthetic_suffix_added": true,
+      "text_tokens": [
+        "東京",
+        "."
+      ],
+      "original_offsets_utf8": [
+        {
+          "start": 0,
+          "end": 6,
+          "coverage": "original"
+        },
+        {
+          "start": 6,
+          "end": 6,
+          "coverage": "synthetic_only"
+        }
+      ]
+    },
+    {
+      "name": "emoji",
+      "text": "wave 😀",
+      "splitter": "whitespace",
+      "max_len": 4096,
+      "choice_prefix": [],
+      "choice_prefix_words": 0,
+      "normalized_text": "wave 😀.",
+      "synthetic_suffix_added": true,
+      "text_tokens": [
+        "wave",
+        "😀",
+        "."
+      ],
+      "original_offsets_utf8": [
+        {
+          "start": 0,
+          "end": 4,
+          "coverage": "original"
+        },
+        {
+          "start": 5,
+          "end": 9,
+          "coverage": "original"
+        },
+        {
+          "start": 9,
+          "end": 9,
+          "coverage": "synthetic_only"
+        }
+      ]
+    },
+    {
+      "name": "unicode_ignorecase_email_and_handle",
+      "text": "İıſK x@İı.ſK @İıſK",
+      "splitter": "whitespace",
+      "max_len": 4096,
+      "choice_prefix": [],
+      "choice_prefix_words": 0,
+      "normalized_text": "İıſK x@İı.ſK @İıſK.",
+      "synthetic_suffix_added": true,
+      "text_tokens": [
+        "i̇ıſk",
+        "x@i̇ı.ſk",
+        "@i̇ıſk",
+        "."
+      ],
+      "original_offsets_utf8": [
+        {
+          "start": 0,
+          "end": 9,
+          "coverage": "original"
+        },
+        {
+          "start": 10,
+          "end": 22,
+          "coverage": "original"
+        },
+        {
+          "start": 23,
+          "end": 33,
+          "coverage": "original"
+        },
+        {
+          "start": 33,
+          "end": 33,
+          "coverage": "synthetic_only"
+        }
+      ]
+    },
+    {
+      "name": "url_absorbs_synthetic_period",
+      "text": "visit https://example.com/path",
+      "splitter": "whitespace",
+      "max_len": 4096,
+      "choice_prefix": [],
+      "choice_prefix_words": 0,
+      "normalized_text": "visit https://example.com/path.",
+      "synthetic_suffix_added": true,
+      "text_tokens": [
+        "visit",
+        "https://example.com/path."
+      ],
+      "original_offsets_utf8": [
+        {
+          "start": 0,
+          "end": 5,
+          "coverage": "original"
+        },
+        {
+          "start": 6,
+          "end": 30,
+          "coverage": "original_with_synthetic_suffix"
+        }
+      ]
+    },
+    {
+      "name": "url_email_handle",
+      "text": "WWW.Example.org mail A+B@example.COM @Handle?",
+      "splitter": "whitespace",
+      "max_len": 4096,
+      "choice_prefix": [],
+      "choice_prefix_words": 0,
+      "normalized_text": "WWW.Example.org mail A+B@example.COM @Handle?",
+      "synthetic_suffix_added": false,
+      "text_tokens": [
+        "www.example.org",
+        "mail",
+        "a+b@example.com",
+        "@handle",
+        "?"
+      ],
+      "original_offsets_utf8": [
+        {
+          "start": 0,
+          "end": 15,
+          "coverage": "original"
+        },
+        {
+          "start": 16,
+          "end": 20,
+          "coverage": "original"
+        },
+        {
+          "start": 21,
+          "end": 36,
+          "coverage": "original"
+        },
+        {
+          "start": 37,
+          "end": 44,
+          "coverage": "original"
+        },
+        {
+          "start": 44,
+          "end": 45,
+          "coverage": "original"
+        }
+      ]
+    },
+    {
+      "name": "python_control_whitespace",
+      "text": "a\u001cb\u001dc\u001ed\u001fe",
+      "splitter": "whitespace",
+      "max_len": 4096,
+      "choice_prefix": [],
+      "choice_prefix_words": 0,
+      "normalized_text": "a\u001cb\u001dc\u001ed\u001fe.",
+      "synthetic_suffix_added": true,
+      "text_tokens": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "."
+      ],
+      "original_offsets_utf8": [
+        {
+          "start": 0,
+          "end": 1,
+          "coverage": "original"
+        },
+        {
+          "start": 2,
+          "end": 3,
+          "coverage": "original"
+        },
+        {
+          "start": 4,
+          "end": 5,
+          "coverage": "original"
+        },
+        {
+          "start": 6,
+          "end": 7,
+          "coverage": "original"
+        },
+        {
+          "start": 8,
+          "end": 9,
+          "coverage": "original"
+        },
+        {
+          "start": 9,
+          "end": 9,
+          "coverage": "synthetic_only"
+        }
+      ]
+    },
+    {
+      "name": "char_mode",
+      "text": "ABC東京 Café @Tag",
+      "splitter": "char",
+      "max_len": 4096,
+      "choice_prefix": [],
+      "choice_prefix_words": 0,
+      "normalized_text": "ABC東京 Café @Tag.",
+      "synthetic_suffix_added": true,
+      "text_tokens": [
+        "abc",
+        "東",
+        "京",
+        "cafe",
+        "́",
+        "@tag."
+      ],
+      "original_offsets_utf8": [
+        {
+          "start": 0,
+          "end": 3,
+          "coverage": "original"
+        },
+        {
+          "start": 3,
+          "end": 6,
+          "coverage": "original"
+        },
+        {
+          "start": 6,
+          "end": 9,
+          "coverage": "original"
+        },
+        {
+          "start": 10,
+          "end": 14,
+          "coverage": "original"
+        },
+        {
+          "start": 14,
+          "end": 16,
+          "coverage": "original"
+        },
+        {
+          "start": 17,
+          "end": 21,
+          "coverage": "original_with_synthetic_suffix"
+        }
+      ]
+    },
+    {
+      "name": "cap_before_choice_prefix",
+      "text": "one two three",
+      "splitter": "whitespace",
+      "max_len": 2,
+      "choice_prefix": [
+        "(",
+        "kind:",
+        "Red",
+        ")"
+      ],
+      "choice_prefix_words": 4,
+      "normalized_text": "one two three.",
+      "synthetic_suffix_added": true,
+      "text_tokens": [
+        "(",
+        "kind:",
+        "Red",
+        ")",
+        "one",
+        "two"
+      ],
+      "original_offsets_utf8": [
+        {
+          "start": 0,
+          "end": 3,
+          "coverage": "original"
+        },
+        {
+          "start": 4,
+          "end": 7,
+          "coverage": "original"
+        }
+      ]
+    },
+    {
+      "name": "trailing_space_before_synthetic_period",
+      "text": "tail ",
+      "splitter": "whitespace",
+      "max_len": 4096,
+      "choice_prefix": [],
+      "choice_prefix_words": 0,
+      "normalized_text": "tail .",
+      "synthetic_suffix_added": true,
+      "text_tokens": [
+        "tail",
+        "."
+      ],
+      "original_offsets_utf8": [
+        {
+          "start": 0,
+          "end": 4,
+          "coverage": "original"
+        },
+        {
+          "start": 5,
+          "end": 5,
+          "coverage": "synthetic_only"
+        }
+      ]
+    }
+  ]
+}

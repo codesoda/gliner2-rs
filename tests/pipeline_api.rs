@@ -30,7 +30,7 @@ fn span_bundle_reports_missing_files_before_loading_sessions() {
 }
 
 #[test]
-fn boundary_placeholder_fails_clearly_without_attempting_span_inference() {
+fn boundary_bundle_reports_missing_files_without_span_fallback() {
     let dir = tempdir().unwrap();
     fs::write(
         dir.path().join("config.json"),
@@ -40,13 +40,14 @@ fn boundary_placeholder_fails_clearly_without_attempting_span_inference() {
 
     let direct = BoundaryPipeline::from_dir(dir.path())
         .err()
-        .expect("M0 boundary loading must be unsupported")
+        .expect("incomplete boundary bundle must fail")
         .to_string();
-    assert!(direct.contains("not available until milestone M2"));
+    assert!(direct.contains("boundary bundle missing required `tokenizer.json`"));
 
     let auto = AutoPipeline::from_dir(dir.path())
         .err()
-        .expect("M0 boundary dispatch must be unsupported")
+        .expect("boundary dispatch must load only boundary artifacts")
         .to_string();
-    assert!(auto.contains("not available until milestone M2"));
+    assert!(auto.contains("boundary bundle missing required `tokenizer.json`"));
+    assert!(!auto.contains("extractor_padded.onnx"));
 }

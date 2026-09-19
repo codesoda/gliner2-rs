@@ -32,10 +32,10 @@ An unexecuted script, model-skipping test, or planned artifact does not pass a g
 | M2 Rust | `src/boundary/marginals.rs`, named I/O/threading consistent with orp/ort, committed-subset parity test | Accepted: subset/full30 corpus, pre-native L0/Q0 guards, no erroneous combined-length4096 cap; full model/no-model gates pass |
 | M3 pool | `src/boundary/pool.rs`, top-k/quota/rank/dedup/order, exact indices/mask/compat for every fixture | Accepted:24 frozen real +9 synthetic bit-exact, debug/release; actual ORT-to-pool exact discrete parity on24 cases; `docs/evidence/m3.json` |
 | M3 ties | root-cause evidence for any tie exception and Astra-written adjudication; no silent tolerance weakening | No exception needed: source-faithful stable sorts/tie rules and fixed AArch64 reduction grouping; exact frozen compatibility preserved |
-| M4 scorer | `export_boundary_scorer.py`, explicit indices/mask/compat, null/count/candidate states; actual dynamic ORT tests | Pending |
-| M4 decoder | `src/boundary/decode.rs`: temperature/threshold/abstention/all overlap policies, half-open spans, Unicode offsets/order/dtypes | Pending |
-| M4 API/parity | entity + classification + combined extract; exact labels/spans, <=1e-3 confidence error on all fixtures | Pending |
-| M4 tutorials | run tutorials 1 and 2 against base 2.5 | Pending |
+| M4 scorer | `export_boundary_scorer.py`, explicit indices/mask/compat, null/count/candidate states; actual dynamic ORT tests | Accepted:24 real + dynamic/B2 cases, typed Rust preflight/runtime, actual marginal→pool→scorer integration; original score tolerances; `docs/evidence/m4.json` |
+| M4 decoder | `src/boundary/decode.rs`: temperature/threshold/abstention/all overlap policies, half-open spans, Unicode offsets/order/dtypes | Accepted: upstream-generated synthetic vectors and real-stage parity, weighted interval scheduling/ties, strict null gate and UTF8-safe original offsets; boundary-specific tokenizer/classifier selection |
+| M4 API/parity | entity + classification + combined extract; exact labels/spans, <=1e-3 confidence error on all fixtures | Accepted: exact21 eligible corpus IDs +2 independently regenerated mixed-task cases; final maximum confidence error5.7816505e-6, exact labels/text/order/offsets; later task families explicitly rejected |
+| M4 tutorials | run tutorials 1 and 2 against base 2.5 | Accepted: parent ran original full tutorial_1_classification/tutorial_2_ner on2.5; same tutorials on v2 retain byte-identical baseline results |
 | M5 records | real `RecordHead.forward_group` export, `decode_group` anchor/natural/legacy, all `extract_json*` APIs | Pending |
 | M5 gate | structure goldens and tutorial 3 on base 2.5 | Pending |
 | M6 relations | typed argument pair generator incl. caps, sparse biaffine scorer export, all `extract_relations*` APIs | Pending |

@@ -1,25 +1,18 @@
 use std::{collections::BTreeMap, time::Instant};
 
-use anyhow::anyhow;
 use gliner2_rs::{
     Result,
     classification::ClassAct,
-    pipeline::Gliner2Pipeline,
     schema_spec::{ClassificationOptions, QuickClassificationTask, SchemaBuilder},
 };
 mod common;
-use common::model_paths_from_args;
+use common::{load_auto_pipeline, model_paths_from_args};
 
 fn main() -> Result<()> {
     let paths = model_paths_from_args("onnx/gliner2-base-v1");
-    let classifier_onnx = paths
-        .classifier
-        .as_ref()
-        .ok_or_else(|| anyhow!("missing classifier.onnx in {}", paths.onnx_dir.display()))?;
 
     let load_start = Instant::now();
-    let pipeline = Gliner2Pipeline::new(&paths.model_dir, &paths.encoder, &paths.extractor)?
-        .with_classifier(classifier_onnx)?;
+    let pipeline = load_auto_pipeline(&paths, true)?;
     println!(
         "model load took: {:.2?} (onnx={})",
         load_start.elapsed(),

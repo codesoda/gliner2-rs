@@ -287,3 +287,48 @@ prompt-to-evidence checklist. Model-free test success is not model parity.
   source-faithful classification selection, replace the high-level scaffold,
   and prove formatted entity/classification parity. M4–M7 and explicit sparse
   scoring remain open; do not describe this branch as a finished2.5 release.
+
+## M4 — integrated pipeline under parent review
+
+- Sol implemented entity/classification AutoPipeline dispatch with one mixed-task
+  encoder pass, Q0 bypass, adapters and explicit errors for pending JSON/relations.
+  Parent read complete pipeline/config and helper implementations. Boundary-only
+  classification preserves schema order and first-label ties; v2 stays unchanged.
+- Parent verified scorer/classifier/preprocessor/decoder tests after replacing
+  temporary source-file test inclusion with actual public-module imports.
+  Added a post-activation finite check for temperature-scaling overflow.
+  Regenerated token vectors byte-identically (9,664bytes); minimal examples run.
+- Review found two test coverage gaps: missing classification results could pass,
+  and full-corpus coverage only required >=2 cases. Targeted fixes require exact
+  21-case coverage, all expected task keys, true mixed-task oracle fixtures,
+  stronger adapter restore checks, and config underflow/graph-flag validation.
+- Original full tutorials1(classification)/2(NER), not just the new small examples,
+  must run against2.5. A separate change is adding architecture-aware example
+  loading while preserving their v2 bodies/results and baseline comparisons.
+- Independent M5 record and explicit sparse scorer exports are preparation only,
+  outside the M4 scope. No M4/M5 acceptance or completion is claimed yet.
+
+## M4 — accepted after hardened end-to-end and tutorial gates
+
+- Parent reviewed the full pipeline/config/scorer/decoder/preprocessor and repaired
+  coverage/robustness gaps. Tests now enforce all21 eligible corpus IDs plus two
+  separately generated mixed-task cases, and cannot pass by dropping classifiers.
+  Parent independently regenerated the mixed fixture byte-identically.
+- Parent actual encoder→marginals→Rust pool→scorer→formatted output comparisons
+  pass with exact labels/text/order/UTF8 offsets. Across49 confidence comparisons,
+  maximum absolute error is5.7816505e-6 (unchanged1e-3 gate).
+- Parent recursively audited the shared scorer graph:30 fp32 finite initializers,
+  12 fp32 finite constants, checker passes. All24 learned-scorer frozen cases pass
+  original tolerances; public Rust helper tests and complete head-chain tests pass.
+- The original full classification/NER tutorials now use an architecture-aware
+  loader without changing their bodies. Parent ran both against2.5 and v2.
+  v2 result payloads remain byte-identical to baseline, excluding only model-load
+  and inference-timing lines; hashes are in `docs/evidence/m4.json`.
+- Parent final fmt/strict all-target/all-feature Clippy pass. Review workspace:
+  87 tests pass without models (24 explicit skips),87 pass with strict v2+boundary
+  artifacts/full fixtures (zero skips). These counts include three uncommitted
+  M5 assignment preparation tests, which are excluded from the M4 commit.
+- Record metadata will use additive boundary sidecar APIs to preserve existing
+  public schema struct literals. M5 record/explicit graphs and assignment helper
+  remain preparations; JSON/records/relations deliberately error until integrated.
+  M5–M7, public explicit scoring, model publication and release remain open.

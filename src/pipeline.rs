@@ -1160,38 +1160,21 @@ impl SpanPipeline {
     }
 }
 
-/// Boundary-architecture placeholder. Loading remains explicitly unsupported
-/// until the M2 graph wrappers are implemented.
-pub struct BoundaryPipeline {
-    _private: (),
-}
-
-impl BoundaryPipeline {
-    pub fn from_dir(bundle: impl AsRef<Path>) -> Result<Self> {
-        let bundle = bundle.as_ref();
-        let config = ModelConfig::from_dir(bundle)?;
-        if config.architecture != Architecture::Boundary {
-            return Err(anyhow!(
-                "BoundaryPipeline requires `architecture: boundary` in {}",
-                bundle.join("config.json").display()
-            ));
-        }
-        Err(boundary_unavailable())
-    }
-}
+/// High-level GLiNER2.5 boundary implementation.
+pub use crate::boundary::pipeline::BoundaryPipeline;
 
 /// Architecture-aware high-level pipeline. Methods delegate without coercing a
 /// boundary model into the legacy span implementation.
 pub enum AutoPipeline {
     Span(Box<SpanPipeline>),
-    Boundary(BoundaryPipeline),
+    Boundary(Box<BoundaryPipeline>),
 }
 
 macro_rules! delegate_auto {
     ($pipeline:expr, $method:ident($($arg:expr),* $(,)?)) => {
         match $pipeline {
             AutoPipeline::Span(pipeline) => pipeline.$method($($arg),*),
-            AutoPipeline::Boundary(_) => Err(boundary_unavailable()),
+            AutoPipeline::Boundary(pipeline) => pipeline.$method($($arg),*),
         }
     };
 }
@@ -1201,7 +1184,9 @@ impl AutoPipeline {
         let bundle = bundle.as_ref();
         match ModelConfig::from_dir(bundle)?.architecture {
             Architecture::Span => Ok(Self::Span(Box::new(SpanPipeline::from_dir(bundle)?))),
-            Architecture::Boundary => Ok(Self::Boundary(BoundaryPipeline::from_dir(bundle)?)),
+            Architecture::Boundary => Ok(Self::Boundary(Box::new(BoundaryPipeline::from_dir(
+                bundle,
+            )?))),
         }
     }
 
@@ -1210,21 +1195,53 @@ impl AutoPipeline {
             Self::Span(pipeline) => Ok(Self::Span(Box::new(
                 (*pipeline).with_classifier(classifier_onnx)?,
             ))),
-            Self::Boundary(_) => Err(boundary_unavailable()),
+            Self::Boundary(pipeline) => Ok(Self::Boundary(Box::new(
+                (*pipeline).with_classifier(classifier_onnx)?,
+            ))),
         }
     }
 
     pub fn has_adapter(&self) -> bool {
         match self {
             Self::Span(pipeline) => pipeline.has_adapter(),
-            Self::Boundary(_) => false,
+            Self::Boundary(pipeline) => pipeline.has_adapter(),
         }
     }
 
     pub fn adapter_config(&self) -> Option<&AdapterConfig> {
         match self {
             Self::Span(pipeline) => pipeline.adapter_config(),
-            Self::Boundary(_) => None,
+            Self::Boundary(pipeline) => pipeline.adapter_config(),
+        }
+    }
+
+    /// Override boundary overlap handling. Span behavior is intentionally
+    /// unchanged and reports that the option is architecture-specific.
+    pub fn set_boundary_overlap_policy(
+        &mut self,
+        policy: crate::boundary::decode::OverlapPolicy,
+    ) -> Result<()> {
+        match self {
+            Self::Boundary(pipeline) => {
+                pipeline.set_overlap_policy(policy);
+                Ok(())
+            }
+            Self::Span(_) => Err(anyhow!(
+                "boundary overlap policy is only available for boundary models"
+            )),
+        }
+    }
+
+    /// Override boundary preprocessing without changing the legacy v2 splitter.
+    pub fn set_boundary_word_splitter(
+        &mut self,
+        splitter: crate::boundary::preprocessing::WordSplitter,
+    ) -> Result<()> {
+        match self {
+            Self::Boundary(pipeline) => pipeline.set_word_splitter(splitter),
+            Self::Span(_) => Err(anyhow!(
+                "boundary word splitter is only available for boundary models"
+            )),
         }
     }
 
@@ -1241,7 +1258,12 @@ impl AutoPipeline {
         schema_tokens_list: &[Vec<String>],
         text_tokens: &[String],
     ) -> Result<ExtractorOutput> {
-        delegate_auto!(self, infer_raw(schema_tokens_list, text_tokens))
+        match self {
+            Self::Span(pipeline) => pipeline.infer_raw(schema_tokens_list, text_tokens),
+            Self::Boundary(_) => Err(anyhow!(
+                "AutoPipeline::infer_raw returns the legacy span-head output and is unsupported for boundary models; use typed boundary high-level methods"
+            )),
+        }
     }
 
     pub fn extract_entities(
@@ -1532,8 +1554,4 @@ fn required_file(bundle: &Path, name: &str) -> Result<std::path::PathBuf> {
         ));
     }
     Ok(path)
-}
-
-fn boundary_unavailable() -> anyhow::Error {
-    anyhow!("boundary architecture runtime is not available until milestone M2")
 }

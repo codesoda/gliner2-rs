@@ -2,17 +2,16 @@ use std::time::Instant;
 
 use gliner2_rs::{
     Result,
-    pipeline::Gliner2Pipeline,
     schema_spec::{EntityOptions, EntitySpec, FieldDtype, SchemaBuilder},
 };
 mod common;
-use common::model_paths_from_args;
+use common::{load_auto_pipeline, model_paths_from_args};
 
 fn main() -> Result<()> {
     let paths = model_paths_from_args("onnx/gliner2-base-v1");
 
     let load_start = Instant::now();
-    let pipeline = Gliner2Pipeline::new(&paths.model_dir, &paths.encoder, &paths.extractor)?;
+    let pipeline = load_auto_pipeline(&paths, false)?;
     println!(
         "model load took: {:.2?} (onnx={})",
         load_start.elapsed(),

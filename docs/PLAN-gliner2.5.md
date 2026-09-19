@@ -69,6 +69,12 @@ moved to Rust, with evidence recorded, rather than hiding errors behind an upgra
   module boundaries; return errors rather than indexing panics.
 - Keep the old schema/result types. Extend schemas additively for record modes
   and overlap options if required; preserve defaults for existing callers.
+  Existing SchemaSpec/StructureSpec/JsonSchema have public fields and support
+  struct literals, so adding required fields would break Rust source compatibility.
+  Prefer typed boundary record metadata as a sidecar keyed by structure name,
+  accepted by additive `extract_with_records` / `extract_json_with_records`
+  methods. Existing extraction methods remain unannotated legacy-record mode.
+  Do not hide record metadata in global state or overload label strings.
 - Byte offsets remain the crate-wide contract, including boundary output, so
   `text[start..end]` is safe. Golden comparison explicitly converts Python
   Unicode code-point offsets to UTF-8 byte offsets; labels/text/order must match.
@@ -150,7 +156,11 @@ context including duplicates), or anchorless (32 learned queries) modes.
 Export inference `forward_group`, not the dense training path; Rust handles
 ragged gathers and metadata. Assignment output includes ABSENT column zero.
 Scalar exclusive assignment needs global min-cost matching; list assignment uses
-strongest instance, confidence=min(candidate,assignment). Preserve required
+strongest instance, confidence=min(candidate,assignment). The pinned environment
+has no SciPy, so the upstream internal shortest-augmenting Hungarian branch is
+normative (it promotes f32-derived costs to f64 and uses strict ascending-column
+loop ties). New oracle generators must not silently switch to the optional SciPy
+branch. Preserve required
 fields, source-anchor ordering, content dedup and literal-choice association.
 
 Relations: two `[R]` queries head/tail, concatenated into `[1,R,2H]`. Pair
