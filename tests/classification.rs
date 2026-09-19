@@ -85,4 +85,3 @@ fn decode_classification_respects_class_act() {
         _ => panic!("expected multi-label output"),
     }
 }
-

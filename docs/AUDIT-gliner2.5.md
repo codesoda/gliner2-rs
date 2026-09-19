@@ -19,10 +19,10 @@ An unexecuted script, model-skipping test, or planned artifact does not pass a g
 | Phase A public API | plan for `Extractor`, `SpanPipeline`, compatibility alias, `BoundaryPipeline`, `AutoPipeline::from_dir` | Approved enum abstraction; preserve low-level extractor name |
 | Phase A goldens | ~30-case corpus design, >=3 long cases, edge/non-ASCII/CJK/tasks, tensors, tolerance | Designed in plan; actual fixtures still pending |
 | Phase A risks | plan resolves every specification risk; maintain current risk list | Source-driven decisions documented; runtime experiments remain mandatory |
-| M0 dispatch | `config.json` architecture default span, unknown/version errors; auto loader tests | Pending |
-| M0 v2 compatibility | `SpanPipeline` and old alias; existing methods/examples unchanged | Pending |
-| M0 preprocessing | config max_len word truncation, default none for v2 / 4096 boundary; query marker enumeration including `[R]` | Pending; `[R]` already gathered by legacy embedding code |
-| M0 artifact paths | consistent crate-root defaults and explicit overrides; no silent model test skips with artifacts | Pending; current test helper incorrectly uses parent |
+| M0 dispatch | `config.json` architecture default span, unknown/version errors; auto loader tests | M0: `src/config.rs`, `src/pipeline.rs`, `tests/{config,pipeline_api}.rs`; boundary loading explicitly unavailable until later milestones |
+| M0 v2 compatibility | `SpanPipeline` and old alias; existing methods/examples unchanged | M0: source reviewed; model-backed suite and six tutorial result snapshots preserved |
+| M0 preprocessing | config max_len word truncation, default none for v2 / 4096 boundary; query marker enumeration including `[R]` | M0: `src/preprocessing.rs`, `src/embeddings.rs`, unit tests and model-backed `tests/truncation_e2e.rs` |
+| M0 artifact paths | consistent crate-root defaults and explicit overrides; no silent model test skips with artifacts | M0: `tests/common/mod.rs`, `GLINER2_TEST_ROOT`, strict `GLINER2_REQUIRE_MODELS=1`; model run has zero skips |
 | M1 Python environment | uv `scripts/export/env`, pinned gliner2/torch/dependencies; ignored venv | Pending |
 | M1 golden generator | `scripts/parity/gen_boundary_goldens.py`; actual upstream checkpoint inference | Pending |
 | M1 corpus/tensors | `.npz` + JSON: hidden/text/query, marginals/projections, pool indices/mask/compat, pair/null/count, final spans/confidence | Pending |
@@ -49,9 +49,9 @@ An unexecuted script, model-skipping test, or planned artifact does not pass a g
 | M7 CI/spec | CI skips absent models, checks real unit/committed-fixture coverage; specification §4/§5 updated to shipped state | Pending |
 | M8 optional features | only after M7: attributes, constrained classification, JointIE, long chunking, each own gate | Optional; not started; do not advertise as shipped |
 | Explicit-span primitive | public `score_explicit_spans`, equivalence tests and example | Pending (retain even if optional helpers deferred) |
-| Every milestone gates | `cargo fmt`, `cargo clippy --all-targets -- -D warnings`, `cargo test` without AND with models | Baseline no-model tests pass; baseline clippy has 10 errors |
+| Every milestone gates | `cargo fmt`, `cargo clippy --all-targets -- -D warnings`, `cargo test` without AND with models | M0: fmt/clippy/no-model and strict-model suite pass; see progress evidence. Later milestones pending |
 | Every milestone records | `PROGRESS-gliner2.5.md`: done/measured/next/questions; descriptive git commit; Astra review | Phase A entry/review complete; implementation gates pending |
-| v2 invariant | actual pre/post byte-identical model outputs; all existing examples/tests still pass | Pending; no-model baseline alone is insufficient |
+| v2 invariant | actual pre/post byte-identical model outputs; all existing examples/tests still pass | M0: six tutorials' full results identical (timing/path log lines excluded), four-case snapshot identical SHA256; all existing model tests pass. Recheck later changes |
 | Runtime/build constraints | no Python runtime/build dependency, ort rc.9 retained unless separately approved, no large fixtures/weights committed | Existing code satisfies; recheck all changes |
 | Final GitHub state | clean committed branch, pushed SHA equality, CI result, documented installable revision | Pending |
 

@@ -106,7 +106,9 @@ pub fn parse_field_spec(field_spec: &str) -> Result<StructureFieldSpec> {
         dtype = FieldDtype::Str;
     }
 
-    let mut spec = StructureFieldSpec::new(field_name).dtype(dtype).choices(choices);
+    let mut spec = StructureFieldSpec::new(field_name)
+        .dtype(dtype)
+        .choices(choices);
     if !description_parts.is_empty() {
         spec = spec.description(description_parts.join("::"));
     }

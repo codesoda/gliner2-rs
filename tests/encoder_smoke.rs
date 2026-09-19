@@ -1,14 +1,7 @@
-use std::path::PathBuf;
-
 use gliner2_rs::{Result, encoder::Encoder, tokenizer::RuntimeTokenizer};
 
-fn model_root() -> PathBuf {
-    // models and onnx dirs live one level above the crate.
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .unwrap()
-        .to_path_buf()
-}
+mod common;
+use common::{artifacts_available, model_root};
 
 #[test]
 fn encoder_runs_on_real_tokens() -> Result<()> {
@@ -16,8 +9,7 @@ fn encoder_runs_on_real_tokens() -> Result<()> {
     let model_dir = root.join("models/gliner2-base-v1");
     let onnx_path = root.join("onnx/gliner2-base-v1/encoder.onnx");
 
-    if !onnx_path.exists() {
-        eprintln!("SKIP: missing {}", onnx_path.display());
+    if !artifacts_available(&[&model_dir, &onnx_path])? {
         return Ok(());
     }
 
@@ -38,8 +30,7 @@ fn convert_known_subwords() -> Result<()> {
     let root = model_root();
     let model_dir = root.join("models/gliner2-base-v1");
 
-    if !model_dir.exists() {
-        eprintln!("SKIP: missing {}", model_dir.display());
+    if !artifacts_available(&[&model_dir])? {
         return Ok(());
     }
 
@@ -56,8 +47,7 @@ fn special_token_ids_match_expected() -> Result<()> {
     let root = model_root();
     let model_dir = root.join("models/gliner2-base-v1");
 
-    if !model_dir.exists() {
-        eprintln!("SKIP: missing {}", model_dir.display());
+    if !artifacts_available(&[&model_dir])? {
         return Ok(());
     }
 

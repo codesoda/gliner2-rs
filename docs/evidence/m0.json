@@ -1,0 +1,44 @@
+{
+  "milestone": "M0 dispatch and hygiene",
+  "baseline_commit": "2883a7301d4de8e2af167e4ce2ca9d9d230f65d3",
+  "reviewer": "GPT Astra 6, parent review of actual source and independent reruns",
+  "platform": "macOS arm64",
+  "rustc": "1.95.0 (59807616e 2026-04-14)",
+  "commands": [
+    {"command": "cargo fmt --all -- --check", "result": "pass"},
+    {"command": "cargo clippy --all-targets -- -D warnings", "result": "pass"},
+    {"command": "cargo test -- --nocapture", "result": "42 passed; 12 explicit model-artifact skip messages"},
+    {"command": "GLINER2_TEST_ROOT=<artifact-root> GLINER2_REQUIRE_MODELS=1 cargo test -- --nocapture", "result": "42 passed; zero skips"}
+  ],
+  "model": "gliner2-base-v1",
+  "tokenizer_hf_revision": "79c3a777abc572b4767922f3916cf63fb5754df2",
+  "onnx_sha256": {
+    "encoder.onnx": "655edabb5e79827a90e271207f21232f949a5a711eac1228e38207b7d29c4c16",
+    "extractor_padded.onnx": "e0f8761de03a639ae1bab56420da4997b4b7a75abad5be5f490447833f778247",
+    "classifier.onnx": "89a84c48bd81bfb174063a40834b7b55e54caf99c2f6052602438c46591fbac2"
+  },
+  "v2_before_after": {
+    "comparison": "All result text including floating confidences byte-identical on this platform. Only lines starting model load took:, inference took:, or batch took: excluded from tutorial logs, because they contain elapsed time and machine-specific model paths.",
+    "tutorial_result_sha256": {
+      "tutorial_1_classification": "6d419dd4833d8f3ad02c55b387496396569c126106b76f9910d80271bbe20242",
+      "tutorial_2_ner": "51982dcfb71709747e8ff2c26f9d9a0a5ab79f9a9e46b69a01c6ca42a67ac2d4",
+      "tutorial_3_json_extraction": "2c1d38de6c8e0f6295a619ee2dfdbd75acb4e7295d026a2961ad559861f9502f",
+      "tutorial_4_combined": "b77ee5cb41bb642ba72ba4363b07e33a67a96991e2f42a29c43eb8b49c929902",
+      "tutorial_5_validator": "1aa77586e815f68884ccbc77808343efdea4fafff2e3794270a91d09202bfe69",
+      "tutorial_6_relation_extraction": "29ef8e1db814938cc69ddf1b32c3d10338f20f68140e3d95998e15b99e000e44"
+    },
+    "additional_four_case_snapshot_sha256": "5d7867e9c9b4449bac920f923f23c2be59196fe8a4d53e5ccf36fb1eb119e924"
+  },
+  "new_test_surfaces": [
+    "tests/config.rs: architecture and cap defaults, malformed/unsupported config",
+    "tests/pipeline_api.rs: aliases, dispatch errors, required bundle files",
+    "tests/preprocessing.rs: byte offsets, word cap, choice prefix exclusion",
+    "tests/boundary_queries.rs: per-marker query routing and shape errors",
+    "tests/truncation_e2e.rs: real configured cap propagation through raw inference, direct classification and combined extraction"
+  ],
+  "limitations": [
+    "BoundaryPipeline is intentionally unavailable scaffold at M0, not GLiNER2.5 inference.",
+    "This report covers M0 only; no boundary tensor parity, model export or publication is established.",
+    "Same-platform regression evidence does not promise byte-identical confidence values across different ORT platforms."
+  ]
+}

@@ -28,13 +28,19 @@ fn parse_field_spec_choices_default_to_str() {
     assert_eq!(spec.dtype, FieldDtype::Str);
     assert_eq!(
         spec.choices,
-        vec!["1".to_string(), "2".to_string(), "3".to_string(), "6+".to_string()]
+        vec![
+            "1".to_string(),
+            "2".to_string(),
+            "3".to_string(),
+            "6+".to_string()
+        ]
     );
 }
 
 #[test]
 fn parse_field_spec_choices_and_list_type() {
-    let spec = parse_field_spec("dietary::[vegetarian|vegan]::list::Dietary restrictions").expect("parse");
+    let spec =
+        parse_field_spec("dietary::[vegetarian|vegan]::list::Dietary restrictions").expect("parse");
     assert_eq!(spec.name, "dietary");
     assert_eq!(spec.dtype, FieldDtype::List);
     assert_eq!(
@@ -75,4 +81,3 @@ fn build_structure_choice_prefix_includes_only_choice_fields() {
     assert!(prefix.contains(&"dietary".to_string()));
     assert!(!prefix.contains(&"restaurant".to_string()));
 }
-

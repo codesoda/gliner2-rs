@@ -69,6 +69,16 @@ every `v*` tag, and every pull request. No model weights are required —
 model-dependent tests detect a missing `onnx/`/`models/` directory and skip
 themselves, so CI stays fast without pulling multi-gigabyte ONNX files.
 
+Model tests resolve artifacts from the crate root by default. To test a separate
+artifact tree and make missing files fail instead of skip, run:
+
+```bash
+GLINER2_TEST_ROOT=/path/to/artifact-root GLINER2_REQUIRE_MODELS=1 cargo test
+```
+
+The root must contain `models/gliner2-base-v1/` and
+`onnx/gliner2-base-v1/`.
+
 ## Layout
 
 - `src/` — the `gliner2-rs` crate: loads ONNX exports and runs inference via

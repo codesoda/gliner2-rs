@@ -158,7 +158,14 @@ list/str, natural anchor and legacy), 4 relations, 3 non-ASCII/CJK,
 Cases may include several task schemas; record their IDs and actual word counts.
 
 `gen_boundary_goldens.py` must run the pinned upstream model with eval/no-grad,
-CPU fp32 and deterministic seeds. It may hook upstream functions, not replace
+CPU fp32 and deterministic seeds. **Measured API correction:** the prompt's
+`GLiNER2.from_pretrained` call fails on boundary checkpoints at this commit
+(`AttributeError: ExtractorConfig has no max_width`), because GLiNER2 deliberately
+remains span-only. Use `AutoExtractor.from_pretrained` or `BoundaryExtractor`;
+never monkey-patch the oracle. A real base-checkpoint smoke test succeeded with
+AutoExtractor, torch2.8.0, transformers4.57.6 and CPU fp32. Upstream automatically
+falls back from unsupported DeBERTa SDPA to eager on this transformers version;
+record eager explicitly in the environment/manifest and parity runs. It may hook upstream functions, not replace
 upstream selection or decoding with the implementation under test. Dump NPZ plus
 JSON per case: tokenization/maps, encoder last_hidden_state, gathered text/query
 states, all marginal/projection tensors, pool indices/mask/compat, pair/null/count,

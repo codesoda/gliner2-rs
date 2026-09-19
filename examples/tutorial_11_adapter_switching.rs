@@ -20,7 +20,9 @@ fn main() -> Result<()> {
     // Mirrors tutorial/11-adapter_switching.md "Quick Start".
     let legal_adapter = root.join("adapters/legal");
     let medical_adapter = root.join("adapters/medical");
-    if !legal_adapter.join("encoder.onnx").exists() || !medical_adapter.join("encoder.onnx").exists() {
+    if !legal_adapter.join("encoder.onnx").exists()
+        || !medical_adapter.join("encoder.onnx").exists()
+    {
         println!(
             "SKIP: missing adapter bundles.\n\
 Expected:\n\
@@ -52,7 +54,8 @@ Expected:\n\
     println!("has_adapter: {}", pipeline.has_adapter());
     println!("adapter_config: {:#?}", pipeline.adapter_config());
     let start = Instant::now();
-    let medical = pipeline.extract_entities("Patient has diabetes", &["disease".to_string()], 0.5)?;
+    let medical =
+        pipeline.extract_entities("Patient has diabetes", &["disease".to_string()], 0.5)?;
     println!("medical_result: {medical:#?}");
     println!("inference took: {:.2?}", start.elapsed());
     println!("-----------------");

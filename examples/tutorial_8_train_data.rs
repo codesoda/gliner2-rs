@@ -7,4 +7,3 @@ fn main() -> Result<()> {
     let _examples = load_jsonl("train.jsonl")?;
     Ok(())
 }
-

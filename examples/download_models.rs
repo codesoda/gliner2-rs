@@ -33,7 +33,9 @@ fn main() -> Result<()> {
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--model" => {
-                model = args.next().ok_or_else(|| anyhow::anyhow!("--model needs a value"))?;
+                model = args
+                    .next()
+                    .ok_or_else(|| anyhow::anyhow!("--model needs a value"))?;
             }
             "--dest" => {
                 dest = args

@@ -126,10 +126,7 @@ fn softmax(logits: &[f32]) -> Vec<f32> {
     if logits.is_empty() {
         return Vec::new();
     }
-    let max = logits
-        .iter()
-        .copied()
-        .fold(f32::NEG_INFINITY, f32::max);
+    let max = logits.iter().copied().fold(f32::NEG_INFINITY, f32::max);
     let exps: Vec<f32> = logits.iter().map(|&x| (x - max).exp()).collect();
     let sum: f32 = exps.iter().sum();
     exps.into_iter().map(|e| e / sum).collect()
@@ -173,7 +170,7 @@ pub fn decode_classification(
                 .iter()
                 .copied()
                 .enumerate()
-                .max_by(|(_, a), (_, b)| a.total_cmp(&b))
+                .max_by(|(_, a), (_, b)| a.total_cmp(b))
                 .unwrap();
             chosen.push((labels[best_idx].clone(), best_p));
         }
@@ -191,7 +188,7 @@ pub fn decode_classification(
             .iter()
             .copied()
             .enumerate()
-            .max_by(|(_, a), (_, b)| a.total_cmp(&b))
+            .max_by(|(_, a), (_, b)| a.total_cmp(b))
             .unwrap();
         ClassificationOutput::Single {
             label: labels[best_idx].clone(),

@@ -19,8 +19,15 @@ pub struct EntityMatches {
 #[derive(Debug, Clone, PartialEq)]
 pub enum FormattedEntitySpan {
     Text(String),
-    TextWithConfidence { text: String, confidence: f32 },
-    TextWithSpans { text: String, start: usize, end: usize },
+    TextWithConfidence {
+        text: String,
+        confidence: f32,
+    },
+    TextWithSpans {
+        text: String,
+        start: usize,
+        end: usize,
+    },
     TextWithConfidenceAndSpans {
         text: String,
         confidence: f32,

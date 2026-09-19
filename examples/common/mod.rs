@@ -2,6 +2,7 @@ use std::{env, path::PathBuf};
 
 /// Resolve model/ONNX paths, with optional `--model <onnx_dir>` override.
 /// Defaults to the base ONNX bundle (`onnx/gliner2-base-v1`).
+#[allow(dead_code)] // Shared by examples that use different subsets of these paths.
 pub struct ModelPaths {
     pub model_dir: PathBuf,
     pub onnx_dir: PathBuf,
@@ -14,6 +15,7 @@ pub fn repo_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
 }
 
+#[allow(dead_code)] // `download_models` includes this shared module but needs only `repo_root`.
 pub fn model_paths_from_args(default_onnx_rel: &str) -> ModelPaths {
     let root = repo_root();
     let default_onnx = root.join(default_onnx_rel);

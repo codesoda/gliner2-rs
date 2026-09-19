@@ -4,7 +4,9 @@ use anyhow::anyhow;
 use gliner2_rs::{
     Result,
     pipeline::Gliner2Pipeline,
-    schema_spec::{ClassificationOptions, EntitySpec, FieldDtype, SchemaBuilder, StructureFieldSpec},
+    schema_spec::{
+        ClassificationOptions, EntitySpec, FieldDtype, SchemaBuilder, StructureFieldSpec,
+    },
 };
 mod common;
 use common::model_paths_from_args;
@@ -17,8 +19,8 @@ fn main() -> Result<()> {
         .ok_or_else(|| anyhow!("missing classifier.onnx in {}", paths.onnx_dir.display()))?;
 
     let load_start = Instant::now();
-    let pipeline =
-        Gliner2Pipeline::new(&paths.model_dir, &paths.encoder, &paths.extractor)?.with_classifier(classifier_onnx)?;
+    let pipeline = Gliner2Pipeline::new(&paths.model_dir, &paths.encoder, &paths.extractor)?
+        .with_classifier(classifier_onnx)?;
     println!(
         "model load took: {:.2?} (onnx={})",
         load_start.elapsed(),
@@ -30,7 +32,11 @@ fn main() -> Result<()> {
 
     // --- Entities + Classification ---
     let schema = SchemaBuilder::new()
-        .entities(vec!["person".to_string(), "product".to_string(), "company".to_string()])
+        .entities(vec![
+            "person".to_string(),
+            "product".to_string(),
+            "company".to_string(),
+        ])
         .classification(
             "sentiment",
             vec![
@@ -41,7 +47,11 @@ fn main() -> Result<()> {
         )
         .classification(
             "category",
-            vec!["review".to_string(), "news".to_string(), "opinion".to_string()],
+            vec![
+                "review".to_string(),
+                "news".to_string(),
+                "opinion".to_string(),
+            ],
         )
         .build();
 
@@ -60,10 +70,7 @@ fn main() -> Result<()> {
                 "person".to_string(),
                 "Names of people mentioned".to_string(),
             ),
-            (
-                "date".to_string(),
-                "Dates and time references".to_string(),
-            ),
+            ("date".to_string(), "Dates and time references".to_string()),
         ]))
         .structure("appointment")
         .field(StructureFieldSpec::new("patient").dtype(FieldDtype::Str))
@@ -107,7 +114,11 @@ regarding his previous visit on February 1st.
         )
         .classification(
             "priority",
-            vec!["urgent".to_string(), "normal".to_string(), "low".to_string()],
+            vec![
+                "urgent".to_string(),
+                "normal".to_string(),
+                "low".to_string(),
+            ],
         )
         .structure("order_info")
         .field(StructureFieldSpec::new("order_number").dtype(FieldDtype::Str))
@@ -360,7 +371,11 @@ Analysts at Goldman Sachs claim the launch could boost revenue, citing pre-order
         )
         .classification(
             "listing_type",
-            vec!["buy_now".to_string(), "auction".to_string(), "best_offer".to_string()],
+            vec![
+                "buy_now".to_string(),
+                "auction".to_string(),
+                "best_offer".to_string(),
+            ],
         )
         .entities(vec![
             EntitySpec::new("brand").description("Product brand or manufacturer"),
@@ -421,7 +436,11 @@ Seller: PhoneWorld rating 4.9, location: San Francisco.
         )
         .classification(
             "urgency",
-            vec!["urgent".to_string(), "routine".to_string(), "elective".to_string()],
+            vec![
+                "urgent".to_string(),
+                "routine".to_string(),
+                "elective".to_string(),
+            ],
         )
         .entities(vec![
             EntitySpec::new("symptom").description("Patient reported symptoms"),

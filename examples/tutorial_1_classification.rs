@@ -395,12 +395,18 @@ fn main() -> Result<()> {
                     "payment".to_string(),
                     "Payment processing, subscriptions".to_string(),
                 ),
-                ("ui".to_string(), "User interface, design issues".to_string()),
+                (
+                    "ui".to_string(),
+                    "User interface, design issues".to_string(),
+                ),
                 (
                     "performance".to_string(),
                     "Speed, loading, responsiveness".to_string(),
                 ),
-                ("data".to_string(), "Data loss, corruption, sync issues".to_string()),
+                (
+                    "data".to_string(),
+                    "Data loss, corruption, sync issues".to_string(),
+                ),
             ],
             ClassificationOptions {
                 multi_label: true,
@@ -767,7 +773,12 @@ be shut down for selling this junk. I'm going to report them to authorities.
     let schema = SchemaBuilder::new()
         .classification_with_options(
             "category",
-            vec!["A".to_string(), "B".to_string(), "C".to_string(), "D".to_string()],
+            vec![
+                "A".to_string(),
+                "B".to_string(),
+                "C".to_string(),
+                "D".to_string(),
+            ],
             ClassificationOptions {
                 class_act: ClassAct::Softmax,
                 ..Default::default()
@@ -861,9 +872,18 @@ Mark
         .classification(
             "intent",
             vec![
-                ("purchase".to_string(), "User wants to buy a product".to_string()),
-                ("return".to_string(), "User wants to return a product".to_string()),
-                ("inquiry".to_string(), "User asking for information".to_string()),
+                (
+                    "purchase".to_string(),
+                    "User wants to buy a product".to_string(),
+                ),
+                (
+                    "return".to_string(),
+                    "User wants to return a product".to_string(),
+                ),
+                (
+                    "inquiry".to_string(),
+                    "User asking for information".to_string(),
+                ),
             ],
         )
         .build();
@@ -921,7 +941,11 @@ Mark
     let schema = SchemaBuilder::new()
         .classification_with_options(
             "size",
-            vec!["small".to_string(), "medium".to_string(), "large".to_string()],
+            vec![
+                "small".to_string(),
+                "medium".to_string(),
+                "large".to_string(),
+            ],
             ClassificationOptions {
                 multi_label: false,
                 ..Default::default()

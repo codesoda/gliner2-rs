@@ -36,4 +36,3 @@ fn validator_case_insensitive_can_be_disabled() {
     // Lowercase still matches, so it's excluded.
     assert!(!v.validate("test phone"));
 }
-

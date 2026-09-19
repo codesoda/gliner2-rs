@@ -126,10 +126,9 @@ impl<'a> Pipeline<'a> for ExtractorPipeline {
     }
 
     fn expected_inputs(&self) -> Option<&HashSet<&str>> {
-        static INPUTS: Lazy<HashSet<&'static str>> =
-            Lazy::new(|| {
-                HashSet::from_iter(["text_emb", "schema_emb_padded", "schema_mask", "spans_idx"])
-            });
+        static INPUTS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
+            HashSet::from_iter(["text_emb", "schema_emb_padded", "schema_mask", "spans_idx"])
+        });
         Some(&INPUTS)
     }
 

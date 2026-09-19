@@ -1,25 +1,18 @@
-use std::path::PathBuf;
-
 use gliner2_rs::{
     Result,
     schema::{Segment, format_input_with_mapping},
     tokenizer::RuntimeTokenizer,
 };
 
-fn model_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .unwrap()
-        .to_path_buf()
-}
+mod common;
+use common::{artifacts_available, model_root};
 
 #[test]
 fn mapping_segments_are_correct() -> Result<()> {
     let root = model_root();
     let model_dir = root.join("models/gliner2-base-v1");
 
-    if !model_dir.exists() {
-        eprintln!("SKIP: missing {}", model_dir.display());
+    if !artifacts_available(&[&model_dir])? {
         return Ok(());
     }
 
@@ -42,18 +35,19 @@ fn mapping_segments_are_correct() -> Result<()> {
         .collect();
 
     // Because of subword splitting, we check prefixes.
-    let mut pos = 0;
-    for expected in [
+    for (pos, expected) in [
         (Segment::Schema, 0), // [P]
         (Segment::Schema, 0), // person
         (Segment::Sep, 1),    // [SEP_TEXT] uses text_schema_idx = num_schemas
         (Segment::Text, 1),   // Alice
         (Segment::Text, 1),   // works
-    ] {
+    ]
+    .into_iter()
+    .enumerate()
+    {
         assert!(pos < segments.len());
         assert_eq!(segments[pos].0, &expected.0);
         assert_eq!(segments[pos].1, expected.1);
-        pos += 1;
     }
 
     Ok(())

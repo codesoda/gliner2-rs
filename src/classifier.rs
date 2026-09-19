@@ -84,4 +84,3 @@ impl<'a> Pipeline<'a> for ClassifierPipeline {
         Some(&OUTPUTS)
     }
 }
-

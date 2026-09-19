@@ -148,7 +148,9 @@ fn main() -> Result<()> {
     let username_validators = vec![
         RegexValidator::new(r"^[a-zA-Z0-9_]+$"),
         RegexValidator::new(r"^.{3,20}$"),
-        RegexValidator::new(r"^admin").exclude(true).case_insensitive(true),
+        RegexValidator::new(r"^admin")
+            .exclude(true)
+            .case_insensitive(true),
     ];
 
     let schema = SchemaBuilder::new()
