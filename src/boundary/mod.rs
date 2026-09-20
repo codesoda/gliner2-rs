@@ -6,6 +6,7 @@ pub mod classification;
 pub mod config;
 pub mod decode;
 pub mod explicit;
+pub mod explicit_spans;
 pub mod marginals;
 pub mod pipeline;
 pub mod pool;
@@ -16,4 +17,5 @@ pub mod record_schema;
 pub mod records;
 pub mod scorer;
 
+pub use explicit_spans::{ExplicitSpanScore, ExplicitSpanScores};
 pub use pipeline::BoundaryPipeline;

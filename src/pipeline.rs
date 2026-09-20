@@ -1266,6 +1266,22 @@ impl AutoPipeline {
         }
     }
 
+    /// Score explicit spans with the boundary sparse scorer. Span models do
+    /// not emulate this separate-head API through the legacy v2 extractor.
+    pub fn score_explicit_spans(
+        &self,
+        text: &str,
+        labels: &[String],
+        spans: &[[usize; 2]],
+    ) -> Result<Vec<crate::boundary::ExplicitSpanScores>> {
+        match self {
+            Self::Boundary(pipeline) => pipeline.score_explicit_spans(text, labels, spans),
+            Self::Span(_) => Err(anyhow!(
+                "explicit-span scoring is unsupported for span models; use a boundary architecture"
+            )),
+        }
+    }
+
     pub fn extract_entities(
         &self,
         text: &str,

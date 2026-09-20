@@ -155,6 +155,38 @@ cargo run --release --example tutorial_1_classification
 Most examples accept `--model <path-to-onnx-dir>` to point at a specific
 downloaded model bundle (see `examples/common/mod.rs`).
 
+### GLiNER2.5 explicit-span scoring (unreleased)
+
+The development branch provides `BoundaryPipeline::score_explicit_spans`, also
+available through `AutoPipeline`. It uses GLiNER2.5's separate learned sparse
+scorer—not the ordinary candidate-pool scorer. Complete hosted 2.5 bundles and a
+release tag are still pending; the existing `v0.1.0` tag does not contain this API.
+
+```rust,ignore
+use gliner2_rs::pipeline::AutoPipeline;
+
+let pipeline = AutoPipeline::from_dir("onnx/gliner2.5-base-v1")?;
+let text = "Alice joined Acme.";
+let labels = vec!["person".to_owned(), "organization".to_owned()];
+let scores = pipeline.score_explicit_spans(text, &labels, &[[0, 5], [13, 17]])?;
+```
+
+Span bounds are half-open UTF-8 **byte offsets into the original text**, aligned
+to retained word-token boundaries. Invalid, partial-word or truncated spans
+return errors rather than being snapped. Labels and spans retain caller order
+and duplicates; duplicate labels are separate queries in the encoder context.
+Each result contains the original span text/bounds, raw logit and calibrated
+confidence. There is no thresholding, overlap resolution, abstention or dedup;
+confidences need not sum to one. Span-architecture (v2) models explicitly reject
+this API.
+
+For a multiline Unicode example with trimmed line bounds:
+
+```bash
+cargo run --release --example explicit_span_scoring -- \
+  --model /path/to/complete/gliner2.5-base-v1
+```
+
 ## Exporting your own ONNX models
 
 See `scripts/export/export_encoder.py`, `scripts/export/export_extractor_padded.py`,

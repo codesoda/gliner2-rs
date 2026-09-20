@@ -12,6 +12,7 @@ use super::{
         group_scored_candidates, map_half_open_utf8, resolve_overlaps, sigmoid_probability,
     },
     explicit::{ExplicitInput, ExplicitModel},
+    explicit_spans::{ExplicitSpanScore, ExplicitSpanScores, map_byte_spans},
     marginals::{MarginalInput, MarginalModel, MarginalOutput},
     pool::{CandidatePool, build_shared_candidate_pool},
     preprocessing::{BoundaryPreprocessingPolicy, PreparedTokens, WordSplitter},
@@ -252,6 +253,142 @@ impl BoundaryPipeline {
             .entities)
     }
 
+    /// Score caller-supplied original-text spans for every ordered label query.
+    ///
+    /// Spans are nonempty half-open UTF-8 byte ranges and must exactly align to
+    /// retained boundary-model words. This path performs no proposal pooling,
+    /// thresholding, abstention, overlap resolution, or deduplication.
+    pub fn score_explicit_spans(
+        &self,
+        text: &str,
+        labels: &[String],
+        spans: &[[usize; 2]],
+    ) -> Result<Vec<ExplicitSpanScores>> {
+        let prepared = self.preprocessing.prepare(text, &[]);
+        // Preflight every supplied span before encoder/native-head work, even
+        // when there are no labels.
+        let mapped = map_byte_spans(&prepared, spans)?;
+
+        if labels.is_empty() {
+            return Ok(Vec::new());
+        }
+        if spans.is_empty() {
+            return Ok(labels
+                .iter()
+                .cloned()
+                .map(|label| ExplicitSpanScores {
+                    label,
+                    spans: Vec::new(),
+                })
+                .collect());
+        }
+
+        let query_count = labels.len();
+        let candidate_count = mapped.len();
+        let coordinate_count = query_count
+            .checked_mul(candidate_count)
+            .and_then(|count| count.checked_mul(2))
+            .context("explicit-span candidate tensor size overflow")?;
+
+        // Do not route through SchemaBuilder: duplicate labels are real,
+        // ordered schema queries in this API.
+        let schema_tokens = vec![build_entities_schema_tokens(labels, None)];
+        let encoding = self.encode_prepared(prepared, &schema_tokens)?;
+        let expected_metadata: Vec<_> = (0..labels.len())
+            .map(|field_idx| QueryMetadata {
+                schema_idx: 0,
+                field_idx,
+                kind: QueryKind::Entity,
+            })
+            .collect();
+        ensure!(
+            encoding.queries.metadata == expected_metadata,
+            "explicit-span query routing mismatch: actual={:?}, expected={expected_metadata:?}",
+            encoding.queries.metadata
+        );
+        ensure!(
+            encoding.queries.query_emb.nrows() == labels.len()
+                && encoding.queries.query_emb.ncols() == encoding.embeddings.text_emb.ncols(),
+            "explicit-span query shape {:?} does not match {} labels and text width {}",
+            encoding.queries.query_emb.dim(),
+            labels.len(),
+            encoding.embeddings.text_emb.ncols()
+        );
+
+        let mut coordinates = Vec::with_capacity(coordinate_count);
+        for _ in 0..query_count {
+            for &[start, end] in &mapped {
+                coordinates.push(start);
+                coordinates.push(end);
+            }
+        }
+        ensure!(
+            coordinates.len() == coordinate_count,
+            "explicit-span candidate tensor size changed during construction"
+        );
+
+        let marginal =
+            self.run_marginals(&encoding.embeddings.text_emb, &encoding.queries.query_emb)?;
+        let output = self.explicit.infer(ExplicitInput {
+            boundary_states: marginal.boundary_states,
+            text_states: encoding
+                .embeddings
+                .text_emb
+                .view()
+                .insert_axis(Axis(0))
+                .to_owned(),
+            text_mask: Array2::from_elem((1, encoding.embeddings.text_emb.nrows()), true),
+            query_states: encoding
+                .queries
+                .query_emb
+                .view()
+                .insert_axis(Axis(0))
+                .to_owned(),
+            query_mask: Array2::from_elem((1, query_count), true),
+            start_logits: marginal.start_logits,
+            end_logits: marginal.end_logits,
+            inside_prefix: marginal.inside_prefix,
+            inside_prefix_mean: marginal.inside_prefix_mean,
+            candidate_indices: Array4::from_shape_vec(
+                (1, query_count, candidate_count, 2),
+                coordinates,
+            )?,
+            candidate_mask: Array3::from_elem((1, query_count, candidate_count), true),
+        })?;
+        ensure!(
+            output.legal_mask.iter().all(|&legal| legal),
+            "explicit scorer rejected a preflighted caller span"
+        );
+
+        labels
+            .iter()
+            .enumerate()
+            .map(|(query, label)| {
+                let scored = spans
+                    .iter()
+                    .enumerate()
+                    .map(|(candidate, &[start, end])| {
+                        let logit = output.pair_logits[(0, query, candidate)];
+                        Ok(ExplicitSpanScore {
+                            start,
+                            end,
+                            text: text
+                                .get(start..end)
+                                .context("preflighted explicit span is not a UTF-8 source slice")?
+                                .to_owned(),
+                            logit,
+                            confidence: sigmoid_probability(logit, self.runtime.pair_temperature)?,
+                        })
+                    })
+                    .collect::<Result<Vec<_>>>()?;
+                Ok(ExplicitSpanScores {
+                    label: label.clone(),
+                    spans: scored,
+                })
+            })
+            .collect()
+    }
+
     pub fn extract_entities_text(
         &self,
         text: &str,
@@ -401,6 +538,14 @@ impl BoundaryPipeline {
         choice_prefix_tokens: &[String],
     ) -> Result<PreparedBoundaryEncoding> {
         let prepared = self.preprocessing.prepare(text, choice_prefix_tokens);
+        self.encode_prepared(prepared, schema_tokens)
+    }
+
+    fn encode_prepared(
+        &self,
+        prepared: PreparedTokens,
+        schema_tokens: &[Vec<String>],
+    ) -> Result<PreparedBoundaryEncoding> {
         let formatted =
             format_input_with_mapping(&self.tokenizer, schema_tokens, &prepared.text_tokens)?;
         let sequence = formatted.input_ids.len();

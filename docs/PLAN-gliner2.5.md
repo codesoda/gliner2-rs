@@ -185,8 +185,8 @@ quota selection are control-heavy and must be independently testable.
 | boundary_proposer.score_explicit_pairs + SparseBoundaryPairScorer | **additional** `boundary_explicit_scorer.onnx`, same Rust scorer module; mandatory for M5 choice fields and public explicit scoring |
 | candidate_decoder + overlap + runtime formatting | `src/boundary/decode.rs`, reuse result types |
 | RecordHead.forward_group | `boundary_records.onnx`, `src/boundary/records.rs` loader + Rust decode_group |
-| TypedRelationPairGenerator | `src/boundary/relations.rs`, Rust top arguments + capped pairs |
-| SparseRelationScorer | `boundary_relations.onnx`, same Rust module loader |
+| TypedRelationPairGenerator | `src/boundary/relation_pairs.rs`, pure Rust typed top arguments + capped pairs |
+| SparseRelationScorer | `boundary_relations.onnx`, `src/boundary/relations.rs` loader over encoder text states and concatenated head/tail query states |
 | model._encode_core / engine orchestration | `src/boundary/pipeline.rs` |
 | training/lora.py | existing merged encoder swap; no Python inference dependency |
 | chunking / attributes / constraints / JointIE | M8 only, distinct tested helpers |
@@ -234,7 +234,15 @@ policy. The relation graph receives ENCODER TEXT states (despite an upstream
 parameter called boundary_states), relation states, relation IDs and four
 endpoint arrays. Gather start and end-1; preserve content-gated biaffine terms.
 Port engine containing-mention canonicalization, coordinate/semantic dedup,
-nearest-occurrence and token-subset rules, not just sigmoid/threshold.
+nearest-occurrence and token-subset rules, not just sigmoid/threshold. Relation
+queries are the two dedicated `[R]` states for each relation schema, never the
+entity-query IDs. Proposal selection uses the raw shared scorer output before
+entity abstention/overlap/threshold decoding. Do not exclude choice-prefix spans
+until after relation scoring; upstream filters them while mapping final edges.
+Final confidence is sigmoid(relation logit / relation temperature), not multiplied
+by endpoint probabilities. Per-relation thresholds override the request threshold.
+Group duplicate canonical relation names before deduplication; descriptions affect
+prompt context, not public keys. Empty proposals bypass the native relation head.
 
 ## 4. Golden design and acceptance rules
 
@@ -403,13 +411,61 @@ The correct Clippy invocation includes `--` before `-D warnings`.
 - M4: scorer/decoder/entities/classification; tutorials 1–2 and formatted parity.
 - M5: record graph/decode/API; structure parity and tutorial 3.
 - M6: pair generator/relation graph/decode/API; parity and tutorial 6.
+  Proposal sigmoid uses raw pair logits (no pair temperature), then stable
+  probability/start/end/flattened-index ordering,32 endpoints per side and64
+  head-major/tail-minor product-ranked pairs per relation. Self-span exclusion
+  compares exact coordinates. No discrete tie exception is pre-approved.
+  Relation graph input is encoder text states, not128-wide boundary states;
+  relation queries concatenate head then tail into2H channels. The original
+  scorer's `float(max(length,1))` must not freeze the distance denominator during
+  export: validate dynamic L/B/R/P against the untouched module. Masked relation
+  scores are0.0 in source, not the extraction mask sentinel.
+  Postprocessing must preserve source insertion order through canonical mention,
+  exact-coordinate and semantic deduplication; then remove strict token-subset
+  edges and sort by head/tail position and confidence. Canonical mention lengths
+  and nearest-occurrence gaps use Python codepoint coordinates, not byte widths.
+  Semantic text uses pinned full casefold plus Python whitespace splitting
+  (including U+001C..U+001F, unlike ordinary Rust whitespace).
 - M7: three complete tested bundles (including the additional explicit scorer),
+  with original license notices and an explicit ONNX/fp32 conversion notice.
+  The README model cards at all three pinned HF revisions declare Apache-2.0
+  (small `f1e4d8fdd6fe328f45dee6aca3e6a07c9db4296e`, base
+  `78cea040597df251eedefa9d7ee2a756af39fe64`, multi
+  `235cf92d6d4318da9bfca0d08975c8fa7250d13b`).
+  Preserve these source/model pins in publication metadata. Continue with
   upload/read-back/downloaders, user docs,
   `RESULTS-gliner2.5.md` CPU 50/500/3000-word benchmark (warmups/repetitions,
   hardware/thread/model hashes stated), CI, specification update and external
   Rust consumer test. Build public explicit-span scoring on the separate sparse
   explicit scorer, NOT on the M4 shared scorer.
 - M8: optional helpers only if M7 complete; document implemented scope honestly.
+
+### M7 packaging implementation constraints
+
+The current exporters intentionally write partial manifests (some still record
+historical rc.9/ORT1.20 metadata); those files are not suitable for publication.
+A final bundle builder must enumerate all seven graphs: encoder, classifier,
+boundary marginals, shared scorer, explicit scorer, records and relations. It
+must derive actual signatures/checksums, include tokenizer/config files and
+source/model licenses, and distinguish Python validation ORT1.20.1 from Rust
+rc.13/native1.28. Source provenance must be proven by file hashes for each of the
+three immutable revisions, not inferred from a directory name. The base-only
+frozen corpus/provenance checks must remain fail-closed; extending generation to
+small/multi requires explicit verified model identity, never relabeling base
+outputs. Each new checkpoint needs its own oracle/ONNX/native validation.
+
+Both opt-in downloaders must recognize the three new model names, download a
+complete bundle, and validate its required file set and recorded checksums.
+Treat manifest paths as untrusted relative paths: reject absolute/traversal paths
+and unsupported architecture/version, and do not call a partial manifest a
+usable bundle. Existing v2 downloads must also acquire tokenizer/config so a
+fresh Rust consumer needs neither a local Python checkpoint nor an existing
+HF cache. `examples/common/mod.rs` currently reads architecture from a complete
+ONNX bundle but still constructs SpanPipeline using the separate `models/`
+directory; correct that selection for colocated v2 metadata while preserving the
+legacy split-layout fallback. Add model-free malformed/missing/hash-mismatch
+tests, then validate actual published downloads in a clean destination. Keep upload authentication
+outside code and logs; missing local credentials remain an explicit blocker.
 
 Final audit explicitly covers every row in `AUDIT-gliner2.5.md`, actual model
 artifacts, remote GitHub SHA/CI, HF downloads and downstream consumer execution.

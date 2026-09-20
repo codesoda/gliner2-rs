@@ -499,3 +499,27 @@ prompt-to-evidence checklist. Model-free test success is not model parity.
 - Evidence: `docs/evidence/m5.json`, backed by preparation/export and Unicode
   verification records. Public explicit-span scoring, M6 relations, M7 bundles,
   publication/readback, external consumer proof and a release tag remain open.
+
+## Public explicit-span API — accepted
+
+- Added ordered label/span scoring on BoundaryPipeline and AutoPipeline using
+  the separate sparse explicit scorer, plus typed byte-offset results and a
+  multiline Unicode example. Span models reject the API explicitly.
+- Parent reviewed preprocessing/preflight, duplicate/query routing, single-pass
+  encoding/marginals and independent upstream oracle generation. Invalid UTF-8,
+  partial words and truncated spans fail before encoder work; empty axes bypass
+  native heads. No proposal, threshold, abstention or overlap filtering is used.
+- Parent regenerated the 3,593-byte fixture with the pinned untouched upstream
+  model: SHA256 `1462e45ad80346ef73a4c4569cd166ef7d6d9c8c950a4b23dd994835c8904f74`,
+  identical to the submitted artifact. The indexed fixture total is1,984,505bytes.
+- Parent targeted verification passed65 library tests,3 explicit pipeline tests
+  with actual v2/boundary graphs, and1 example unit test, zero skips. Formatting
+  and staged whitespace checks passed. The isolated accepted-scope snapshot
+  passed178 strict tests with zero skips,178 no-model tests with38 artifact skip
+  messages, all-target/all-feature Clippy, the release example, Rust1.91 all-target
+  check and20 selected explicit tests. Six v2 tutorials pass with only the same
+  approved5.364418e-7 confidence difference.
+- Parent verified all eight staged code/test/fixture overlays match the tested
+  snapshot byte-for-byte and independently checked the command logs and counts.
+  Evidence: `docs/evidence/public-explicit-spans.json`. M6 remains under
+  implementation/review and M7 remains open; this is not a release or new tag.
