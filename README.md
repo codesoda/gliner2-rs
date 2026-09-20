@@ -55,9 +55,11 @@ extraction, relation extraction, validators, and LoRA adapters.
 ### Runtime compatibility
 
 The current branch uses `ort` **2.0.0-rc.13** directly (native ONNX Runtime
-**1.28**), without ORP. It requires Rust **1.88+**. Existing inference methods
-and public `ndarray` **0.16** types are retained. Each model session serializes
-its own inference calls; independent sessions can run concurrently.
+**1.28**), without ORP. It requires Rust **1.91+** (the locked Hugging Face/Xet
+transitive dependencies require newer APIs than ORT's own Rust 1.88 floor).
+Existing inference methods and public `ndarray` **0.16** types are retained.
+Each model session serializes its own inference calls; independent sessions can
+run concurrently.
 
 The runtime upgrade can change floating-point confidences slightly. The v2
 regression gate permits at most **1e-6 absolute confidence drift**, while labels,

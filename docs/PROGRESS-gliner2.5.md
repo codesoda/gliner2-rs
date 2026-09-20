@@ -401,3 +401,20 @@ prompt-to-evidence checklist. Model-free test success is not model parity.
   example. Public ndarray0.16 APIs and per-session synchronization are preserved.
 - Evidence: `docs/evidence/ort-migration.json`. This accepts the runtime change,
   not M5–M7, the public explicit-span API, bundle publication or a release tag.
+
+## Direct ORT follow-up — project MSRV verified and corrected
+
+- An isolated build of accepted commit a3ecbfa exposed an incorrect Rust1.88
+  project-floor declaration. ORT itself permits1.88, but locked hf-hub/Xet
+  dependencies reject1.88;1.89 then fails on Xet's use of
+  `str::floor_char_boundary`, stabilized in1.91. No dependencies were downgraded.
+- Rust1.91 now passes91 strict model tests with zero skips and91 no-model tests
+  (25 explicit artifact skips), plus all six executable v2 tutorial regressions.
+  The sole approved confidence delta remains5.364418029785156e-7. The isolated
+  tutorial runner first rejected missing config/tokenizer links; after supplying
+  the pinned files it passed in full. The corrected manifest also builds all
+  tests on1.91; isolated formatting and1.91 all-target/all-feature Clippy with
+  warnings denied also pass.
+- Cargo/README now declare1.91. Evidence: `docs/evidence/msrv-verification.json`.
+  Verification excludes uncommitted M5 work and is local macOS arm64 evidence;
+  this follow-up is not a completed GLiNER2.5 release or new tag.
