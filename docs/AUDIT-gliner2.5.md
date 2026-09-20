@@ -52,7 +52,8 @@ An unexecuted script, model-skipping test, or planned artifact does not pass a g
 | Every milestone gates | `cargo fmt`, `cargo clippy --all-targets -- -D warnings`, `cargo test` without AND with models | M0: fmt/clippy/no-model and strict-model suite pass; see progress evidence. Later milestones pending |
 | Every milestone records | `PROGRESS-gliner2.5.md`: done/measured/next/questions; descriptive git commit; Astra review | Phase A entry/review complete; implementation gates pending |
 | v2 invariant | actual pre/post byte-identical model outputs; all existing examples/tests still pass | M0: six tutorials' full results identical (timing/path log lines excluded), four-case snapshot identical SHA256; all existing model tests pass. Recheck later changes |
-| Runtime/build constraints | no Python runtime/build dependency, ort rc.9 retained unless separately approved, no large fixtures/weights committed | Existing code satisfies; recheck all changes |
+| Runtime/build constraints | no Python runtime/build dependency, no large fixtures/weights committed | Recheck all changes; historical M0–M4 evidence used ORT rc.9 |
+| User-approved direct-ORT migration | remove ORP; exact latest ORT rc.13; preserve public API, session settings, numerical parity and v2 output bytes | Implemented; native1.28 verified;110 strict tests/zero skips, fmt/Clippy pass. Accepted with user-approved <=1e-6 absolute confidence exception and exact non-confidence output. Parent fresh executable six-tutorial gate passes (one5.364418e-7 difference);15 fail-closed comparator tests pass. Isolated migration commit scope91 strict model tests/zero skips,91 no-model tests, fmt/Clippy pass. See `evidence/ort-migration.json` |
 | Final GitHub state | clean committed branch, pushed SHA equality, CI result, documented installable revision | Pending |
 
 ## Baseline observations

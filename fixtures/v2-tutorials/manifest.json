@@ -1,0 +1,345 @@
+{
+  "absolute_confidence_tolerance": 1e-06,
+  "case_ids": [
+    "1_classification",
+    "2_ner",
+    "3_json_extraction",
+    "4_combined",
+    "5_validator",
+    "6_relation_extraction"
+  ],
+  "entries": [
+    {
+      "bytes": 9966,
+      "case_id": "1_classification",
+      "confidence_slots": [
+        {
+          "kind": "named",
+          "line": 13,
+          "prefix": "        confidence: ",
+          "reference": "1.0",
+          "suffix": ",",
+          "variant": "SingleWithConfidence"
+        },
+        {
+          "kind": "tuple",
+          "line": 33,
+          "prefix": "                ",
+          "reference": "0.9996412",
+          "suffix": ",",
+          "variant": "MultiWithConfidence"
+        },
+        {
+          "kind": "tuple",
+          "line": 37,
+          "prefix": "                ",
+          "reference": "0.9973194",
+          "suffix": ",",
+          "variant": "MultiWithConfidence"
+        },
+        {
+          "kind": "tuple",
+          "line": 41,
+          "prefix": "                ",
+          "reference": "0.86740035",
+          "suffix": ",",
+          "variant": "MultiWithConfidence"
+        }
+      ],
+      "line_count": 472,
+      "reference": "tutorial_1_classification.txt",
+      "sha256": "6d419dd4833d8f3ad02c55b387496396569c126106b76f9910d80271bbe20242"
+    },
+    {
+      "bytes": 9900,
+      "case_id": "2_ner",
+      "confidence_slots": [
+        {
+          "kind": "named",
+          "line": 199,
+          "prefix": "                confidence: ",
+          "reference": "1.0",
+          "suffix": ",",
+          "variant": "TextWithConfidence"
+        },
+        {
+          "kind": "named",
+          "line": 207,
+          "prefix": "                confidence: ",
+          "reference": "1.0",
+          "suffix": ",",
+          "variant": "TextWithConfidence"
+        },
+        {
+          "kind": "named",
+          "line": 215,
+          "prefix": "                confidence: ",
+          "reference": "1.0",
+          "suffix": ",",
+          "variant": "TextWithConfidence"
+        },
+        {
+          "kind": "named",
+          "line": 247,
+          "prefix": "                confidence: ",
+          "reference": "1.0",
+          "suffix": ",",
+          "variant": "TextWithConfidenceAndSpans"
+        },
+        {
+          "kind": "named",
+          "line": 257,
+          "prefix": "                confidence: ",
+          "reference": "1.0",
+          "suffix": ",",
+          "variant": "TextWithConfidenceAndSpans"
+        }
+      ],
+      "line_count": 534,
+      "reference": "tutorial_2_ner.txt",
+      "sha256": "51982dcfb71709747e8ff2c26f9d9a0a5ab79f9a9e46b69a01c6ca42a67ac2d4"
+    },
+    {
+      "bytes": 21523,
+      "case_id": "3_json_extraction",
+      "confidence_slots": [
+        {
+          "kind": "named",
+          "line": 754,
+          "prefix": "                        confidence: ",
+          "reference": "1.0",
+          "suffix": ",",
+          "variant": "TextWithConfidence"
+        },
+        {
+          "kind": "named",
+          "line": 758,
+          "prefix": "                        confidence: ",
+          "reference": "1.0",
+          "suffix": ",",
+          "variant": "TextWithConfidence"
+        },
+        {
+          "kind": "named",
+          "line": 762,
+          "prefix": "                        confidence: ",
+          "reference": "1.0",
+          "suffix": ",",
+          "variant": "TextWithConfidence"
+        },
+        {
+          "kind": "named",
+          "line": 770,
+          "prefix": "                        confidence: ",
+          "reference": "1.0",
+          "suffix": ",",
+          "variant": "TextWithConfidence"
+        },
+        {
+          "kind": "named",
+          "line": 778,
+          "prefix": "                        confidence: ",
+          "reference": "1.0",
+          "suffix": ",",
+          "variant": "TextWithConfidence"
+        },
+        {
+          "kind": "named",
+          "line": 837,
+          "prefix": "                        confidence: ",
+          "reference": "1.0",
+          "suffix": ",",
+          "variant": "TextWithConfidenceAndSpans"
+        },
+        {
+          "kind": "named",
+          "line": 843,
+          "prefix": "                        confidence: ",
+          "reference": "1.0",
+          "suffix": ",",
+          "variant": "TextWithConfidenceAndSpans"
+        },
+        {
+          "kind": "named",
+          "line": 849,
+          "prefix": "                        confidence: ",
+          "reference": "1.0",
+          "suffix": ",",
+          "variant": "TextWithConfidenceAndSpans"
+        },
+        {
+          "kind": "named",
+          "line": 859,
+          "prefix": "                        confidence: ",
+          "reference": "1.0",
+          "suffix": ",",
+          "variant": "TextWithConfidenceAndSpans"
+        },
+        {
+          "kind": "named",
+          "line": 869,
+          "prefix": "                        confidence: ",
+          "reference": "1.0",
+          "suffix": ",",
+          "variant": "TextWithConfidenceAndSpans"
+        }
+      ],
+      "line_count": 877,
+      "reference": "tutorial_3_json_extraction.txt",
+      "sha256": "2c1d38de6c8e0f6295a619ee2dfdbd75acb4e7295d026a2961ad559861f9502f"
+    },
+    {
+      "bytes": 26310,
+      "case_id": "4_combined",
+      "confidence_slots": [
+        {
+          "kind": "named",
+          "line": 982,
+          "prefix": "                    confidence: ",
+          "reference": "1.0",
+          "suffix": ",",
+          "variant": "TextWithConfidenceAndSpans"
+        },
+        {
+          "kind": "named",
+          "line": 992,
+          "prefix": "                    confidence: ",
+          "reference": "1.0",
+          "suffix": ",",
+          "variant": "TextWithConfidenceAndSpans"
+        },
+        {
+          "kind": "named",
+          "line": 1002,
+          "prefix": "            confidence: ",
+          "reference": "1.0",
+          "suffix": ",",
+          "variant": "SingleWithConfidence"
+        },
+        {
+          "kind": "named",
+          "line": 1012,
+          "prefix": "                            confidence: ",
+          "reference": "1.0",
+          "suffix": ",",
+          "variant": "TextWithConfidenceAndSpans"
+        },
+        {
+          "kind": "named",
+          "line": 1022,
+          "prefix": "                            confidence: ",
+          "reference": "1.0",
+          "suffix": ",",
+          "variant": "TextWithConfidenceAndSpans"
+        },
+        {
+          "kind": "named",
+          "line": 1036,
+          "prefix": "                    confidence: ",
+          "reference": "1.0",
+          "suffix": ",",
+          "variant": "TextWithConfidenceAndSpans"
+        },
+        {
+          "kind": "named",
+          "line": 1042,
+          "prefix": "                    confidence: ",
+          "reference": "0.99999976",
+          "suffix": ",",
+          "variant": "TextWithConfidenceAndSpans"
+        }
+      ],
+      "line_count": 1049,
+      "reference": "tutorial_4_combined.txt",
+      "sha256": "b77ee5cb41bb642ba72ba4363b07e33a67a96991e2f42a29c43eb8b49c929902"
+    },
+    {
+      "bytes": 2837,
+      "case_id": "5_validator",
+      "confidence_slots": [],
+      "line_count": 140,
+      "reference": "tutorial_5_validator.txt",
+      "sha256": "1aa77586e815f68884ccbc77808343efdea4fafff2e3794270a91d09202bfe69"
+    },
+    {
+      "bytes": 19680,
+      "case_id": "6_relation_extraction",
+      "confidence_slots": [
+        {
+          "kind": "named",
+          "line": 223,
+          "prefix": "                confidence: ",
+          "reference": "0.9999336",
+          "suffix": ",",
+          "variant": "TextWithConfidence"
+        },
+        {
+          "kind": "named",
+          "line": 227,
+          "prefix": "                confidence: ",
+          "reference": "0.99999845",
+          "suffix": ",",
+          "variant": "TextWithConfidence"
+        },
+        {
+          "kind": "named",
+          "line": 235,
+          "prefix": "                confidence: ",
+          "reference": "0.9999982",
+          "suffix": ",",
+          "variant": "TextWithConfidence"
+        },
+        {
+          "kind": "named",
+          "line": 239,
+          "prefix": "                confidence: ",
+          "reference": "1.0",
+          "suffix": ",",
+          "variant": "TextWithConfidence"
+        },
+        {
+          "kind": "named",
+          "line": 281,
+          "prefix": "                confidence: ",
+          "reference": "0.9999336",
+          "suffix": ",",
+          "variant": "TextWithConfidenceAndSpans"
+        },
+        {
+          "kind": "named",
+          "line": 287,
+          "prefix": "                confidence: ",
+          "reference": "0.99999845",
+          "suffix": ",",
+          "variant": "TextWithConfidenceAndSpans"
+        },
+        {
+          "kind": "named",
+          "line": 297,
+          "prefix": "                confidence: ",
+          "reference": "0.9999982",
+          "suffix": ",",
+          "variant": "TextWithConfidenceAndSpans"
+        },
+        {
+          "kind": "named",
+          "line": 303,
+          "prefix": "                confidence: ",
+          "reference": "1.0",
+          "suffix": ",",
+          "variant": "TextWithConfidenceAndSpans"
+        }
+      ],
+      "line_count": 916,
+      "reference": "tutorial_6_relation_extraction.txt",
+      "sha256": "29ef8e1db814938cc69ddf1b32c3d10338f20f68140e3d95998e15b99e000e44"
+    }
+  ],
+  "format_version": 1,
+  "reference_provenance": {
+    "capture": "canonical normalized tutorial stdout; timing/path log lines removed",
+    "ort_crate_version": "2.0.0-rc.9",
+    "ort_native_version": "1.20.0",
+    "source_git_head": "9705e8d"
+  }
+}

@@ -1,3 +1,5 @@
+use std::{sync::Arc, thread};
+
 use gliner2_rs::{Result, encoder::Encoder, tokenizer::RuntimeTokenizer};
 
 mod common;
@@ -22,6 +24,36 @@ fn encoder_runs_on_real_tokens() -> Result<()> {
     let hidden = encoder.infer(input_ids, attention_mask)?;
 
     assert_eq!(hidden.shape(), &[1, len, 768]);
+    Ok(())
+}
+
+#[test]
+fn shared_encoder_serializes_concurrent_inference() -> Result<()> {
+    let root = model_root();
+    let model_dir = root.join("models/gliner2-base-v1");
+    let onnx_path = root.join("onnx/gliner2-base-v1/encoder.onnx");
+
+    if !artifacts_available(&[&model_dir, &onnx_path])? {
+        return Ok(());
+    }
+
+    let tokenizer = RuntimeTokenizer::from_dir(&model_dir)?;
+    let (input_ids, attention_mask) = tokenizer.encode_text("Concurrent inference")?;
+    let encoder = Arc::new(Encoder::new(&onnx_path)?);
+    let handles: Vec<_> = (0..2)
+        .map(|_| {
+            let encoder = Arc::clone(&encoder);
+            let input_ids = input_ids.clone();
+            let attention_mask = attention_mask.clone();
+            thread::spawn(move || encoder.infer(input_ids, attention_mask))
+        })
+        .collect();
+    let outputs: Vec<_> = handles
+        .into_iter()
+        .map(|handle| handle.join().expect("encoder inference thread panicked"))
+        .collect::<Result<_>>()?;
+
+    assert_eq!(outputs[0], outputs[1]);
     Ok(())
 }
 

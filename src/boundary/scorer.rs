@@ -1,18 +1,31 @@
-use std::collections::HashSet;
-use std::iter::FromIterator;
 use std::path::Path;
 
 use anyhow::{Context, anyhow, ensure};
 use ndarray::{Array2, Array3, Ix2, Ix3};
-use once_cell::sync::Lazy;
-use orp::{
-    model::Model,
-    params::RuntimeParameters,
-    pipeline::{Pipeline, PostProcessor, PreProcessor},
-};
-use ort::session::SessionOutputs;
 
 use crate::Result;
+use crate::runtime::{RuntimeSession, extract, tensor};
+
+const INPUTS: &[&str] = &[
+    "boundary_states",
+    "text_states",
+    "text_mask",
+    "query_states",
+    "query_mask",
+    "start_logits",
+    "end_logits",
+    "inside_prefix",
+    "inside_prefix_mean",
+    "candidate_indices",
+    "candidate_mask",
+    "candidate_compat",
+];
+const OUTPUTS: &[&str] = &[
+    "pair_logits",
+    "candidate_states",
+    "null_logits",
+    "count_log_rates",
+];
 
 /// Explicit shared-pool inputs for `boundary_scorer.onnx`.
 #[derive(Debug)]
@@ -51,21 +64,66 @@ pub struct ScorerOutput {
 
 /// Low-level ONNX wrapper for the GLiNER2.5 shared boundary scorer graph.
 pub struct ScorerModel {
-    model: Model,
+    session: RuntimeSession,
 }
 
 impl ScorerModel {
     pub fn new(model_path: impl AsRef<Path>) -> Result<Self> {
-        let model = Model::new(model_path, RuntimeParameters::default())
-            .map_err(|error| anyhow!(error.to_string()))?;
-        Ok(Self { model })
+        Ok(Self {
+            session: RuntimeSession::load(model_path, "boundary scorer", INPUTS, OUTPUTS)?,
+        })
     }
 
     pub fn infer(&self, input: ScorerInput) -> Result<ScorerOutput> {
         validate_input(&input)?;
-        self.model
-            .inference(input, &ScorerPipeline, &())
-            .map_err(|error| anyhow!(error.to_string()))
+        let batch = input.boundary_states.shape()[0];
+        let hidden = input.text_states.shape()[2];
+        let queries = input.query_states.shape()[1];
+        let candidates = input.candidate_indices.shape()[1];
+        let inputs = ort::inputs! {
+            "boundary_states" => tensor(&input.boundary_states)?,
+            "text_states" => tensor(&input.text_states)?,
+            "text_mask" => tensor(&input.text_mask)?,
+            "query_states" => tensor(&input.query_states)?,
+            "query_mask" => tensor(&input.query_mask)?,
+            "start_logits" => tensor(&input.start_logits)?,
+            "end_logits" => tensor(&input.end_logits)?,
+            "inside_prefix" => tensor(&input.inside_prefix)?,
+            "inside_prefix_mean" => tensor(&input.inside_prefix_mean)?,
+            "candidate_indices" => tensor(&input.candidate_indices)?,
+            "candidate_mask" => tensor(&input.candidate_mask)?,
+            "candidate_compat" => tensor(&input.candidate_compat)?,
+        };
+        self.session.run(inputs, |outputs| {
+            let pair_logits = extract::<f32, Ix3>(outputs, "pair_logits")?;
+            let candidate_states = extract::<f32, Ix3>(outputs, "candidate_states")?;
+            let null_logits = extract::<f32, Ix2>(outputs, "null_logits")?;
+            let count_log_rates = extract::<f32, Ix2>(outputs, "count_log_rates")?;
+
+            ensure_shape3(
+                "pair_logits",
+                pair_logits.shape(),
+                [batch, queries, candidates],
+            )?;
+            ensure_shape3(
+                "candidate_states",
+                candidate_states.shape(),
+                [batch, candidates, hidden],
+            )?;
+            ensure_shape2("null_logits", null_logits.shape(), [batch, queries])?;
+            ensure_shape2("count_log_rates", count_log_rates.shape(), [batch, queries])?;
+            ensure_finite("pair_logits", pair_logits.iter())?;
+            ensure_finite("candidate_states", candidate_states.iter())?;
+            ensure_finite("null_logits", null_logits.iter())?;
+            ensure_finite("count_log_rates", count_log_rates.iter())?;
+
+            Ok(ScorerOutput {
+                pair_logits,
+                candidate_states,
+                null_logits,
+                count_log_rates,
+            })
+        })
     }
 }
 
@@ -188,138 +246,11 @@ fn validate_input(input: &ScorerInput) -> Result<()> {
     Ok(())
 }
 
-struct ScorerPipeline;
-
-impl<'a> Pipeline<'a> for ScorerPipeline {
-    type Input = ScorerInput;
-    type Output = ScorerOutput;
-    type Context = (usize, usize, usize, usize);
-    type Parameters = ();
-
-    fn pre_processor(
-        &self,
-        _: &Self::Parameters,
-    ) -> impl PreProcessor<'a, Self::Input, Self::Context> {
-        |input: ScorerInput| {
-            let batch = input.boundary_states.shape()[0];
-            let hidden = input.text_states.shape()[2];
-            let queries = input.query_states.shape()[1];
-            let candidates = input.candidate_indices.shape()[1];
-            let inputs = ort::inputs! {
-                "boundary_states" => input.boundary_states,
-                "text_states" => input.text_states,
-                "text_mask" => input.text_mask,
-                "query_states" => input.query_states,
-                "query_mask" => input.query_mask,
-                "start_logits" => input.start_logits,
-                "end_logits" => input.end_logits,
-                "inside_prefix" => input.inside_prefix,
-                "inside_prefix_mean" => input.inside_prefix_mean,
-                "candidate_indices" => input.candidate_indices,
-                "candidate_mask" => input.candidate_mask,
-                "candidate_compat" => input.candidate_compat,
-            }?;
-            Ok((inputs.into(), (batch, queries, candidates, hidden)))
-        }
-    }
-
-    fn post_processor(
-        &self,
-        _: &Self::Parameters,
-    ) -> impl PostProcessor<'a, Self::Output, Self::Context> {
-        |(outputs, (batch, queries, candidates, hidden)): (
-            SessionOutputs<'_, '_>,
-            (usize, usize, usize, usize),
-        )| {
-            let pair_logits = extract_f32_3(&outputs, "pair_logits")?;
-            let candidate_states = extract_f32_3(&outputs, "candidate_states")?;
-            let null_logits = extract_f32_2(&outputs, "null_logits")?;
-            let count_log_rates = extract_f32_2(&outputs, "count_log_rates")?;
-
-            ensure_shape3(
-                "pair_logits",
-                pair_logits.shape(),
-                [batch, queries, candidates],
-            )?;
-            ensure_shape3(
-                "candidate_states",
-                candidate_states.shape(),
-                [batch, candidates, hidden],
-            )?;
-            ensure_shape2("null_logits", null_logits.shape(), [batch, queries])?;
-            ensure_shape2("count_log_rates", count_log_rates.shape(), [batch, queries])?;
-            ensure_finite("pair_logits", pair_logits.iter())?;
-            ensure_finite("candidate_states", candidate_states.iter())?;
-            ensure_finite("null_logits", null_logits.iter())?;
-            ensure_finite("count_log_rates", count_log_rates.iter())?;
-
-            Ok(ScorerOutput {
-                pair_logits,
-                candidate_states,
-                null_logits,
-                count_log_rates,
-            })
-        }
-    }
-
-    fn expected_inputs(&self) -> Option<&HashSet<&str>> {
-        static INPUTS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
-            HashSet::from_iter([
-                "boundary_states",
-                "text_states",
-                "text_mask",
-                "query_states",
-                "query_mask",
-                "start_logits",
-                "end_logits",
-                "inside_prefix",
-                "inside_prefix_mean",
-                "candidate_indices",
-                "candidate_mask",
-                "candidate_compat",
-            ])
-        });
-        Some(&INPUTS)
-    }
-
-    fn expected_outputs(&self) -> Option<&HashSet<&str>> {
-        static OUTPUTS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
-            HashSet::from_iter([
-                "pair_logits",
-                "candidate_states",
-                "null_logits",
-                "count_log_rates",
-            ])
-        });
-        Some(&OUTPUTS)
-    }
-}
-
 fn shape3<T>(name: &str, values: &Array3<T>) -> Result<[usize; 3]> {
     values
         .shape()
         .try_into()
         .map_err(|_| anyhow!("{name} must have rank 3"))
-}
-
-fn extract_f32_3(outputs: &SessionOutputs<'_, '_>, name: &str) -> Result<Array3<f32>> {
-    outputs
-        .get(name)
-        .with_context(|| format!("missing {name}"))?
-        .try_extract_tensor::<f32>()?
-        .into_dimensionality::<Ix3>()
-        .map_err(|error| anyhow!("unexpected {name} shape: {error}"))
-        .map(|value| value.to_owned())
-}
-
-fn extract_f32_2(outputs: &SessionOutputs<'_, '_>, name: &str) -> Result<Array2<f32>> {
-    outputs
-        .get(name)
-        .with_context(|| format!("missing {name}"))?
-        .try_extract_tensor::<f32>()?
-        .into_dimensionality::<Ix2>()
-        .map_err(|error| anyhow!("unexpected {name} shape: {error}"))
-        .map(|value| value.to_owned())
 }
 
 fn ensure_finite<'a>(name: &str, values: impl Iterator<Item = &'a f32>) -> Result<()> {

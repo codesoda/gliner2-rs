@@ -1,18 +1,23 @@
-use std::collections::HashSet;
-use std::iter::FromIterator;
 use std::path::Path;
 
 use anyhow::{Context, anyhow, ensure};
 use ndarray::{Array2, Array3, Ix2, Ix3};
-use once_cell::sync::Lazy;
-use orp::{
-    model::Model,
-    params::RuntimeParameters,
-    pipeline::{Pipeline, PostProcessor, PreProcessor},
-};
-use ort::session::SessionOutputs;
 
 use crate::Result;
+use crate::runtime::{RuntimeSession, extract, tensor};
+
+const INPUTS: &[&str] = &["text_states", "text_mask", "query_states", "query_mask"];
+const OUTPUTS: &[&str] = &[
+    "boundary_states",
+    "boundary_mask",
+    "start_logits",
+    "end_logits",
+    "inside_logits",
+    "inside_prefix",
+    "inside_prefix_mean",
+    "start_all",
+    "end_all",
+];
 
 /// Typed inputs for `boundary_marginals.onnx`.
 #[derive(Debug)]
@@ -39,21 +44,65 @@ pub struct MarginalOutput {
 
 /// Low-level ONNX wrapper for the GLiNER2.5 marginal graph.
 pub struct MarginalModel {
-    model: Model,
+    session: RuntimeSession,
 }
 
 impl MarginalModel {
     pub fn new(model_path: impl AsRef<Path>) -> Result<Self> {
-        let model = Model::new(model_path, RuntimeParameters::default())
-            .map_err(|error| anyhow!(error.to_string()))?;
-        Ok(Self { model })
+        Ok(Self {
+            session: RuntimeSession::load(model_path, "boundary marginal", INPUTS, OUTPUTS)?,
+        })
     }
 
     pub fn infer(&self, input: MarginalInput) -> Result<MarginalOutput> {
         validate_input(&input)?;
-        self.model
-            .inference(input, &MarginalPipeline, &())
-            .map_err(|error| anyhow!(error.to_string()))
+        let batch = input.text_states.shape()[0];
+        let text_length = input.text_states.shape()[1];
+        let query_count = input.query_states.shape()[1];
+        let inputs = ort::inputs! {
+            "text_states" => tensor(&input.text_states)?,
+            "text_mask" => tensor(&input.text_mask)?,
+            "query_states" => tensor(&input.query_states)?,
+            "query_mask" => tensor(&input.query_mask)?,
+        };
+        self.session.run(inputs, |outputs| {
+            let boundary_states = extract::<f32, Ix3>(outputs, "boundary_states")?;
+            let boundary_mask = extract::<bool, Ix2>(outputs, "boundary_mask")?;
+            let start_logits = extract::<f32, Ix3>(outputs, "start_logits")?;
+            let end_logits = extract::<f32, Ix3>(outputs, "end_logits")?;
+            let inside_logits = extract::<f32, Ix3>(outputs, "inside_logits")?;
+            let inside_prefix = extract::<f32, Ix3>(outputs, "inside_prefix")?;
+            let inside_prefix_mean = extract::<f32, Ix3>(outputs, "inside_prefix_mean")?;
+            let start_all = extract::<f32, Ix3>(outputs, "start_all")?;
+            let end_all = extract::<f32, Ix3>(outputs, "end_all")?;
+
+            validate_output(
+                batch,
+                text_length,
+                query_count,
+                &boundary_states,
+                &boundary_mask,
+                &start_logits,
+                &end_logits,
+                &inside_logits,
+                &inside_prefix,
+                &inside_prefix_mean,
+                &start_all,
+                &end_all,
+            )?;
+
+            Ok(MarginalOutput {
+                boundary_states,
+                boundary_mask,
+                start_logits,
+                end_logits,
+                inside_logits,
+                inside_prefix,
+                inside_prefix_mean,
+                start_all,
+                end_all,
+            })
+        })
     }
 }
 
@@ -107,124 +156,6 @@ fn validate_input(input: &MarginalInput) -> Result<()> {
         "query_states contains non-finite values"
     );
     Ok(())
-}
-
-struct MarginalPipeline;
-
-impl<'a> Pipeline<'a> for MarginalPipeline {
-    type Input = MarginalInput;
-    type Output = MarginalOutput;
-    type Context = (usize, usize, usize);
-    type Parameters = ();
-
-    fn pre_processor(
-        &self,
-        _: &Self::Parameters,
-    ) -> impl PreProcessor<'a, Self::Input, Self::Context> {
-        |input: MarginalInput| {
-            let batch = input.text_states.shape()[0];
-            let text_length = input.text_states.shape()[1];
-            let query_count = input.query_states.shape()[1];
-            let inputs = ort::inputs! {
-                "text_states" => input.text_states,
-                "text_mask" => input.text_mask,
-                "query_states" => input.query_states,
-                "query_mask" => input.query_mask,
-            }?;
-            Ok((inputs.into(), (batch, text_length, query_count)))
-        }
-    }
-
-    fn post_processor(
-        &self,
-        _: &Self::Parameters,
-    ) -> impl PostProcessor<'a, Self::Output, Self::Context> {
-        |(outputs, (batch, text_length, query_count)): (
-            SessionOutputs<'_, '_>,
-            (usize, usize, usize),
-        )| {
-            let boundary_states = extract_f32_3(&outputs, "boundary_states")?;
-            let boundary_mask = extract_bool_2(&outputs, "boundary_mask")?;
-            let start_logits = extract_f32_3(&outputs, "start_logits")?;
-            let end_logits = extract_f32_3(&outputs, "end_logits")?;
-            let inside_logits = extract_f32_3(&outputs, "inside_logits")?;
-            let inside_prefix = extract_f32_3(&outputs, "inside_prefix")?;
-            let inside_prefix_mean = extract_f32_3(&outputs, "inside_prefix_mean")?;
-            let start_all = extract_f32_3(&outputs, "start_all")?;
-            let end_all = extract_f32_3(&outputs, "end_all")?;
-
-            validate_output(
-                batch,
-                text_length,
-                query_count,
-                &boundary_states,
-                &boundary_mask,
-                &start_logits,
-                &end_logits,
-                &inside_logits,
-                &inside_prefix,
-                &inside_prefix_mean,
-                &start_all,
-                &end_all,
-            )?;
-
-            Ok(MarginalOutput {
-                boundary_states,
-                boundary_mask,
-                start_logits,
-                end_logits,
-                inside_logits,
-                inside_prefix,
-                inside_prefix_mean,
-                start_all,
-                end_all,
-            })
-        }
-    }
-
-    fn expected_inputs(&self) -> Option<&HashSet<&str>> {
-        static INPUTS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
-            HashSet::from_iter(["text_states", "text_mask", "query_states", "query_mask"])
-        });
-        Some(&INPUTS)
-    }
-
-    fn expected_outputs(&self) -> Option<&HashSet<&str>> {
-        static OUTPUTS: Lazy<HashSet<&'static str>> = Lazy::new(|| {
-            HashSet::from_iter([
-                "boundary_states",
-                "boundary_mask",
-                "start_logits",
-                "end_logits",
-                "inside_logits",
-                "inside_prefix",
-                "inside_prefix_mean",
-                "start_all",
-                "end_all",
-            ])
-        });
-        Some(&OUTPUTS)
-    }
-}
-
-fn extract_f32_3(outputs: &SessionOutputs<'_, '_>, name: &str) -> Result<Array3<f32>> {
-    outputs
-        .get(name)
-        .with_context(|| format!("missing {name}"))?
-        .try_extract_tensor::<f32>()?
-        .into_dimensionality::<Ix3>()
-        .map_err(|error| anyhow!("unexpected {name} shape: {error}"))
-        .map(|value| value.to_owned())
-}
-
-fn extract_bool_2(outputs: &SessionOutputs<'_, '_>, name: &str) -> Result<Array2<bool>> {
-    outputs
-        .get(name)
-        .with_context(|| format!("missing {name}"))?
-        .try_extract_tensor::<bool>()?
-        .into_dimensionality::<Ix2>()
-        .map_err(|error| anyhow!("unexpected {name} shape: {error}"))
-        .map(|value| value.to_owned())
 }
 
 #[allow(clippy::too_many_arguments)]

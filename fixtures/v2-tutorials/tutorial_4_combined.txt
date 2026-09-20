@@ -1,0 +1,1049 @@
+-----------------
+text: Tim Cook announced that Apple's new iPhone is exceeding sales expectations.
+out: ExtractionResult {
+    entities: {
+        "company": List(
+            [
+                Text(
+                    "Apple",
+                ),
+            ],
+        ),
+        "person": List(
+            [
+                Text(
+                    "Tim Cook",
+                ),
+            ],
+        ),
+        "product": List(
+            [
+                Text(
+                    "iPhone",
+                ),
+            ],
+        ),
+    },
+    classifications: {
+        "category": Single(
+            "news",
+        ),
+        "sentiment": Single(
+            "positive",
+        ),
+    },
+    structures: {},
+    relations: {},
+}
+-----------------
+text: 
+Dr. Sarah Johnson confirmed the appointment with John Smith for 
+March 15th at 2:30 PM. This will be a follow-up consultation 
+regarding his previous visit on February 1st.
+
+out: ExtractionResult {
+    entities: {
+        "date": List(
+            [
+                Text(
+                    "February 1st",
+                ),
+                Text(
+                    "March 15th",
+                ),
+                Text(
+                    "2:30 PM",
+                ),
+            ],
+        ),
+        "person": List(
+            [
+                Text(
+                    "John Smith",
+                ),
+                Text(
+                    "Dr. Sarah Johnson",
+                ),
+            ],
+        ),
+    },
+    classifications: {},
+    structures: {
+        "appointment": [
+            {
+                "date": List(
+                    [
+                        Text(
+                            "March 15th",
+                        ),
+                    ],
+                ),
+                "doctor": Single(
+                    Some(
+                        Text(
+                            "Dr. Sarah Johnson",
+                        ),
+                    ),
+                ),
+                "patient": Single(
+                    Some(
+                        Text(
+                            "John Smith",
+                        ),
+                    ),
+                ),
+                "time": List(
+                    [
+                        Text(
+                            "2:30 PM",
+                        ),
+                    ],
+                ),
+                "type": Single(
+                    Some(
+                        Text(
+                            "consultation",
+                        ),
+                    ),
+                ),
+            },
+        ],
+    },
+    relations: {},
+}
+-----------------
+text: Order confirmation: Order #ORD-42 includes 2x Laptop Stand and 1x Mouse, total $120. Status: processing. Please ship ASAP.
+out: ExtractionResult {
+    entities: {},
+    classifications: {
+        "email_type": Single(
+            "order_confirmation",
+        ),
+        "priority": Single(
+            "urgent",
+        ),
+    },
+    structures: {
+        "order_info": [
+            {
+                "items": List(
+                    [
+                        Text(
+                            "1x Mouse",
+                        ),
+                        Text(
+                            "2x Laptop Stand",
+                        ),
+                    ],
+                ),
+                "order_number": Single(
+                    Some(
+                        Text(
+                            "ORD-42",
+                        ),
+                    ),
+                ),
+                "status": Single(
+                    Some(
+                        Text(
+                            "processing",
+                        ),
+                    ),
+                ),
+                "total": Single(
+                    Some(
+                        Text(
+                            "$120",
+                        ),
+                    ),
+                ),
+            },
+        ],
+    },
+    relations: {},
+}
+-----------------
+invoice_text: 
+INVOICE #INV-2024-001
+Vendor: Acme Consulting LLC
+Customer: Globex Corp
+Issue date: March 1, 2024
+Due date: March 31, 2024
+
+Line items:
+- Consulting services 10 hours @ $150/hr = $1500 (tax 0%)
+- Support retainer 1 month @ $500 = $500 (tax 0%)
+
+Payment status: unpaid. Terms: NET30. Pay by bank_transfer.
+
+out: ExtractionResult {
+    entities: {
+        "amount": List(
+            [
+                Text(
+                    "$500",
+                ),
+                Text(
+                    "$1500",
+                ),
+                Text(
+                    "$150/hr",
+                ),
+            ],
+        ),
+        "company": List(
+            [
+                Text(
+                    "Globex Corp",
+                ),
+                Text(
+                    "Acme Consulting LLC",
+                ),
+            ],
+        ),
+        "date": List(
+            [
+                Text(
+                    "March 1, 2024",
+                ),
+                Text(
+                    "March 31, 2024",
+                ),
+            ],
+        ),
+        "person": List(
+            [],
+        ),
+    },
+    classifications: {
+        "document_type": Single(
+            "invoice",
+        ),
+        "payment_status": Single(
+            "unpaid",
+        ),
+    },
+    structures: {
+        "invoice_header": [
+            {
+                "customer_name": Single(
+                    Some(
+                        Text(
+                            "Globex Corp",
+                        ),
+                    ),
+                ),
+                "due_date": Single(
+                    Some(
+                        Text(
+                            "March 31, 2024",
+                        ),
+                    ),
+                ),
+                "invoice_number": Single(
+                    Some(
+                        Text(
+                            "INV-2024-001",
+                        ),
+                    ),
+                ),
+                "issue_date": Single(
+                    Some(
+                        Text(
+                            "March 1, 2024",
+                        ),
+                    ),
+                ),
+                "vendor_name": Single(
+                    Some(
+                        Text(
+                            "Acme Consulting LLC",
+                        ),
+                    ),
+                ),
+            },
+        ],
+        "line_item": [
+            {
+                "amount": List(
+                    [
+                        Text(
+                            "$1500",
+                        ),
+                    ],
+                ),
+                "description": Single(
+                    Some(
+                        Text(
+                            "Consulting services",
+                        ),
+                    ),
+                ),
+                "quantity": List(
+                    [
+                        Text(
+                            "10 hours",
+                        ),
+                    ],
+                ),
+                "tax_rate": Single(
+                    Some(
+                        Text(
+                            "0%",
+                        ),
+                    ),
+                ),
+                "unit_price": List(
+                    [
+                        Text(
+                            "$150/hr",
+                        ),
+                    ],
+                ),
+            },
+            {
+                "amount": List(
+                    [
+                        Text(
+                            "$500",
+                        ),
+                    ],
+                ),
+                "description": Single(
+                    Some(
+                        Text(
+                            "Support retainer",
+                        ),
+                    ),
+                ),
+                "quantity": List(
+                    [
+                        Text(
+                            "1 month",
+                        ),
+                    ],
+                ),
+                "tax_rate": Single(
+                    Some(
+                        Text(
+                            "0%",
+                        ),
+                    ),
+                ),
+                "unit_price": List(
+                    [
+                        Text(
+                            "$500",
+                        ),
+                    ],
+                ),
+            },
+        ],
+        "payment_info": [
+            {
+                "bank_details": List(
+                    [],
+                ),
+                "method": Single(
+                    Some(
+                        Text(
+                            "bank_transfer",
+                        ),
+                    ),
+                ),
+                "terms": List(
+                    [
+                        Text(
+                            "NET30",
+                        ),
+                    ],
+                ),
+            },
+        ],
+    },
+    relations: {},
+}
+-----------------
+feedback_text: I love the new camera feature on the iPhone, but the battery life is majorly disappointing. Samsung lasts longer at this price. Please improve battery optimization; it would help travel use.
+out: ExtractionResult {
+    entities: {
+        "competitor": List(
+            [
+                Text(
+                    "Samsung",
+                ),
+            ],
+        ),
+        "feature": List(
+            [
+                Text(
+                    "camera feature",
+                ),
+            ],
+        ),
+        "price_mention": List(
+            [
+                Text(
+                    "this price",
+                ),
+            ],
+        ),
+        "product": List(
+            [
+                Text(
+                    "iPhone",
+                ),
+            ],
+        ),
+    },
+    classifications: {
+        "intent": Multi(
+            [
+                "suggestion",
+                "complaint",
+            ],
+        ),
+        "sentiment": Single(
+            "negative",
+        ),
+    },
+    structures: {
+        "issue": [
+            {
+                "affected_area": List(
+                    [
+                        Text(
+                            "battery life",
+                        ),
+                    ],
+                ),
+                "problem": Single(
+                    None,
+                ),
+                "severity": Single(
+                    Some(
+                        Text(
+                            "major",
+                        ),
+                    ),
+                ),
+            },
+        ],
+        "suggestion": [
+            {
+                "benefit": List(
+                    [
+                        Text(
+                            "travel use",
+                        ),
+                    ],
+                ),
+                "improvement": Single(
+                    Some(
+                        Text(
+                            "battery optimization",
+                        ),
+                    ),
+                ),
+            },
+        ],
+    },
+    relations: {},
+}
+-----------------
+news_text: 
+In Cupertino, Apple CEO Tim Cook said "we're thrilled with iPhone 15 demand" during the September event.
+Analysts at Goldman Sachs claim the launch could boost revenue, citing pre-order numbers and supply-chain checks.
+
+out: ExtractionResult {
+    entities: {
+        "event": List(
+            [
+                Text(
+                    "launch",
+                ),
+            ],
+        ),
+        "location": List(
+            [
+                Text(
+                    "Cupertino",
+                ),
+            ],
+        ),
+        "organization": List(
+            [
+                Text(
+                    "Goldman Sachs",
+                ),
+                Text(
+                    "Apple",
+                ),
+            ],
+        ),
+        "person": List(
+            [
+                Text(
+                    "Tim Cook",
+                ),
+            ],
+        ),
+    },
+    classifications: {
+        "bias": Single(
+            "neutral",
+        ),
+        "category": Single(
+            "business",
+        ),
+        "factuality": Single(
+            "fact",
+        ),
+    },
+    structures: {
+        "claim": [
+            {
+                "evidence": List(
+                    [
+                        Text(
+                            "supply-chain checks",
+                        ),
+                        Text(
+                            "pre-order numbers",
+                        ),
+                    ],
+                ),
+                "source": Single(
+                    Some(
+                        Text(
+                            "Goldman Sachs",
+                        ),
+                    ),
+                ),
+                "statement": Single(
+                    Some(
+                        Text(
+                            "launch could boost revenue",
+                        ),
+                    ),
+                ),
+            },
+        ],
+        "quote": [
+            {
+                "context": List(
+                    [
+                        Text(
+                            "September event",
+                        ),
+                    ],
+                ),
+                "speaker": Single(
+                    Some(
+                        Text(
+                            "Tim Cook",
+                        ),
+                    ),
+                ),
+                "statement": Single(
+                    Some(
+                        Text(
+                            "we're thrilled with iPhone 15 demand",
+                        ),
+                    ),
+                ),
+            },
+        ],
+    },
+    relations: {},
+}
+-----------------
+listing_text: 
+Listing: Apple iPhone 15 Pro Max (Blue) 256GB - Buy Now $1099
+Features: amazing new camera, 120Hz display, USB-C.
+Condition: new. Shipping: express or overnight, cost $25, delivery 1-2 days.
+Seller: PhoneWorld rating 4.9, location: San Francisco.
+
+out: ExtractionResult {
+    entities: {
+        "brand": List(
+            [
+                Text(
+                    "Apple",
+                ),
+            ],
+        ),
+        "color": List(
+            [
+                Text(
+                    "Blue",
+                ),
+            ],
+        ),
+        "model": List(
+            [
+                Text(
+                    "iPhone 15 Pro Max",
+                ),
+            ],
+        ),
+        "size": List(
+            [
+                Text(
+                    "256GB",
+                ),
+            ],
+        ),
+    },
+    classifications: {
+        "condition": Single(
+            "new",
+        ),
+        "listing_type": Single(
+            "buy_now",
+        ),
+    },
+    structures: {
+        "product": [
+            {
+                "category": Single(
+                    None,
+                ),
+                "features": List(
+                    [
+                        Text(
+                            "USB-C",
+                        ),
+                        Text(
+                            "120Hz display",
+                        ),
+                        Text(
+                            "amazing new camera",
+                        ),
+                    ],
+                ),
+                "price": Single(
+                    Some(
+                        Text(
+                            "$1099",
+                        ),
+                    ),
+                ),
+                "title": Single(
+                    Some(
+                        Text(
+                            "Apple iPhone 15 Pro Max",
+                        ),
+                    ),
+                ),
+            },
+        ],
+        "seller": [
+            {
+                "location": Single(
+                    Some(
+                        Text(
+                            "San Francisco",
+                        ),
+                    ),
+                ),
+                "name": Single(
+                    Some(
+                        Text(
+                            "PhoneWorld",
+                        ),
+                    ),
+                ),
+                "rating": Single(
+                    Some(
+                        Text(
+                            "4.9",
+                        ),
+                    ),
+                ),
+            },
+        ],
+        "shipping": [
+            {
+                "cost": Single(
+                    Some(
+                        Text(
+                            "$25",
+                        ),
+                    ),
+                ),
+                "delivery_time": List(
+                    [
+                        Text(
+                            "1-2 days",
+                        ),
+                    ],
+                ),
+                "method": List(
+                    [
+                        Text(
+                            "express",
+                        ),
+                    ],
+                ),
+            },
+        ],
+    },
+    relations: {},
+}
+-----------------
+clinical_text: 
+Patient: Sarah Johnson, 34, female. Chief complaint: chest pain.
+Vitals: BP 120/80, HR 72, Temp 98.6F, RR 16.
+Assessment: possible hypertension. Prescribed Lisinopril 10mg daily for 30 days, route oral.
+
+out: ExtractionResult {
+    entities: {
+        "body_part": List(
+            [],
+        ),
+        "diagnosis": List(
+            [
+                Text(
+                    "hypertension",
+                ),
+            ],
+        ),
+        "medication": List(
+            [
+                Text(
+                    "Lisinopril",
+                ),
+            ],
+        ),
+        "procedure": List(
+            [
+                Text(
+                    "Temp",
+                ),
+                Text(
+                    "HR",
+                ),
+                Text(
+                    "BP",
+                ),
+            ],
+        ),
+        "symptom": List(
+            [
+                Text(
+                    "chest pain",
+                ),
+            ],
+        ),
+    },
+    classifications: {
+        "urgency": Single(
+            "routine",
+        ),
+        "visit_type": Single(
+            "initial_consultation",
+        ),
+    },
+    structures: {
+        "patient_info": [
+            {
+                "age": Single(
+                    Some(
+                        Text(
+                            "34",
+                        ),
+                    ),
+                ),
+                "chief_complaint": Single(
+                    Some(
+                        Text(
+                            "chest pain",
+                        ),
+                    ),
+                ),
+                "gender": Single(
+                    Some(
+                        Text(
+                            "male",
+                        ),
+                    ),
+                ),
+                "name": Single(
+                    Some(
+                        Text(
+                            "Sarah Johnson",
+                        ),
+                    ),
+                ),
+            },
+        ],
+        "prescription": [
+            {
+                "dosage": Single(
+                    Some(
+                        Text(
+                            "10mg",
+                        ),
+                    ),
+                ),
+                "duration": List(
+                    [
+                        Text(
+                            "30 days",
+                        ),
+                    ],
+                ),
+                "frequency": List(
+                    [
+                        Text(
+                            "daily",
+                        ),
+                    ],
+                ),
+                "medication": Single(
+                    Some(
+                        Text(
+                            "Lisinopril",
+                        ),
+                    ),
+                ),
+                "route": Single(
+                    Some(
+                        Text(
+                            "oral",
+                        ),
+                    ),
+                ),
+            },
+        ],
+        "vital_signs": [
+            {
+                "blood_pressure": Single(
+                    Some(
+                        Text(
+                            "120/80",
+                        ),
+                    ),
+                ),
+                "heart_rate": Single(
+                    None,
+                ),
+                "respiratory_rate": Single(
+                    Some(
+                        Text(
+                            "HR 72",
+                        ),
+                    ),
+                ),
+                "temperature": Single(
+                    Some(
+                        Text(
+                            "98.6F",
+                        ),
+                    ),
+                ),
+            },
+        ],
+    },
+    relations: {},
+}
+-----------------
+legal_text: 
+In the State Court, plaintiff Acme Corp alleges breach of contract by defendant Globex Inc.
+The payment clause requires delivery by March 31, 2024. The amount in dispute is $50,000.
+
+out: ExtractionResult {
+    entities: {
+        "attorney": List(
+            [],
+        ),
+        "case_citation": List(
+            [],
+        ),
+        "judge": List(
+            [],
+        ),
+        "party": List(
+            [
+                Text(
+                    "Acme Corp",
+                ),
+                Text(
+                    "Globex Inc.",
+                ),
+                Text(
+                    "defendant",
+                ),
+                Text(
+                    "plaintiff",
+                ),
+            ],
+        ),
+        "statute": List(
+            [
+                Text(
+                    "State Court",
+                ),
+            ],
+        ),
+    },
+    classifications: {
+        "document_type": Single(
+            "contract",
+        ),
+        "jurisdiction": Single(
+            "state",
+        ),
+    },
+    structures: {
+        "claim": [
+            {
+                "amount": Single(
+                    Some(
+                        Text(
+                            "$50,000",
+                        ),
+                    ),
+                ),
+                "basis": List(
+                    [
+                        Text(
+                            "State Court",
+                        ),
+                    ],
+                ),
+                "defendant": Single(
+                    Some(
+                        Text(
+                            "Globex Inc.",
+                        ),
+                    ),
+                ),
+                "plaintiff": Single(
+                    Some(
+                        Text(
+                            "Acme Corp",
+                        ),
+                    ),
+                ),
+                "type": Single(
+                    Some(
+                        Text(
+                            "breach of contract",
+                        ),
+                    ),
+                ),
+            },
+        ],
+        "contract_term": [
+            {
+                "clause_type": Single(
+                    Some(
+                        Text(
+                            "payment",
+                        ),
+                    ),
+                ),
+                "deadline": List(
+                    [
+                        Text(
+                            "March 31, 2024",
+                        ),
+                    ],
+                ),
+                "obligation": Single(
+                    Some(
+                        Text(
+                            "delivery",
+                        ),
+                    ),
+                ),
+                "party_responsible": Single(
+                    Some(
+                        Text(
+                            "Globex Inc.",
+                        ),
+                    ),
+                ),
+            },
+        ],
+    },
+    relations: {},
+}
+-----------------
+text: Tim Cook works for Apple. The iPhone 15 costs $999. This is exciting!
+out: ExtractionResult {
+    entities: {
+        "company": List(
+            [
+                TextWithConfidenceAndSpans {
+                    text: "Apple",
+                    confidence: 1.0,
+                    start: 19,
+                    end: 24,
+                },
+            ],
+        ),
+        "person": List(
+            [
+                TextWithConfidenceAndSpans {
+                    text: "Tim Cook",
+                    confidence: 1.0,
+                    start: 0,
+                    end: 8,
+                },
+            ],
+        ),
+    },
+    classifications: {
+        "sentiment": SingleWithConfidence {
+            label: "positive",
+            confidence: 1.0,
+        },
+    },
+    structures: {
+        "product": [
+            {
+                "name": Single(
+                    Some(
+                        TextWithConfidenceAndSpans {
+                            text: "iPhone 15",
+                            confidence: 1.0,
+                            start: 30,
+                            end: 39,
+                        },
+                    ),
+                ),
+                "price": Single(
+                    Some(
+                        TextWithConfidenceAndSpans {
+                            text: "$999",
+                            confidence: 1.0,
+                            start: 46,
+                            end: 50,
+                        },
+                    ),
+                ),
+            },
+        ],
+    },
+    relations: {
+        "works_for": [
+            FormattedRelationPair {
+                head: TextWithConfidenceAndSpans {
+                    text: "Tim Cook",
+                    confidence: 1.0,
+                    start: 0,
+                    end: 8,
+                },
+                tail: TextWithConfidenceAndSpans {
+                    text: "Apple",
+                    confidence: 0.99999976,
+                    start: 19,
+                    end: 24,
+                },
+            },
+        ],
+    },
+}

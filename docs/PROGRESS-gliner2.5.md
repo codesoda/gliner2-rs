@@ -332,3 +332,72 @@ prompt-to-evidence checklist. Model-free test success is not model parity.
   public schema struct literals. M5 record/explicit graphs and assignment helper
   remain preparations; JSON/records/relations deliberately error until integrated.
   M5–M7, public explicit scoring, model publication and release remain open.
+
+## User-approved direct ORT migration — implemented, acceptance issue open
+
+- User explicitly approved removing ORP and using the latest published ORT.
+  Dependency pins now resolve to ORT/ort-sys2.0.0-rc.13; native build information
+  confirms ONNX Runtime1.28.0 (`rel-1.28.0`, commit `da9b5e3`). ORP/composable
+  are no longer active dependencies. Rust1.88 is the declared dependency floor;
+  local tests use1.95 (not an independent MSRV validation).
+- A private per-session mutex preserves public `infer(&self)` methods. Session
+  settings retain CPU/four intra-op threads/Level3 optimization and schema-name
+  checks. The raw-tensor bridge preserves public ndarray0.16 types and logical
+  row-major order for nonstandard arrays; owned outputs stay safe after unlock.
+- Parent strict all-model/full-fixture suite passes110 tests with zero skips;
+  no-model suite passes110 with29 explicit skip messages. Formatting, strict
+  all-target/all-feature Clippy, actual native-version checks and shared-session
+  concurrent inference tests pass. Full boundary tutorials1/2 also run.
+- Five v2 tutorials retain byte-identical payloads. Tutorial1 has exactly one
+  changed confidence: technology0.8674003481864929 →0.8674008846282959
+  (absolute5.364418029785156e-7, nine f32 ULPs). Labels, ordering and all other
+  displayed values match. This still fails the strict byte invariant; no
+  rounding or tolerance change was applied. Cross-feed diagnosis now localizes
+  the change to native encoder execution: identical inputs, deterministic repeated
+  runs, identical classifier output for identical old/new label embeddings in
+  both runtimes. Encoder maximum absolute drift is1.9073486328125e-5.
+  Optimization Disable/Level1/Level2/Level3, deterministic compute and disabling
+  prepacking did not restore old encoder bytes; no production setting was changed.
+- The proposed exception is absolute v2 confidence drift <=1e-6, retaining exact
+  labels/text/spans/order and all other gates. This requires explicit user
+  approval; it has not been adopted. The structured confirmation tool failed
+  (`Cannot read properties of undefined (reading 'cancelled')`), so the next
+  required input is the user's confidence-policy decision.
+- Evidence: `docs/evidence/ort-migration.json`. Migration acceptance, commit/tag
+  and the overall release goal are not claimed complete.
+
+## Direct ORT migration — confidence exception approved
+
+- User explicitly replied **Approved** to the <=1e-6 absolute v2 confidence
+  exception. Labels, text, spans, ordering, structure and non-confidence values
+  remain exact; no output rounding/bias or other tolerance changes are allowed.
+- Parent reviewed the completed stage diagnostic: old/new inputs are identical;
+  encoder hidden states differ deterministically, and both classifiers are
+  bit-identical for either set of frozen embeddings. The exact divergent native
+  operator is not claimed. Tested session knobs do not restore old bytes.
+- An executable fail-closed regression comparator and frozen original tutorial
+  payloads are being added before final acceptance/commit. All broader M5–M7
+  and release requirements remain in force.
+
+## Direct ORT migration — accepted after approved regression gate
+
+- The fail-closed comparator now pins all six original v2 payload hashes and
+  permits drift only in34 recognized confidence slots. Non-confidence bytes,
+  case IDs, labels, strings, coordinates, ordering and even line endings stay
+  exact. NaN/Inf, tolerance increases, reference tampering and missing/extra
+  cases fail. No runtime output is rewritten. Parent ran15 unit tests; CI now
+  includes those model-free checks.
+- Parent exercised the comparator's real `--run` path, rebuilding/running all
+  six original tutorials. It passes the user-approved1e-6 gate with exactly one
+  changed value (5.364418029785156e-7); the other five payloads remain byte-exact.
+  Frozen reference text plus manifest totals100,006bytes.
+- To separate this commit from M5 preparations, parent archived HEAD and overlaid
+  only the migration source files, with a distinct Cargo target directory.
+  This isolated migration scope passes91 strict-model tests with zero skips,
+  91 no-model tests (25 explicit skip messages), formatting and strict Clippy.
+  A missing full-fixture symlink correctly failed the initial strict run; after
+  repairing artifact setup the entire suite passed. Working-tree superset
+  checks additionally pass52 optimized head/pipeline/helper tests and the smoke
+  example. Public ndarray0.16 APIs and per-session synchronization are preserved.
+- Evidence: `docs/evidence/ort-migration.json`. This accepts the runtime change,
+  not M5–M7, the public explicit-span API, bundle publication or a release tag.

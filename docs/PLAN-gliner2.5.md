@@ -40,10 +40,33 @@ model-name dispatch. architecture_version must be 1. Safetensors header review
 finds F32 tensors in all three actual checkpoints despite encoder config metadata
 saying float16; always cast and verify rather than relying on either assumption.
 
-Runtime stays `ort = =2.0.0-rc.9` / corresponding ort-sys (ONNX Runtime 1.20).
-Export opset 17 with fp32 weights, CPU validation and finite `-1e4` masks.
-No upgrade of ort is approved. Actual unsupported operations are redesigned or
-moved to Rust, with evidence recorded, rather than hiding errors behind an upgrade.
+**User-approved runtime migration (after M4):** remove ORP and use direct
+`ort = =2.0.0-rc.13` / matching ort-sys, the latest published versions verified
+against the live crates.io registry. This supersedes the original rc.9 freeze
+in the implementation prompt. rc.13 targets ONNX Runtime 1.28 and requires
+Rust 1.88; the local compiler is 1.95. M0–M4 historical evidence used rc.9 /
+native 1.20 and is not retroactively relabeled. The pinned Python oracle remains
+unchanged; new Rust-runtime comparisons must independently satisfy its gates.
+Keep public `infer(&self)` signatures via per-session synchronization because
+newer ORT `Session::run` requires mutable access. Preserve CPU defaults, four
+intra-op threads, Level3 graph optimization, exact input-name sets and required
+output-name subsets. Own/copy outputs before releasing the session guard.
+The migration must pass model-free and strict model tests, numerical parity,
+v2 tutorial regression checks, formatting and Clippy before acceptance.
+**User-approved exception:** v2 confidence values may differ from the old native
+runtime by at most1e-6 absolute (finite f32, without rounding or bias). Labels,
+text, spans, ordering, result structure and all non-confidence values remain
+exact. All other stage tolerances are unchanged. This replaces byte identity
+only for recognized confidence values across the runtime migration. No speedup
+is implied; benchmark separately.
+The exception follows deterministic native encoder drift: max1.9073486328125e-5
+in hidden states for the isolated tutorial case, but bit-identical classifier
+results when cross-fed the same old/new embeddings. Six full v2 tutorials have
+one displayed confidence difference of5.364418029785156e-7; the other five
+payloads match byte-for-byte. Multiple optimization/determinism/prepacking
+experiments did not restore old encoder bytes. The exact first divergent native
+operator is not claimed. See `evidence/ort-migration.json` for diagnostic evidence.
+Export remains opset 17, fp32, with finite `-1e4` masks and no Python inference.
 
 ## 2. Public API and backward compatibility
 
@@ -64,9 +87,10 @@ moved to Rust, with evidence recorded, rather than hiding errors behind an upgra
   During M0, an explicitly unsupported boundary constructor is acceptable
   scaffolding, but is not a completed boundary implementation or release.
 - `BoundaryPipeline` owns tokenizer, encoder, classifier, marginal/scorer/record/
-  relation sessions. Reuse `orp::Model`, `RuntimeParameters::default()` (4 CPU
-  threads), and named tensor I/O as in encoder/extractor. Validate shapes at
-  module boundaries; return errors rather than indexing panics.
+  relation sessions. Use a small private direct-ORT session helper (4 CPU
+  threads, Level3 optimization) and named tensor I/O as in encoder/extractor.
+  Validate shapes at module boundaries; return errors rather than indexing
+  panics. ORP is being removed under the user-approved migration above.
 - Keep the old schema/result types. Extend schemas additively for record modes
   and overlap options if required; preserve defaults for existing callers.
   Existing SchemaSpec/StructureSpec/JsonSchema have public fields and support
@@ -302,13 +326,17 @@ not claim raw empty-dimension graph support.
    exception is approved.
 7. **ONNX attention/export:** preserve full graph-affecting flags (directional,
    rotary, content, 8-head compatibility). Dynamic-shape multi-length tests are
-   mandatory, not single dummy-input export success. Rust wrappers follow ort
-   rc.9 APIs actually installed; Python ORT uses matching runtime generation.
+   mandatory, not single dummy-input export success. Rust wrappers must follow
+   the actual installed rc.13 APIs after migration. Python validation remains
+   on its pinned 1.20.1 environment; record both versions explicitly and rerun
+   all affected Rust model parity rather than assuming cross-version identity.
 8. **Records/relations coupling:** preserve candidate identity/order and query
    routing across heads; natural/legacy schema paths must have separate fixtures.
 9. **v2 regression:** do not replace v2 weights/algorithms. Capture representative
    pre-change outputs and compare bytes after hygiene changes; run all existing
-   tests with real models in addition to skip-mode CI. Correct crate-root paths
+   tests with real models in addition to skip-mode CI. The approved direct-ORT
+   migration exception above applies only to confidence comparisons (<=1e-6);
+   preserve exact non-confidence output and do not round values. Correct crate-root paths
    and allow an explicit test artifact-root override; strict test mode prevents
    a missing-file typo from being reported as a model-enabled success.
 10. **Fresh install:** current hosted v2 bundles omit tokenizer/config. Full 2.5

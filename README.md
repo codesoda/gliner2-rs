@@ -52,6 +52,30 @@ See `examples/` in this repo (`tutorial_1_classification.rs` through
 `tutorial_11_adapter_switching.rs`) for classification, structured/JSON
 extraction, relation extraction, validators, and LoRA adapters.
 
+### Runtime compatibility
+
+The current branch uses `ort` **2.0.0-rc.13** directly (native ONNX Runtime
+**1.28**), without ORP. It requires Rust **1.88+**. Existing inference methods
+and public `ndarray` **0.16** types are retained. Each model session serializes
+its own inference calls; independent sessions can run concurrently.
+
+The runtime upgrade can change floating-point confidences slightly. The v2
+regression gate permits at most **1e-6 absolute confidence drift**, while labels,
+text, spans, ordering and all non-confidence output remain exact. No outputs are
+rounded to meet this gate. See [migration evidence](docs/evidence/ort-migration.json).
+
+To run all six original v2 tutorials and check their frozen reference outputs:
+
+```bash
+python3 scripts/parity/validate_v2_tutorials.py --run \
+  --model /path/to/onnx/gliner2-base-v1 \
+  --actual-dir /tmp/gliner2-v2-regression --actual-prefix current
+```
+
+The tutorials also require tokenizer/config files under
+`models/gliner2-base-v1/`. Python is used only for this development-time
+regression harness, not Rust inference or the Rust build.
+
 ### Tags & versioning
 
 Tagged releases live at `vX.Y.Z` and match the version in `Cargo.toml`.
@@ -81,8 +105,8 @@ The root must contain `models/gliner2-base-v1/` and
 
 ## Layout
 
-- `src/` — the `gliner2-rs` crate: loads ONNX exports and runs inference via
-  [`orp`](https://crates.io/crates/orp) / [`ort`](https://crates.io/crates/ort).
+- `src/` — the `gliner2-rs` crate: loads ONNX exports and runs inference directly
+  through [`ort`](https://crates.io/crates/ort), without ORP.
 - `examples/` — tutorials covering classification, NER, JSON extraction,
   relations, adapters, and training data prep.
 - `tests/` — integration tests.

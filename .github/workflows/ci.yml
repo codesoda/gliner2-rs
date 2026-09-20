@@ -35,6 +35,9 @@ jobs:
       - name: Test
         run: cargo test --all-targets --verbose
 
+      - name: V2 confidence regression gate unit tests (no models)
+        run: python3 scripts/parity/test_validate_v2_tutorials.py
+
       - name: Clippy (non-blocking)
         run: cargo clippy --all-targets
         continue-on-error: true

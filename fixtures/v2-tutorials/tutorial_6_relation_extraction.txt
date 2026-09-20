@@ -1,0 +1,916 @@
+-----------------
+text: John works for Apple Inc. and lives in San Francisco.
+relation_extraction: {
+    "lives_in": [
+        (
+            "John",
+            "San Francisco",
+        ),
+    ],
+    "works_for": [
+        (
+            "John",
+            "Apple Inc.",
+        ),
+    ],
+}
+-----------------
+schema.relations + extract(): {
+    "lives_in": [
+        FormattedRelationPair {
+            head: Text(
+                "John",
+            ),
+            tail: Text(
+                "San Francisco",
+            ),
+        },
+    ],
+    "works_for": [
+        FormattedRelationPair {
+            head: Text(
+                "John",
+            ),
+            tail: Text(
+                "Apple Inc.",
+            ),
+        },
+    ],
+}
+-----------------
+text: Alice manages the Engineering team. Bob reports to Alice.
+relation_extraction: {
+    "founded": [
+        (
+            "Alice",
+            "Engineering team",
+        ),
+    ],
+    "manages": [
+        (
+            "Alice",
+            "Engineering team",
+        ),
+    ],
+    "reports_to": [
+        (
+            "Bob",
+            "Alice",
+        ),
+    ],
+}
+-----------------
+text: 
+Sarah founded TechCorp in 2020. She is married to Mike, 
+who works at Google. TechCorp is located in Seattle.
+
+relation_extraction: {
+    "founded": [
+        (
+            "Sarah",
+            "TechCorp",
+        ),
+    ],
+    "located_in": [
+        (
+            "TechCorp",
+            "Seattle",
+        ),
+    ],
+    "married_to": [
+        (
+            "Sarah",
+            "Mike",
+        ),
+    ],
+    "works_at": [
+        (
+            "Mike",
+            "Google",
+        ),
+    ],
+}
+-----------------
+text: 
+John works for Microsoft. Mary works for Google. 
+Bob works for Apple. All three live in California.
+
+relation_extraction: {
+    "lives_in": [
+        (
+            "John",
+            "California",
+        ),
+    ],
+    "works_for": [
+        (
+            "John",
+            "Microsoft",
+        ),
+        (
+            "Mary",
+            "Google",
+        ),
+        (
+            "Bob",
+            "Apple",
+        ),
+    ],
+}
+-----------------
+text: 
+Elon Musk founded SpaceX in 2002. SpaceX is located in Hawthorne, California.
+Tesla acquired SolarCity in 2016. Many engineers work for SpaceX.
+
+relations_with_descriptions: {
+    "acquired": [
+        FormattedRelationPair {
+            head: Text(
+                "Tesla",
+            ),
+            tail: Text(
+                "SolarCity",
+            ),
+        },
+    ],
+    "founded": [
+        FormattedRelationPair {
+            head: Text(
+                "Elon Musk",
+            ),
+            tail: Text(
+                "SpaceX",
+            ),
+        },
+    ],
+    "located_in": [
+        FormattedRelationPair {
+            head: Text(
+                "SpaceX",
+            ),
+            tail: Text(
+                "Hawthorne, California",
+            ),
+        },
+    ],
+    "works_for": [
+        FormattedRelationPair {
+            head: Text(
+                "engineers",
+            ),
+            tail: Text(
+                "SpaceX",
+            ),
+        },
+    ],
+}
+-----------------
+text: Sundar Pichai reports to the board of directors. Many engineers work for Google. Google is located in Mountain View.
+advanced_config: {
+    "located_in": [
+        FormattedRelationPair {
+            head: Text(
+                "Google",
+            ),
+            tail: Text(
+                "Mountain View",
+            ),
+        },
+    ],
+    "reports_to": [
+        FormattedRelationPair {
+            head: Text(
+                "Sundar Pichai",
+            ),
+            tail: Text(
+                "board of directors",
+            ),
+        },
+    ],
+    "works_for": [
+        FormattedRelationPair {
+            head: Text(
+                "Sundar Pichai",
+            ),
+            tail: Text(
+                "Google",
+            ),
+        },
+    ],
+}
+-----------------
+text: Meta acquired Oculus. Google merged with NobodyCorp.
+threshold=0.8: {
+    "acquired": [
+        (
+            "Meta",
+            "Oculus",
+        ),
+    ],
+    "merged_with": [
+        (
+            "Google",
+            "NobodyCorp",
+        ),
+    ],
+}
+-----------------
+include_confidence: {
+    "lives_in": [
+        FormattedRelationPair {
+            head: TextWithConfidence {
+                text: "John",
+                confidence: 0.9999336,
+            },
+            tail: TextWithConfidence {
+                text: "San Francisco",
+                confidence: 0.99999845,
+            },
+        },
+    ],
+    "works_for": [
+        FormattedRelationPair {
+            head: TextWithConfidence {
+                text: "John",
+                confidence: 0.9999982,
+            },
+            tail: TextWithConfidence {
+                text: "Apple Inc.",
+                confidence: 1.0,
+            },
+        },
+    ],
+}
+-----------------
+include_spans: {
+    "lives_in": [
+        FormattedRelationPair {
+            head: TextWithSpans {
+                text: "John",
+                start: 0,
+                end: 4,
+            },
+            tail: TextWithSpans {
+                text: "San Francisco",
+                start: 39,
+                end: 52,
+            },
+        },
+    ],
+    "works_for": [
+        FormattedRelationPair {
+            head: TextWithSpans {
+                text: "John",
+                start: 0,
+                end: 4,
+            },
+            tail: TextWithSpans {
+                text: "Apple Inc.",
+                start: 15,
+                end: 25,
+            },
+        },
+    ],
+}
+-----------------
+include_confidence+include_spans: {
+    "lives_in": [
+        FormattedRelationPair {
+            head: TextWithConfidenceAndSpans {
+                text: "John",
+                confidence: 0.9999336,
+                start: 0,
+                end: 4,
+            },
+            tail: TextWithConfidenceAndSpans {
+                text: "San Francisco",
+                confidence: 0.99999845,
+                start: 39,
+                end: 52,
+            },
+        },
+    ],
+    "works_for": [
+        FormattedRelationPair {
+            head: TextWithConfidenceAndSpans {
+                text: "John",
+                confidence: 0.9999982,
+                start: 0,
+                end: 4,
+            },
+            tail: TextWithConfidenceAndSpans {
+                text: "Apple Inc.",
+                confidence: 1.0,
+                start: 15,
+                end: 25,
+            },
+        },
+    ],
+}
+-----------------
+batch_extract_relations: [
+    {
+        "founded": [
+            (
+                "John",
+                "Microsoft",
+            ),
+        ],
+        "lives_in": [
+            (
+                "John",
+                "Seattle",
+            ),
+        ],
+        "reports_to": [
+            (
+                "John",
+                "Microsoft",
+            ),
+        ],
+        "works_for": [
+            (
+                "John",
+                "Microsoft",
+            ),
+        ],
+    },
+    {
+        "founded": [
+            (
+                "Sarah",
+                "TechStartup",
+            ),
+        ],
+        "lives_in": [],
+        "reports_to": [],
+        "works_for": [
+            (
+                "Sarah",
+                "TechStartup",
+            ),
+        ],
+    },
+    {
+        "founded": [
+            (
+                "Alice",
+                "Google",
+            ),
+        ],
+        "lives_in": [
+            (
+                "Bob",
+                "Google",
+            ),
+        ],
+        "reports_to": [
+            (
+                "Bob",
+                "Alice",
+            ),
+        ],
+        "works_for": [
+            (
+                "Bob",
+                "Google",
+            ),
+        ],
+    },
+]
+-----------------
+text: Tim Cook works for Apple Inc., which is located in Cupertino, California.
+relations_plus_entities: ExtractionResult {
+    entities: {
+        "location": List(
+            [
+                Text(
+                    "California",
+                ),
+                Text(
+                    "Cupertino",
+                ),
+            ],
+        ),
+        "organization": List(
+            [
+                Text(
+                    "Apple Inc.",
+                ),
+            ],
+        ),
+        "person": List(
+            [
+                Text(
+                    "Tim Cook",
+                ),
+            ],
+        ),
+    },
+    classifications: {},
+    structures: {},
+    relations: {
+        "located_in": [
+            FormattedRelationPair {
+                head: Text(
+                    "Apple Inc.",
+                ),
+                tail: Text(
+                    "Cupertino, California",
+                ),
+            },
+        ],
+        "works_for": [
+            FormattedRelationPair {
+                head: Text(
+                    "Tim Cook",
+                ),
+                tail: Text(
+                    "Apple Inc.",
+                ),
+            },
+        ],
+    },
+}
+-----------------
+text: 
+BREAKING: Microsoft announced today that it acquired GitHub. 
+Satya Nadella, CEO of Microsoft, confirmed the deal. 
+The acquisition was finalized on October 26, 2018.
+
+relations_plus_classification_plus_structures: ExtractionResult {
+    entities: {
+        "company": List(
+            [
+                Text(
+                    "Microsoft",
+                ),
+                Text(
+                    "GitHub",
+                ),
+            ],
+        ),
+        "person": List(
+            [
+                Text(
+                    "Satya Nadella",
+                ),
+            ],
+        ),
+    },
+    classifications: {
+        "document_type": Single(
+            "announcement",
+        ),
+    },
+    structures: {
+        "event": [
+            {
+                "date": Single(
+                    Some(
+                        Text(
+                            "October 26, 2018",
+                        ),
+                    ),
+                ),
+                "description": Single(
+                    None,
+                ),
+            },
+        ],
+    },
+    relations: {
+        "acquired": [
+            FormattedRelationPair {
+                head: Text(
+                    "Microsoft",
+                ),
+                tail: Text(
+                    "GitHub",
+                ),
+            },
+        ],
+        "works_for": [
+            FormattedRelationPair {
+                head: Text(
+                    "Satya Nadella",
+                ),
+                tail: Text(
+                    "Microsoft",
+                ),
+            },
+        ],
+    },
+}
+-----------------
+org_text: 
+Sundar Pichai is the CEO of Google. He reports to the board of directors.
+Google acquired YouTube in 2006. Many engineers work for Google.
+
+org_relations: {
+    "acquired": [
+        FormattedRelationPair {
+            head: Text(
+                "Google",
+            ),
+            tail: Text(
+                "YouTube",
+            ),
+        },
+    ],
+    "founded": [
+        FormattedRelationPair {
+            head: Text(
+                "Google",
+            ),
+            tail: Text(
+                "Google",
+            ),
+        },
+    ],
+    "manages": [],
+    "reports_to": [
+        FormattedRelationPair {
+            head: Text(
+                "Sundar Pichai",
+            ),
+            tail: Text(
+                "board of directors",
+            ),
+        },
+    ],
+    "works_for": [
+        FormattedRelationPair {
+            head: Text(
+                "Sundar Pichai",
+            ),
+            tail: Text(
+                "Google",
+            ),
+        },
+    ],
+}
+-----------------
+medical_text: 
+Dr. Smith treats patients with diabetes. Metformin is prescribed for Type 2 Diabetes.
+High blood sugar causes frequent urination. The pancreas is located in the abdomen.
+
+medical_relations: {
+    "causes": [
+        FormattedRelationPair {
+            head: Text(
+                "High blood sugar",
+            ),
+            tail: Text(
+                "frequent urination",
+            ),
+        },
+    ],
+    "located_in": [
+        FormattedRelationPair {
+            head: Text(
+                "pancreas",
+            ),
+            tail: Text(
+                "abdomen",
+            ),
+        },
+    ],
+    "prescribed_for": [
+        FormattedRelationPair {
+            head: Text(
+                "Metformin",
+            ),
+            tail: Text(
+                "Type 2 Diabetes",
+            ),
+        },
+    ],
+    "treats": [
+        FormattedRelationPair {
+            head: Text(
+                "Dr. Smith",
+            ),
+            tail: Text(
+                "Diabetes",
+            ),
+        },
+    ],
+}
+-----------------
+finance_text: 
+SoftBank invested in Uber in 2018. Microsoft acquired LinkedIn in 2016.
+Disney merged with 21st Century Fox. Berkshire Hathaway owns Geico.
+
+finance_relations: {
+    "acquired": [
+        FormattedRelationPair {
+            head: Text(
+                "SoftBank",
+            ),
+            tail: Text(
+                "Uber",
+            ),
+        },
+        FormattedRelationPair {
+            head: Text(
+                "Microsoft",
+            ),
+            tail: Text(
+                "LinkedIn",
+            ),
+        },
+        FormattedRelationPair {
+            head: Text(
+                "Disney",
+            ),
+            tail: Text(
+                "21st Century Fox",
+            ),
+        },
+        FormattedRelationPair {
+            head: Text(
+                "Berkshire Hathaway",
+            ),
+            tail: Text(
+                "Geico",
+            ),
+        },
+    ],
+    "invested_in": [
+        FormattedRelationPair {
+            head: Text(
+                "SoftBank",
+            ),
+            tail: Text(
+                "Uber",
+            ),
+        },
+        FormattedRelationPair {
+            head: Text(
+                "Microsoft",
+            ),
+            tail: Text(
+                "LinkedIn",
+            ),
+        },
+        FormattedRelationPair {
+            head: Text(
+                "Disney",
+            ),
+            tail: Text(
+                "21st Century Fox",
+            ),
+        },
+        FormattedRelationPair {
+            head: Text(
+                "Berkshire Hathaway",
+            ),
+            tail: Text(
+                "Geico",
+            ),
+        },
+    ],
+    "merged_with": [
+        FormattedRelationPair {
+            head: Text(
+                "Microsoft",
+            ),
+            tail: Text(
+                "Uber",
+            ),
+        },
+        FormattedRelationPair {
+            head: Text(
+                "Disney",
+            ),
+            tail: Text(
+                "21st Century Fox",
+            ),
+        },
+        FormattedRelationPair {
+            head: Text(
+                "Disney",
+            ),
+            tail: Text(
+                "21st Century Fox",
+            ),
+        },
+        FormattedRelationPair {
+            head: Text(
+                "Berkshire Hathaway",
+            ),
+            tail: Text(
+                "Geico",
+            ),
+        },
+    ],
+    "owns": [
+        FormattedRelationPair {
+            head: Text(
+                "SoftBank",
+            ),
+            tail: Text(
+                "Uber",
+            ),
+        },
+        FormattedRelationPair {
+            head: Text(
+                "Microsoft",
+            ),
+            tail: Text(
+                "LinkedIn",
+            ),
+        },
+        FormattedRelationPair {
+            head: Text(
+                "Disney",
+            ),
+            tail: Text(
+                "21st Century Fox",
+            ),
+        },
+        FormattedRelationPair {
+            head: Text(
+                "Berkshire Hathaway",
+            ),
+            tail: Text(
+                "Geico",
+            ),
+        },
+    ],
+}
+-----------------
+geo_text: 
+Paris is the capital of France. France borders Germany and Spain.
+The Seine flows through Paris. Paris is located in France.
+
+geo_relations: {
+    "borders": [
+        FormattedRelationPair {
+            head: Text(
+                "France",
+            ),
+            tail: Text(
+                "Germany",
+            ),
+        },
+        FormattedRelationPair {
+            head: Text(
+                "France",
+            ),
+            tail: Text(
+                "Spain",
+            ),
+        },
+    ],
+    "capital_of": [
+        FormattedRelationPair {
+            head: Text(
+                "Paris",
+            ),
+            tail: Text(
+                "France",
+            ),
+        },
+    ],
+    "flows_through": [
+        FormattedRelationPair {
+            head: Text(
+                "Seine",
+            ),
+            tail: Text(
+                "Paris",
+            ),
+        },
+    ],
+    "located_in": [
+        FormattedRelationPair {
+            head: Text(
+                "Paris",
+            ),
+            tail: Text(
+                "France",
+            ),
+        },
+    ],
+}
+-----------------
+family_text: 
+John is married to Mary. They are parents of two children: Alice and Bob.
+Alice and Bob are siblings. Mary is related to her sister Sarah.
+
+family_relations: {
+    "married_to": [
+        FormattedRelationPair {
+            head: Text(
+                "John",
+            ),
+            tail: Text(
+                "Mary",
+            ),
+        },
+    ],
+    "parent_of": [
+        FormattedRelationPair {
+            head: Text(
+                "John",
+            ),
+            tail: Text(
+                "Alice",
+            ),
+        },
+        FormattedRelationPair {
+            head: Text(
+                "Mary",
+            ),
+            tail: Text(
+                "Bob",
+            ),
+        },
+    ],
+    "related_to": [
+        FormattedRelationPair {
+            head: Text(
+                "Alice",
+            ),
+            tail: Text(
+                "Mary",
+            ),
+        },
+        FormattedRelationPair {
+            head: Text(
+                "Bob",
+            ),
+            tail: Text(
+                "Mary",
+            ),
+        },
+    ],
+    "sibling_of": [
+        FormattedRelationPair {
+            head: Text(
+                "Alice",
+            ),
+            tail: Text(
+                "Mary",
+            ),
+        },
+        FormattedRelationPair {
+            head: Text(
+                "Bob",
+            ),
+            tail: Text(
+                "Mary",
+            ),
+        },
+    ],
+}
+-----------------
+academic_text: 
+Dr. Johnson authored the paper on machine learning. The paper cited 
+previous work by Dr. Smith. Dr. Johnson supervises graduate students 
+at MIT, where she is affiliated with the Computer Science department.
+
+academic_relations: {
+    "affiliated_with": [
+        FormattedRelationPair {
+            head: Text(
+                "Dr. Johnson",
+            ),
+            tail: Text(
+                "MIT",
+            ),
+        },
+    ],
+    "authored": [
+        FormattedRelationPair {
+            head: Text(
+                "Dr. Johnson",
+            ),
+            tail: Text(
+                "Dr. Smith",
+            ),
+        },
+    ],
+    "cited": [
+        FormattedRelationPair {
+            head: Text(
+                "machine learning",
+            ),
+            tail: Text(
+                "Dr. Smith",
+            ),
+        },
+    ],
+    "supervised": [
+        FormattedRelationPair {
+            head: Text(
+                "Dr. Johnson",
+            ),
+            tail: Text(
+                "graduate students",
+            ),
+        },
+    ],
+}

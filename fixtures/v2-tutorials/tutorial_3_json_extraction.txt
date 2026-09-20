@@ -1,0 +1,877 @@
+-----------------
+text: The MacBook Pro costs $1999 and features M3 chip, 16GB RAM, and 512GB storage.
+product: {
+    "product": [
+        {
+            "features": List(
+                [
+                    Text(
+                        "M3 chip",
+                    ),
+                    Text(
+                        "16GB RAM",
+                    ),
+                    Text(
+                        "512GB storage",
+                    ),
+                ],
+            ),
+            "name": Single(
+                Some(
+                    Text(
+                        "MacBook Pro",
+                    ),
+                ),
+            ),
+            "price": List(
+                [
+                    Text(
+                        "$1999",
+                    ),
+                ],
+            ),
+        },
+    ],
+}
+-----------------
+text: 
+Contact: John Smith
+Email: john@example.com
+Phones: 555-1234, 555-5678
+Address: 123 Main St, NYC
+
+contact: {
+    "contact": [
+        {
+            "address": List(
+                [
+                    Text(
+                        "123 Main St, NYC",
+                    ),
+                ],
+            ),
+            "email": Single(
+                Some(
+                    Text(
+                        "john@example.com",
+                    ),
+                ),
+            ),
+            "name": Single(
+                Some(
+                    Text(
+                        "John Smith",
+                    ),
+                ),
+            ),
+            "phone": List(
+                [
+                    Text(
+                        "555-1234",
+                    ),
+                    Text(
+                        "555-5678",
+                    ),
+                ],
+            ),
+        },
+    ],
+}
+-----------------
+text: 
+Tech Conference 2024 on June 15th in San Francisco. 
+Topics include AI, Machine Learning, and Cloud Computing.
+Registration fee: $299 for early bird tickets.
+
+event: {
+    "event": [
+        {
+            "date": Single(
+                Some(
+                    Text(
+                        "June 15th",
+                    ),
+                ),
+            ),
+            "location": Single(
+                Some(
+                    Text(
+                        "San Francisco",
+                    ),
+                ),
+            ),
+            "name": Single(
+                Some(
+                    Text(
+                        "Tech Conference 2024",
+                    ),
+                ),
+            ),
+            "registration_fee": Single(
+                Some(
+                    Text(
+                        "$299",
+                    ),
+                ),
+            ),
+            "topics": List(
+                [
+                    Text(
+                        "AI",
+                    ),
+                    Text(
+                        "Machine Learning",
+                    ),
+                    Text(
+                        "Cloud Computing",
+                    ),
+                ],
+            ),
+        },
+    ],
+}
+-----------------
+text: 
+Reservation at Le Bernardin for 4 people on March 15th at 7:30 PM. 
+We'd prefer outdoor seating. Two guests are vegetarian and one is gluten-free.
+
+reservation: {
+    "reservation": [
+        {
+            "date": Single(
+                Some(
+                    Text(
+                        "March 15th",
+                    ),
+                ),
+            ),
+            "dietary": List(
+                [
+                    Text(
+                        "vegetarian",
+                    ),
+                ],
+            ),
+            "party_size": Single(
+                Some(
+                    Text(
+                        "4",
+                    ),
+                ),
+            ),
+            "restaurant": Single(
+                Some(
+                    Text(
+                        "Le Bernardin",
+                    ),
+                ),
+            ),
+            "seating": Single(
+                Some(
+                    Text(
+                        "outdoor",
+                    ),
+                ),
+            ),
+            "time": Single(
+                Some(
+                    Text(
+                        "7:30 PM",
+                    ),
+                ),
+            ),
+        },
+    ],
+}
+-----------------
+text: 
+Recent transactions:
+- Jan 5: Starbucks $5.50 (food)
+- Jan 5: Uber $23.00 (transport)  
+- Jan 6: Amazon $156.99 (shopping)
+
+transaction: {
+    "transaction": [
+        {
+            "amount": Single(
+                Some(
+                    Text(
+                        "$5.50",
+                    ),
+                ),
+            ),
+            "category": Single(
+                Some(
+                    Text(
+                        "food",
+                    ),
+                ),
+            ),
+            "date": Single(
+                Some(
+                    Text(
+                        "Jan 5",
+                    ),
+                ),
+            ),
+            "merchant": Single(
+                Some(
+                    Text(
+                        "Starbucks",
+                    ),
+                ),
+            ),
+        },
+        {
+            "amount": Single(
+                Some(
+                    Text(
+                        "$23.00",
+                    ),
+                ),
+            ),
+            "category": Single(
+                Some(
+                    Text(
+                        "transport",
+                    ),
+                ),
+            ),
+            "date": Single(
+                Some(
+                    Text(
+                        "Jan 5",
+                    ),
+                ),
+            ),
+            "merchant": Single(
+                Some(
+                    Text(
+                        "Uber",
+                    ),
+                ),
+            ),
+        },
+        {
+            "amount": Single(
+                Some(
+                    Text(
+                        "$156.99",
+                    ),
+                ),
+            ),
+            "category": Single(
+                Some(
+                    Text(
+                        "shopping",
+                    ),
+                ),
+            ),
+            "date": Single(
+                Some(
+                    Text(
+                        "Jan 6",
+                    ),
+                ),
+            ),
+            "merchant": Single(
+                Some(
+                    Text(
+                        "Amazon",
+                    ),
+                ),
+            ),
+        },
+    ],
+}
+-----------------
+text: 
+Alice Brown booked the Hilton Downtown from March 10 to March 12. She selected a double room 
+for $340 total with breakfast and parking included.
+
+Robert Taylor reserved The Grand Hotel, April 1 to April 5, suite at $1,200 total. 
+Amenities include breakfast, wifi, gym, and spa access.
+
+booking: {
+    "booking": [
+        {
+            "amenities": List(
+                [
+                    Text(
+                        "breakfast",
+                    ),
+                    Text(
+                        "parking",
+                    ),
+                ],
+            ),
+            "check_in": Single(
+                Some(
+                    Text(
+                        "March 10",
+                    ),
+                ),
+            ),
+            "check_out": Single(
+                Some(
+                    Text(
+                        "March 12",
+                    ),
+                ),
+            ),
+            "guest": Single(
+                Some(
+                    Text(
+                        "Alice Brown",
+                    ),
+                ),
+            ),
+            "hotel": Single(
+                Some(
+                    Text(
+                        "Hilton Downtown",
+                    ),
+                ),
+            ),
+            "room_type": Single(
+                Some(
+                    Text(
+                        "double",
+                    ),
+                ),
+            ),
+            "total_price": Single(
+                Some(
+                    Text(
+                        "$340",
+                    ),
+                ),
+            ),
+        },
+        {
+            "amenities": List(
+                [
+                    Text(
+                        "breakfast",
+                    ),
+                    Text(
+                        "wifi",
+                    ),
+                    Text(
+                        "gym",
+                    ),
+                ],
+            ),
+            "check_in": Single(
+                Some(
+                    Text(
+                        "April 1",
+                    ),
+                ),
+            ),
+            "check_out": Single(
+                Some(
+                    Text(
+                        "April 5",
+                    ),
+                ),
+            ),
+            "guest": Single(
+                Some(
+                    Text(
+                        "Robert Taylor",
+                    ),
+                ),
+            ),
+            "hotel": Single(
+                Some(
+                    Text(
+                        "Grand Hotel",
+                    ),
+                ),
+            ),
+            "room_type": Single(
+                Some(
+                    Text(
+                        "suite",
+                    ),
+                ),
+            ),
+            "total_price": Single(
+                Some(
+                    Text(
+                        "$1,200",
+                    ),
+                ),
+            ),
+        },
+    ],
+}
+-----------------
+text: Apple CEO Tim Cook announced iPhone 15 for $999 with amazing new features. This is exciting!
+multi_task: ExtractionResult {
+    entities: {
+        "company": List(
+            [
+                Text(
+                    "Apple",
+                ),
+            ],
+        ),
+        "location": List(
+            [],
+        ),
+        "person": List(
+            [
+                Text(
+                    "Tim Cook",
+                ),
+            ],
+        ),
+    },
+    classifications: {
+        "sentiment": Single(
+            "positive",
+        ),
+    },
+    structures: {
+        "product": [
+            {
+                "category": Single(
+                    Some(
+                        Text(
+                            "electronics",
+                        ),
+                    ),
+                ),
+                "features": List(
+                    [
+                        Text(
+                            "amazing new features",
+                        ),
+                    ],
+                ),
+                "name": Single(
+                    Some(
+                        Text(
+                            "iPhone 15",
+                        ),
+                    ),
+                ),
+                "price": Single(
+                    Some(
+                        Text(
+                            "$999",
+                        ),
+                    ),
+                ),
+            },
+        ],
+    },
+    relations: {},
+}
+-----------------
+text: Ticket #ABC-123: Jane Doe reports a billing issue with her invoice. This is urgent support. Tag: billing.
+support_ticket: ExtractionResult {
+    entities: {},
+    classifications: {
+        "urgency": Single(
+            "high",
+        ),
+    },
+    structures: {
+        "support_ticket": [
+            {
+                "customer": Single(
+                    Some(
+                        Text(
+                            "Jane Doe",
+                        ),
+                    ),
+                ),
+                "issue": Single(
+                    Some(
+                        Text(
+                            "billing issue",
+                        ),
+                    ),
+                ),
+                "priority": Single(
+                    Some(
+                        Text(
+                            "urgent",
+                        ),
+                    ),
+                ),
+                "tags": List(
+                    [
+                        Text(
+                            "billing",
+                        ),
+                    ],
+                ),
+                "ticket_id": Single(
+                    Some(
+                        Text(
+                            "ABC-123",
+                        ),
+                    ),
+                ),
+            },
+        ],
+    },
+    relations: {},
+}
+-----------------
+text: 
+Goldman Sachs processed a $2.5M equity trade for Tesla Inc. on March 15, 2024. 
+Commission: $1,250. Status: Completed.
+
+financial_transaction: {
+    "transaction": [
+        {
+            "amount": Single(
+                Some(
+                    Text(
+                        "$2.5M",
+                    ),
+                ),
+            ),
+            "broker": Single(
+                Some(
+                    Text(
+                        "Tesla Inc.",
+                    ),
+                ),
+            ),
+            "commission": Single(
+                Some(
+                    Text(
+                        "$1,250",
+                    ),
+                ),
+            ),
+            "date": Single(
+                Some(
+                    Text(
+                        "March 15, 2024",
+                    ),
+                ),
+            ),
+            "security": Single(
+                None,
+            ),
+            "status": Single(
+                Some(
+                    Text(
+                        "completed",
+                    ),
+                ),
+            ),
+            "type": Single(
+                Some(
+                    Text(
+                        "equity",
+                    ),
+                ),
+            ),
+        },
+    ],
+}
+-----------------
+text: 
+Patient: Sarah Johnson, 34, presented with chest pain.
+Prescribed: Lisinopril 10mg daily, Metoprolol 25mg twice daily.
+Follow-up scheduled for next Tuesday.
+
+medical_prescription: {
+    "patient": [
+        {
+            "age": Single(
+                Some(
+                    Text(
+                        "34",
+                    ),
+                ),
+            ),
+            "name": Single(
+                Some(
+                    Text(
+                        "Sarah Johnson",
+                    ),
+                ),
+            ),
+            "symptoms": List(
+                [
+                    Text(
+                        "chest pain",
+                    ),
+                ],
+            ),
+        },
+    ],
+    "prescription": [
+        {
+            "dosage": Single(
+                Some(
+                    Text(
+                        "10mg",
+                    ),
+                ),
+            ),
+            "frequency": Single(
+                Some(
+                    Text(
+                        "daily",
+                    ),
+                ),
+            ),
+            "medication": Single(
+                Some(
+                    Text(
+                        "Lisinopril",
+                    ),
+                ),
+            ),
+        },
+        {
+            "dosage": Single(
+                Some(
+                    Text(
+                        "25mg",
+                    ),
+                ),
+            ),
+            "frequency": Single(
+                Some(
+                    Text(
+                        "twice daily",
+                    ),
+                ),
+            ),
+            "medication": Single(
+                Some(
+                    Text(
+                        "Metoprolol",
+                    ),
+                ),
+            ),
+        },
+    ],
+}
+-----------------
+text: 
+Order #ORD-2024-001 for Alexandra Thompson
+Items: Laptop Stand (2x $45.99), Wireless Mouse (1x $29.99), USB Hub (3x $35.50)
+Subtotal: $228.46, Tax: $18.28, Total: $246.74
+Status: Processing
+
+ecommerce_order: {
+    "order": [
+        {
+            "customer": Single(
+                Some(
+                    Text(
+                        "Alexandra Thompson",
+                    ),
+                ),
+            ),
+            "items": List(
+                [
+                    Text(
+                        "Laptop Stand",
+                    ),
+                    Text(
+                        "Wireless Mouse",
+                    ),
+                    Text(
+                        "USB Hub",
+                    ),
+                ],
+            ),
+            "order_id": Single(
+                Some(
+                    Text(
+                        "ORD-2024-001",
+                    ),
+                ),
+            ),
+            "quantities": List(
+                [],
+            ),
+            "status": Single(
+                Some(
+                    Text(
+                        "processing",
+                    ),
+                ),
+            ),
+            "subtotal": Single(
+                Some(
+                    Text(
+                        "$228.46",
+                    ),
+                ),
+            ),
+            "tax": Single(
+                Some(
+                    Text(
+                        "$18.28",
+                    ),
+                ),
+            ),
+            "total": Single(
+                Some(
+                    Text(
+                        "$246.74",
+                    ),
+                ),
+            ),
+            "unit_prices": List(
+                [
+                    Text(
+                        "$35.50",
+                    ),
+                    Text(
+                        "$29.99",
+                    ),
+                    Text(
+                        "$45.99",
+                    ),
+                ],
+            ),
+        },
+    ],
+}
+-----------------
+include_confidence: {
+    "product": [
+        {
+            "features": List(
+                [
+                    TextWithConfidence {
+                        text: "M3 chip",
+                        confidence: 1.0,
+                    },
+                    TextWithConfidence {
+                        text: "16GB RAM",
+                        confidence: 1.0,
+                    },
+                    TextWithConfidence {
+                        text: "512GB storage",
+                        confidence: 1.0,
+                    },
+                ],
+            ),
+            "name": Single(
+                Some(
+                    TextWithConfidence {
+                        text: "MacBook Pro",
+                        confidence: 1.0,
+                    },
+                ),
+            ),
+            "price": List(
+                [
+                    TextWithConfidence {
+                        text: "$1999",
+                        confidence: 1.0,
+                    },
+                ],
+            ),
+        },
+    ],
+}
+-----------------
+include_spans: {
+    "product": [
+        {
+            "features": List(
+                [
+                    TextWithSpans {
+                        text: "M3 chip",
+                        start: 41,
+                        end: 48,
+                    },
+                    TextWithSpans {
+                        text: "16GB RAM",
+                        start: 50,
+                        end: 58,
+                    },
+                    TextWithSpans {
+                        text: "512GB storage",
+                        start: 64,
+                        end: 77,
+                    },
+                ],
+            ),
+            "name": Single(
+                Some(
+                    TextWithSpans {
+                        text: "MacBook Pro",
+                        start: 4,
+                        end: 15,
+                    },
+                ),
+            ),
+            "price": List(
+                [
+                    TextWithSpans {
+                        text: "$1999",
+                        start: 22,
+                        end: 27,
+                    },
+                ],
+            ),
+        },
+    ],
+}
+-----------------
+include_confidence+include_spans: {
+    "product": [
+        {
+            "features": List(
+                [
+                    TextWithConfidenceAndSpans {
+                        text: "M3 chip",
+                        confidence: 1.0,
+                        start: 41,
+                        end: 48,
+                    },
+                    TextWithConfidenceAndSpans {
+                        text: "16GB RAM",
+                        confidence: 1.0,
+                        start: 50,
+                        end: 58,
+                    },
+                    TextWithConfidenceAndSpans {
+                        text: "512GB storage",
+                        confidence: 1.0,
+                        start: 64,
+                        end: 77,
+                    },
+                ],
+            ),
+            "name": Single(
+                Some(
+                    TextWithConfidenceAndSpans {
+                        text: "MacBook Pro",
+                        confidence: 1.0,
+                        start: 4,
+                        end: 15,
+                    },
+                ),
+            ),
+            "price": List(
+                [
+                    TextWithConfidenceAndSpans {
+                        text: "$1999",
+                        confidence: 1.0,
+                        start: 22,
+                        end: 27,
+                    },
+                ],
+            ),
+        },
+    ],
+}

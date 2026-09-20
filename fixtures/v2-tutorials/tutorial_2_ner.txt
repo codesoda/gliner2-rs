@@ -1,0 +1,534 @@
+-----------------
+text: Apple Inc. CEO Tim Cook announced the new iPhone 15 in Cupertino, California on September 12, 2023.
+entities: {
+    "company": List(
+        [
+            Text(
+                "Apple Inc.",
+            ),
+        ],
+    ),
+    "date": List(
+        [
+            Text(
+                "September 12, 2023",
+            ),
+        ],
+    ),
+    "location": List(
+        [
+            Text(
+                "California",
+            ),
+            Text(
+                "Cupertino",
+            ),
+        ],
+    ),
+    "person": List(
+        [
+            Text(
+                "Tim Cook",
+            ),
+        ],
+    ),
+    "product": List(
+        [
+            Text(
+                "iPhone 15",
+            ),
+        ],
+    ),
+}
+-----------------
+schema.entities + extract(): {
+    "company": List(
+        [
+            Text(
+                "Apple Inc.",
+            ),
+        ],
+    ),
+    "date": List(
+        [
+            Text(
+                "September 12, 2023",
+            ),
+        ],
+    ),
+    "location": List(
+        [
+            Text(
+                "California",
+            ),
+            Text(
+                "Cupertino",
+            ),
+        ],
+    ),
+    "person": List(
+        [
+            Text(
+                "Tim Cook",
+            ),
+        ],
+    ),
+    "product": List(
+        [
+            Text(
+                "iPhone 15",
+            ),
+        ],
+    ),
+}
+-----------------
+medical_text: 
+Patient was prescribed Metformin 500mg twice daily for Type 2 Diabetes. 
+She reported fatigue and occasional dizziness. Liver function tests ordered.
+
+entities (descriptions): {
+    "disease": List(
+        [
+            Text(
+                "Type 2 Diabetes",
+            ),
+        ],
+    ),
+    "dosage": List(
+        [
+            Text(
+                "500mg twice daily",
+            ),
+        ],
+    ),
+    "drug": List(
+        [
+            Text(
+                "Metformin",
+            ),
+        ],
+    ),
+    "organ": List(
+        [
+            Text(
+                "Liver",
+            ),
+        ],
+    ),
+    "symptom": List(
+        [
+            Text(
+                "fatigue",
+            ),
+            Text(
+                "dizziness",
+            ),
+        ],
+    ),
+}
+-----------------
+text: Bill Gates and Steve Jobs founded Microsoft and Apple respectively.
+dtype=list: {
+    "organization": List(
+        [
+            Text(
+                "Microsoft",
+            ),
+            Text(
+                "Apple",
+            ),
+        ],
+    ),
+    "person": List(
+        [
+            Text(
+                "Bill Gates",
+            ),
+            Text(
+                "Steve Jobs",
+            ),
+        ],
+    ),
+}
+-----------------
+text: Apple CEO Tim Cook met with Microsoft CEO Satya Nadella.
+dtype=str: {
+    "ceo": Single(
+        Some(
+            Text(
+                "Tim Cook",
+            ),
+        ),
+    ),
+    "company": Single(
+        Some(
+            Text(
+                "Apple",
+            ),
+        ),
+    ),
+}
+-----------------
+text: Contact John Doe at john.doe@email.com or call 555-1234.
+threshold=0.8: {
+    "address": List(
+        [],
+    ),
+    "email": List(
+        [
+            Text(
+                "john.doe@email.com",
+            ),
+        ],
+    ),
+    "phone": List(
+        [
+            Text(
+                "555-1234",
+            ),
+        ],
+    ),
+}
+-----------------
+text: Apple Inc. CEO Tim Cook announced iPhone 15 in Cupertino.
+include_confidence: {
+    "company": List(
+        [
+            TextWithConfidence {
+                text: "Apple Inc.",
+                confidence: 1.0,
+            },
+        ],
+    ),
+    "person": List(
+        [
+            TextWithConfidence {
+                text: "Tim Cook",
+                confidence: 1.0,
+            },
+        ],
+    ),
+    "product": List(
+        [
+            TextWithConfidence {
+                text: "iPhone 15",
+                confidence: 1.0,
+            },
+        ],
+    ),
+}
+-----------------
+include_spans: {
+    "company": List(
+        [
+            TextWithSpans {
+                text: "Apple Inc.",
+                start: 0,
+                end: 10,
+            },
+        ],
+    ),
+    "person": List(
+        [
+            TextWithSpans {
+                text: "Tim Cook",
+                start: 15,
+                end: 23,
+            },
+        ],
+    ),
+}
+-----------------
+include_confidence+include_spans: {
+    "company": List(
+        [
+            TextWithConfidenceAndSpans {
+                text: "Apple Inc.",
+                confidence: 1.0,
+                start: 0,
+                end: 10,
+            },
+        ],
+    ),
+    "product": List(
+        [
+            TextWithConfidenceAndSpans {
+                text: "iPhone 15",
+                confidence: 1.0,
+                start: 34,
+                end: 43,
+            },
+        ],
+    ),
+}
+-----------------
+contact_text: Contact John Doe at john.doe@email.com or call 555-1234.
+per-entity thresholds (default=0.6): {
+    "email": List(
+        [
+            Text(
+                "john.doe@email.com",
+            ),
+        ],
+    ),
+    "name": List(
+        [
+            Text(
+                "John Doe",
+            ),
+        ],
+    ),
+    "phone": List(
+        [
+            Text(
+                "555-1234",
+            ),
+        ],
+    ),
+}
+-----------------
+text: In Q3 2024, Acme reported revenue of $3.2M and beat BetaCorp on key performance metrics.
+mixed_config: {
+    "competitor": List(
+        [
+            Text(
+                "BetaCorp",
+            ),
+        ],
+    ),
+    "currency": List(
+        [
+            Text(
+                "$",
+            ),
+        ],
+    ),
+    "date": List(
+        [
+            Text(
+                "Q3 2024",
+            ),
+        ],
+    ),
+    "metric": List(
+        [
+            Text(
+                "performance metrics",
+            ),
+        ],
+    ),
+    "revenue": Single(
+        Some(
+            Text(
+                "$3.2M",
+            ),
+        ),
+    ),
+    "technical_term": List(
+        [],
+    ),
+    "time": List(
+        [],
+    ),
+}
+-----------------
+text: Alice moved from Paris to London to join Acme and discuss P/E ratios.
+incremental_addition: {
+    "company": List(
+        [
+            Text(
+                "Acme",
+            ),
+        ],
+    ),
+    "financial_term": List(
+        [
+            Text(
+                "P/E ratios",
+            ),
+        ],
+    ),
+    "location": List(
+        [
+            Text(
+                "Paris",
+            ),
+            Text(
+                "London",
+            ),
+        ],
+    ),
+    "person": List(
+        [
+            Text(
+                "Alice",
+            ),
+        ],
+    ),
+}
+-----------------
+legal_text: 
+In the case of Smith v. Jones, Judge Sarah Williams of the Superior Court 
+ruled that the defendant violated Section 15.2 of the Consumer Protection Act.
+The plaintiff was represented by Miller & Associates.
+
+legal_entities: {
+    "case": List(
+        [
+            Text(
+                "Smith v. Jones",
+            ),
+        ],
+    ),
+    "court": List(
+        [
+            Text(
+                "Superior Court",
+            ),
+        ],
+    ),
+    "judge": List(
+        [
+            Text(
+                "Judge Sarah Williams",
+            ),
+        ],
+    ),
+    "law_firm": List(
+        [
+            Text(
+                "Miller & Associates",
+            ),
+        ],
+    ),
+    "legal_term": List(
+        [
+            Text(
+                "Consumer Protection Act",
+            ),
+        ],
+    ),
+    "party": List(
+        [
+            Text(
+                "plaintiff",
+            ),
+            Text(
+                "defendant",
+            ),
+        ],
+    ),
+    "statute": List(
+        [
+            Text(
+                "Consumer Protection Act",
+            ),
+        ],
+    ),
+}
+-----------------
+finance_text: 
+AAPL rose 3.5% to $185.50 after beating earnings expectations. 
+The company's P/E ratio of 28.5 attracted Goldman Sachs analysts. 
+The NASDAQ composite gained 1.2% for the day.
+
+finance_entities: {
+    "currency_amount": List(
+        [
+            Text(
+                "$185.50",
+            ),
+        ],
+    ),
+    "financial_metric": List(
+        [
+            Text(
+                "P/E ratio",
+            ),
+        ],
+    ),
+    "financial_org": List(
+        [
+            Text(
+                "Goldman Sachs",
+            ),
+        ],
+    ),
+    "market_index": List(
+        [
+            Text(
+                "NASDAQ composite",
+            ),
+        ],
+    ),
+    "percentage": List(
+        [
+            Text(
+                "1.2%",
+            ),
+            Text(
+                "3.5%",
+            ),
+        ],
+    ),
+    "ticker": List(
+        [
+            Text(
+                "AAPL",
+            ),
+        ],
+    ),
+}
+-----------------
+science_text: 
+Researchers at MIT discovered that the BRCA1 gene mutation increases 
+cancer risk by 70%. The study used CRISPR-Cas9 to modify DNA sequences
+in Mus musculus specimens, measuring tumor growth in millimeters.
+
+science_entities: {
+    "chemical": List(
+        [
+            Text(
+                "CRISPR-Cas9",
+            ),
+            Text(
+                "DNA",
+            ),
+        ],
+    ),
+    "gene": List(
+        [
+            Text(
+                "BRCA1",
+            ),
+        ],
+    ),
+    "institution": List(
+        [
+            Text(
+                "MIT",
+            ),
+        ],
+    ),
+    "measurement": List(
+        [
+            Text(
+                "millimeters",
+            ),
+        ],
+    ),
+    "organism": List(
+        [
+            Text(
+                "Mus musculus",
+            ),
+        ],
+    ),
+    "research_method": List(
+        [
+            Text(
+                "CRISPR-Cas9",
+            ),
+        ],
+    ),
+}
