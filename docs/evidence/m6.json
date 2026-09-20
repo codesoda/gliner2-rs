@@ -1,0 +1,87 @@
+{
+  "status": "accepted_M6_relations_gate_not_overall_release",
+  "base_commit": "e737cfb484d39d615d1ee883962a8940d8b855fe",
+  "pins": {
+    "gliner2_commit": "d7c727458bf6929bc9ef5ee04e13c3f717a7c455",
+    "hf_model": "fastino/gliner2.5-base-v1",
+    "hf_revision": "78cea040597df251eedefa9d7ee2a756af39fe64",
+    "ort_crate": "2.0.0-rc.13",
+    "native_ort": "1.28",
+    "python_ort": "1.20.1",
+    "torch": "2.8.0",
+    "reference_platform": "macOS arm64 CPU fp32, one Torch thread"
+  },
+  "implementation": {
+    "proposal": "Raw untempered sigmoid, typed head/tail queries, stable probability/start/end/index rank, head-major Cartesian products, stable product rank, exact-coordinate self exclusion; checkpoint defaults 32/32/64/0.2",
+    "graph": "Encoder text states and concatenated head-then-tail relation query states; original learned endpoint/content/biaffine terms with dynamic L denominator",
+    "decode": "Containing-mention canonicalization, insertion-preserving coordinate/semantic dedup, nearest occurrence, strict token-subset removal, stable final ordering; pinned full casefold/Python whitespace and codepoint metrics with public UTF8 bytes",
+    "pipeline": "All relation methods, AutoPipeline forwarding and batching; one structures/entities/relations/classifications prompt; raw shared candidates before entity filtering; separate relation temperature/threshold; choice-prefix removal only at final mapping",
+    "unsupported": "Negative-stride proposal logit views have no pinned Torch equivalent and return an explicit error"
+  },
+  "graph_validation": {
+    "artifact": "boundary_relations.onnx",
+    "bytes": 23649750,
+    "sha256": "cf6d94f492c74fe3e3ffcfc613beffd3f02cd9b0099594d3e4601b74d20bc40f",
+    "fp32_finite_initializers": 12,
+    "opset": 17,
+    "real_cases": 4,
+    "synthetic_and_raw_probes": 5,
+    "untouched_vs_frozen_max_abs": 0.0,
+    "wrapper_vs_untouched_max_abs": 0.0,
+    "onnx_vs_untouched_max_abs": 0.00001049041748046875,
+    "max_confidence_error": 0.000001043081283569336,
+    "failures": 0,
+    "axes": {"B": [1, 2], "L": [1, 7, 31, 129], "R": [1, 3], "P": [1, 9, 67, 97]},
+    "masked_policy": "Exact positive-zero logits; public API requires valid routing/coordinates even for masked pairs",
+    "empty_policy": "Positive B/L/R/P graph axes; empty relation/pair sets bypass native inference",
+    "parent_reexport_byte_identical": true,
+    "parent_single_pair_trace_fix": "Exporter assertion now checks only masked rows instead of assuming the last row is masked when P=1. P=1 re-export independently passed all nine real/dynamic comparisons with unchanged tolerances."
+  },
+  "sigmoid_adjudication": {
+    "bug": "Stable negative sigmoid algebra changed a source f32 tie near -1.386, altering endpoint-cap and pair-cap selection",
+    "decision": "Fix local proposal arithmetic and source traversal; no tie exception, rounding bias, global confidence decoder change or tolerance relaxation",
+    "sleef_commit": "5a1d179df9cf652951b59010a2d2075372d67f68",
+    "parent_source_verification": "Exact pinned git blobs for xexpf, constants, AArch64 FMA helper and license matched; operation order and f32 constants reviewed",
+    "reproducible_harness": "scripts/parity/validate_relation_sigmoid.py",
+    "actual_rust_arithmetic_extracted": true,
+    "vector_samples": 12033560,
+    "scalar_strided_samples": 2000001,
+    "layout_mirror_samples": 3552,
+    "exact_bit_comparisons": 14037113,
+    "bit_failures": 0,
+    "scope_limit": "Bounded macOSarm64 Torch2.8 reference evidence, not arbitrary-platform scalar-libm identity. Harness layout classification is a Python mirror; actual Rust API layout/cap regressions are separate integration tests.",
+    "license": "Full SLEEF Boost1.0 license and Naoki Shibata/contributors/ARM notices retained"
+  },
+  "oracle_vectors": {
+    "proposal": {"cases": 7, "pairs": 52, "sha256": "5bc759df903cb2e0fee5d11289dfc77976f362ceaea81214e8d2ca328caf90d7"},
+    "dedup": {"cases": 14, "sha256": "1ceaeb67dade3f1020360e7c53ba6862c73be9131c6a3d4962a22a65ff3a34fc"},
+    "mixed_unicode": {"cases": 2, "sha256": "a2bec90beec76f70e96cb7d582e188fce94dfe57ecb8ccf90e05db3e1ee59d71"},
+    "parent_regenerated": true,
+    "location": "Ignored fixtures/gliner2.5-base-v1/relation-aux and relation-runtime-vectors subdirectories; no generated JSON added to corpus root or git",
+    "committed_subset": "Pure proposal parity always exercises the committed relation_employment fixture; model-only non-full pipeline mode also uses that real oracle",
+    "strict_missing_fixture_probe": "Missing decode vectors failed with exit101 as required"
+  },
+  "final_parity": {
+    "relation_only_case_ids": ["relation_employment", "relation_founded", "relation_location", "relation_multiple_types"],
+    "relation_only_max_confidence_error": 7.748604e-7,
+    "additional_case_ids": ["unicode_relations", "mixed_choice_relations"],
+    "mixed_all_task_families_and_unicode_max_confidence_error": 8.940696716308594e-7,
+    "non_confidence": "Exact names/keys/shape/text/order/UTF8 bounds, including all task families in the independent mixed choice-prefix oracle",
+    "confidence_tolerance": 1e-3,
+    "debug_release_msrv_agree": true
+  },
+  "parent_gates": {
+    "strict_model_tests_rust_1_95": {"passed": 217, "artifact_skips": 0},
+    "strict_model_tests_rust_1_91": {"passed": 217, "artifact_skips": 0},
+    "no_model_tests": {"passed": 217, "artifact_skip_messages": 47},
+    "optimized_scoped_tests": {"passed": 101, "artifact_skips": 0},
+    "fmt_check": "pass",
+    "all_target_all_feature_clippy_warnings_denied": "pass",
+    "boundary_tutorial_6_release": "pass",
+    "v2_six_tutorial_gate": {"status": "pass", "confidence_differences": 1, "max_delta": 5.364418029785156e-7, "approved_tolerance": 1e-6},
+    "fixture_budget": {"committed_bytes": 1984505, "limit_bytes": 2000000},
+    "tolerances_changed": false,
+    "logs": "Local m6-parent-{full-strict,no-model,msrv-full,release,clippy,tutorial6,v2-gate,sigmoid-validation} logs and JSON reports under the development work directory"
+  },
+  "remaining": ["M7 complete validated small/base/multi bundles", "HF upload and clean download readback", "benchmarks and shipped-scope documentation", "remote CI", "external Rust consumer", "version and GitHub release tag"]
+}

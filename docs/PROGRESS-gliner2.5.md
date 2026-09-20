@@ -523,3 +523,44 @@ prompt-to-evidence checklist. Model-free test success is not model parity.
   snapshot byte-for-byte and independently checked the command logs and counts.
   Evidence: `docs/evidence/public-explicit-spans.json`. M6 remains under
   implementation/review and M7 remains open; this is not a release or new tag.
+
+## M6 — relations accepted
+
+- Implemented typed proposals, learned relation graph/runtime, source-faithful
+  mention/edge deduplication and all existing relation APIs in the joint prompt.
+  Query routing is head/tail-specific; relation scores are calibrated separately,
+  and original UTF8 bytes are retained while canonical/nearest metrics count
+  Python codepoints. Tutorial6 now loads either architecture.
+- Review found a real discrete-order bug in the initial proposal sigmoid:
+  algebraically stable negative evaluation changed a source f32 tie. The local
+  correction reproduces source scalar algebra and pinned SLEEF vector arithmetic
+  with layout-aware block/tail handling. No rounding bias, global decoder change
+  or relaxed tie tolerance was used. Parent independently compared actual-source
+  arithmetic on12,033,560 vector and2,000,001 scalar values with zero bit failures;
+  source constants/order/license were checked against the immutable SLEEF commit.
+- Parent regenerated relation graph and oracle vectors independently. Default
+  graph hash is unchanged (`cf6d94f492c74fe3e3ffcfc613beffd3f02cd9b0099594d3e4601b74d20bc40f`).
+  An exporter assertion incorrectly assumed a masked last row even for a P=1
+  trace; parent restricted the assertion to masked rows and validated the P=1
+  re-export across the full dynamic/real suite. Original tolerances pass.
+- Parent corrected auxiliary fixture placement after the M4 corpus enumerator
+  rightly rejected non-corpus JSON files at its root; generated relation vectors
+  now live in ignored subdirectories, without weakening corpus validation.
+- Final parent gates:217 strict tests with zero skips on both Rust1.95 and1.91,
+  217 no-model tests with47 artifact skips,101 optimized scoped tests, fmt,
+  all-target/all-feature Clippy, and actual boundary tutorial6 pass. Four relation
+  outputs have exact keys/text/order/UTF8 bounds and maximum confidence
+  error7.748604e-7, identical in debug/release/MSRV. The fresh six-v2-tutorial gate
+  retains the same sole5.364418e-7 confidence drift.
+- Two additional independently regenerated upstream cases prove Unicode relation
+  endpoints and all four task families together with a choice prefix/description.
+  Every non-confidence value matches exactly; maximum confidence error8.940697e-7.
+  The committed real employment oracle runs even without full fixture opt-in;
+  strict full mode still requires all four relation-only IDs. Config Cartesian
+  overflow is rejected before loading models. Missing strict decode data fails.
+- The committed development sigmoid harness extracts actual Rust arithmetic;
+  its14,037,113 comparisons pass, with traversal-mirror limitations clearly stated
+  and actual public-API layout tests separate. Parent reviewed the real source,
+  notices, tests, independently regenerated artifacts and measured all gates.
+  Evidence: `docs/evidence/m6.json`. M7 bundles/publication/readback/consumer/CI/tag
+  remain open; M6 acceptance is not a completed release.

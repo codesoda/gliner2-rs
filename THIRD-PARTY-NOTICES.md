@@ -3,7 +3,8 @@
 ## GLiNER2 boundary inference
 
 Boundary candidate selection, decoding, preprocessing, classification selection,
-and record assignment in `src/boundary/`, together with the related Python
+record assignment, and relation proposals/edge deduplication in `src/boundary/`,
+together with the related Python
 export/parity utilities, include modified adaptations of Fastino's GLiNER2
 implementation at commit `d7c727458bf6929bc9ef5ee04e13c3f717a7c455`.
 The Rust ports replace tensor/control-flow operations while preserving the
@@ -31,6 +32,24 @@ including its retained legacy notices, is provided in
 Upstream: <https://github.com/llvm/llvm-project/tree/main/libcxx/include/__algorithm>.
 License source: <https://github.com/llvm/llvm-project/blob/main/libcxx/LICENSE.TXT>.
 This attribution does not assign a license to unrelated project code.
+
+## SLEEF relation-proposal exponential
+
+`src/boundary/relation_pairs.rs` contains a modified scalar Rust adaptation of
+SLEEF's single-precision `expf` u10 operation solely to reproduce the pinned
+macOS arm64 PyTorch 2.8 CPU vector-kernel rounding used to rank relation
+proposals. This is a bounded reference-platform compatibility operation, not a
+claim of universal SLEEF or arbitrary-platform bit parity.
+
+The adaptation is based on SLEEF commit
+`5a1d179df9cf652951b59010a2d2075372d67f68`, specifically
+`src/libm/sleefsimdsp.c` (`xexpf`), `src/common/misc.h` (range-reduction
+constants), and `src/arch/helperadvsimd.h` (fused multiply-add operation order).
+Copyright Naoki Shibata and contributors 2010–2024.
+The AArch64 helper also carries Copyright ARM Ltd. 2010–2024.
+Upstream: <https://github.com/shibatch/sleef/tree/5a1d179df9cf652951b59010a2d2075372d67f68>.
+The Boost Software License 1.0 is reproduced in
+[`docs/licenses/SLEEF-Boost-1.0.txt`](docs/licenses/SLEEF-Boost-1.0.txt).
 
 ## Pinned choice-field Unicode behavior
 

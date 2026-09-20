@@ -22,6 +22,9 @@ use super::{
         CompiledRecordSpec, RecordMetadata, compile_record_specs, validate_record_metadata,
     },
     records::RecordModel,
+    relation_decode::{RelationEdge, RelationMention, deduplicate_relation_edges},
+    relation_pairs::{RelationPair, RelationTypeSpec, generate_relation_pairs},
+    relations::{RelationInput, RelationModel},
     scorer::{ScorerInput, ScorerModel, ScorerOutput},
 };
 use crate::{
@@ -41,7 +44,10 @@ use crate::{
         build_entities_schema_tokens_with_descriptions,
     },
     json::{JsonExtraction, JsonRecord, JsonSchema},
-    relations::{FormattedRelationExtraction, RelationExtraction},
+    relations::{
+        FormattedRelationExtraction, FormattedRelationPair, RelationExtraction,
+        build_relation_schema_tokens,
+    },
     schema::format_input_with_mapping,
     schema_spec::{
         ClassificationSpec, EntityLabels, ExtractionResult, FieldDtype, QuickClassificationTask,
@@ -53,8 +59,8 @@ use crate::{
 
 /// High-level GLiNER2.5 boundary pipeline.
 ///
-/// Supports entities, classifications, legacy JSON structures, and opt-in
-/// record formation. Relation schemas remain a separate pending feature.
+/// Supports entities, classifications, relations, legacy JSON structures, and
+/// opt-in record formation.
 pub struct BoundaryPipeline {
     tokenizer: RuntimeTokenizer,
     encoder: Encoder,
@@ -64,6 +70,7 @@ pub struct BoundaryPipeline {
     scorer: ScorerModel,
     explicit: ExplicitModel,
     records: RecordModel,
+    relations: RelationModel,
     adapter_config: Option<AdapterConfig>,
     runtime: BoundaryRuntimeConfig,
     preprocessing: BoundaryPreprocessingPolicy,
@@ -74,11 +81,17 @@ struct BoundaryOutput {
     entities: Vec<EntityMatches>,
     classifications: Vec<(String, ClassificationOutput)>,
     structures: Vec<RawStructureOutput>,
+    relations: Vec<RawRelationOutput>,
 }
 
 struct RawStructureOutput {
     name: String,
     instances: Vec<Vec<RawStructureField>>,
+}
+
+struct RawRelationOutput {
+    name: String,
+    edges: Vec<RelationEdge>,
 }
 
 struct RawStructureField {
@@ -111,6 +124,7 @@ impl BoundaryPipeline {
         let scorer = required_file(bundle, "boundary_scorer.onnx")?;
         let explicit = required_file(bundle, "boundary_explicit_scorer.onnx")?;
         let records = required_file(bundle, "boundary_records.onnx")?;
+        let relations = required_file(bundle, "boundary_relations.onnx")?;
         let preprocessing =
             BoundaryPreprocessingPolicy::new(runtime.max_len, WordSplitter::Whitespace)
                 .map_err(|error| anyhow!(error))?;
@@ -151,6 +165,12 @@ impl BoundaryPipeline {
                 format!(
                     "failed to load boundary record head at {}",
                     records.display()
+                )
+            })?,
+            relations: RelationModel::new(&relations).with_context(|| {
+                format!(
+                    "failed to load boundary relation head at {}",
+                    relations.display()
                 )
             })?,
             adapter_config: None,
@@ -528,6 +548,29 @@ impl BoundaryPipeline {
             }
             result.structures.insert(structure.name, instances);
         }
+        for relation in raw.relations {
+            let pairs = relation
+                .edges
+                .into_iter()
+                .map(|edge| FormattedRelationPair {
+                    head: EntitySpan {
+                        start: edge.head.start,
+                        end: edge.head.end,
+                        text: edge.head.text,
+                        score: edge.score,
+                    }
+                    .format(include_confidence, include_spans),
+                    tail: EntitySpan {
+                        start: edge.tail.start,
+                        end: edge.tail.end,
+                        text: edge.tail.text,
+                        score: edge.score,
+                    }
+                    .format(include_confidence, include_spans),
+                })
+                .collect();
+            result.relations.insert(relation.name, pairs);
+        }
         Ok(result)
     }
 
@@ -733,13 +776,11 @@ impl BoundaryPipeline {
         record_metadata: &RecordMetadata,
         default_threshold: f32,
     ) -> Result<BoundaryOutput> {
-        reject_pending_schema(schema)?;
         validate_record_metadata(&schema.structures, record_metadata)?;
         validate_schema_thresholds(schema, default_threshold)?;
 
-        // Upstream prompt order is structures, entities, relations, then
-        // classifications. Relations are rejected above; all remaining task
-        // families share exactly one encoder invocation.
+        // All task families share exactly one encoder invocation in upstream
+        // prompt order: structures, entities, relations, classifications.
         let mut schema_tokens = Vec::new();
         let mut expected_queries = Vec::new();
         let mut structure_query_ids = Vec::with_capacity(schema.structures.len());
@@ -794,6 +835,28 @@ impl BoundaryPipeline {
                     kind: QueryKind::Entity,
                 });
             }
+        }
+
+        let mut relation_query_ids = Vec::with_capacity(schema.relations.len());
+        for relation in &schema.relations {
+            let schema_idx = schema_tokens.len();
+            schema_tokens.push(build_relation_schema_tokens(
+                &relation.name,
+                relation.description.as_deref(),
+            ));
+            let head_query_id = expected_queries.len();
+            expected_queries.push(QueryMetadata {
+                schema_idx,
+                field_idx: 0,
+                kind: QueryKind::Relation,
+            });
+            let tail_query_id = expected_queries.len();
+            expected_queries.push(QueryMetadata {
+                schema_idx,
+                field_idx: 1,
+                kind: QueryKind::Relation,
+            });
+            relation_query_ids.push([head_query_id, tail_query_id]);
         }
 
         let mut classification_schema_indices = Vec::with_capacity(schema.classifications.len());
@@ -981,6 +1044,17 @@ impl BoundaryPipeline {
             decoded_record_groups.insert(spec.structure_index, (spec, decoded));
         }
 
+        output.relations = self.run_relation_stage(
+            &schema.relations,
+            &relation_query_ids,
+            default_threshold,
+            &encoding.prepared,
+            &encoding.embeddings.text_emb,
+            &encoding.queries.query_emb,
+            &pool,
+            &scorer,
+        )?;
+
         let prepared = encoding.prepared;
         let offsets: Vec<_> = prepared
             .original_offsets
@@ -1100,6 +1174,150 @@ impl BoundaryPipeline {
         }
 
         Ok(output)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn run_relation_stage(
+        &self,
+        relation_specs: &[crate::schema_spec::RelationSpec],
+        relation_query_ids: &[[usize; 2]],
+        default_threshold: f32,
+        prepared: &PreparedTokens,
+        text_embeddings: &Array2<f32>,
+        query_embeddings: &Array2<f32>,
+        pool: &CandidatePool,
+        scorer: &ScorerOutput,
+    ) -> Result<Vec<RawRelationOutput>> {
+        ensure!(
+            relation_specs.len() == relation_query_ids.len(),
+            "relation schema/routing count mismatch: {} specs, {} routes",
+            relation_specs.len(),
+            relation_query_ids.len()
+        );
+        if relation_specs.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let query_count = query_embeddings.nrows();
+        let candidate_count = pool.indices.nrows();
+        ensure!(
+            scorer.pair_logits.dim() == (1, query_count, candidate_count),
+            "relation proposal scorer shape {:?}, expected [1,{query_count},{candidate_count}]",
+            scorer.pair_logits.dim()
+        );
+        let candidate_indices = pool.indices.view().insert_axis(Axis(0));
+        let indices = candidate_indices
+            .broadcast((query_count, candidate_count, 2))
+            .context("failed to broadcast shared relation candidate indices")?;
+        let candidate_mask = pool.mask.view().insert_axis(Axis(0));
+        let valid_mask = candidate_mask
+            .broadcast((query_count, candidate_count))
+            .context("failed to broadcast shared relation candidate mask")?;
+        let query_mask = Array1::from_elem(query_count, true);
+        let typed_specs: Vec<_> = relation_specs
+            .iter()
+            .zip(relation_query_ids)
+            .map(|(spec, &[head, tail])| {
+                Ok(RelationTypeSpec {
+                    relation_type: spec.name.clone(),
+                    head_query_ids: vec![i64::try_from(head)?],
+                    tail_query_ids: vec![i64::try_from(tail)?],
+                    allow_self: false,
+                })
+            })
+            .collect::<Result<_>>()?;
+        let pairs = generate_relation_pairs(
+            indices,
+            valid_mask,
+            query_mask.view(),
+            scorer.pair_logits.index_axis(Axis(0), 0),
+            &typed_specs,
+            self.runtime.relation_proposals,
+        )?;
+        if pairs.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let hidden = query_embeddings.ncols();
+        ensure!(
+            text_embeddings.ncols() == hidden,
+            "relation text/query hidden width mismatch: {} and {hidden}",
+            text_embeddings.ncols()
+        );
+        let relation_width = hidden
+            .checked_mul(2)
+            .context("relation query width overflow")?;
+        let mut relation_states = Array3::zeros((1, relation_specs.len(), relation_width));
+        for (relation_index, &[head, tail]) in relation_query_ids.iter().enumerate() {
+            ensure!(
+                head < query_count && tail < query_count,
+                "relation {relation_index} query route [{head},{tail}] exceeds {query_count} queries"
+            );
+            relation_states
+                .slice_mut(s![0, relation_index, ..hidden])
+                .assign(&query_embeddings.row(head));
+            relation_states
+                .slice_mut(s![0, relation_index, hidden..])
+                .assign(&query_embeddings.row(tail));
+        }
+
+        let pair_array = |select: fn(&RelationPair) -> usize| -> Result<Array1<i64>> {
+            pairs
+                .iter()
+                .map(|pair| i64::try_from(select(pair)).map_err(Into::into))
+                .collect::<Result<Vec<_>>>()
+                .map(Array1::from_vec)
+        };
+        let relation_output = self.relations.infer(&RelationInput {
+            text_states: text_embeddings.view().insert_axis(Axis(0)).to_owned(),
+            relation_query_states: relation_states,
+            batch_index: Array1::zeros(pairs.len()),
+            relation_index: pair_array(|pair| pair.relation_index)?,
+            head_start: pair_array(|pair| pair.head[0])?,
+            head_end: pair_array(|pair| pair.head[1])?,
+            tail_start: pair_array(|pair| pair.tail[0])?,
+            tail_end: pair_array(|pair| pair.tail[1])?,
+            pair_mask: Array1::from_elem(pairs.len(), true),
+        })?;
+
+        let offsets: Vec<_> = prepared
+            .original_offsets
+            .iter()
+            .map(|offset| WordOffset {
+                start: offset.start,
+                end: offset.end,
+            })
+            .collect();
+        let mut grouped: Vec<RawRelationOutput> = Vec::new();
+        for (pair, &logit) in pairs.iter().zip(relation_output.relation_logits.iter()) {
+            let relation = relation_specs
+                .get(pair.relation_index)
+                .context("relation pair references an unknown schema entry")?;
+            let threshold = relation.threshold.unwrap_or(default_threshold);
+            let score = sigmoid_probability(logit, self.runtime.relation_temperature)?;
+            if score < threshold {
+                continue;
+            }
+            let Some(head) = map_relation_mention(prepared, &offsets, pair.head)? else {
+                continue;
+            };
+            let Some(tail) = map_relation_mention(prepared, &offsets, pair.tail)? else {
+                continue;
+            };
+            let edge = RelationEdge { head, tail, score };
+            if let Some(existing) = grouped.iter_mut().find(|entry| entry.name == relation.name) {
+                existing.edges.push(edge);
+            } else {
+                grouped.push(RawRelationOutput {
+                    name: relation.name.clone(),
+                    edges: vec![edge],
+                });
+            }
+        }
+        for relation in &mut grouped {
+            relation.edges = deduplicate_relation_edges(&prepared.original_text, &relation.edges)?;
+        }
+        Ok(grouped)
     }
 
     pub fn classify_text(
@@ -1314,62 +1532,186 @@ impl BoundaryPipeline {
             .structures)
     }
 
+    fn extract_relations_with_specs(
+        &self,
+        text: &str,
+        relations: &[crate::schema_spec::RelationSpec],
+        threshold: f32,
+        include_confidence: bool,
+        include_spans: bool,
+    ) -> Result<FormattedRelationExtraction> {
+        let schema = SchemaSpec {
+            relations: relations.to_vec(),
+            ..SchemaSpec::default()
+        };
+        Ok(self
+            .extract_internal(
+                text,
+                &schema,
+                &RecordMetadata::new(),
+                threshold,
+                include_confidence,
+                include_spans,
+            )?
+            .relations)
+    }
+
     pub fn extract_relations(
         &self,
-        _text: &str,
-        _relation_types: &[String],
-        _threshold: f32,
+        text: &str,
+        relation_types: &[String],
+        threshold: f32,
     ) -> Result<RelationExtraction> {
-        Err(relations_pending())
+        fn text_of(span: &crate::entities::FormattedEntitySpan) -> &str {
+            match span {
+                crate::entities::FormattedEntitySpan::Text(text)
+                | crate::entities::FormattedEntitySpan::TextWithConfidence { text, .. }
+                | crate::entities::FormattedEntitySpan::TextWithSpans { text, .. }
+                | crate::entities::FormattedEntitySpan::TextWithConfidenceAndSpans {
+                    text, ..
+                } => text,
+            }
+        }
+
+        let specs: Vec<_> = relation_types
+            .iter()
+            .cloned()
+            .map(crate::schema_spec::RelationSpec::new)
+            .collect();
+        let formatted = self.extract_relations_with_specs(text, &specs, threshold, false, false)?;
+        Ok(formatted
+            .into_iter()
+            .map(|(name, pairs)| {
+                let pairs = pairs
+                    .into_iter()
+                    .map(|pair| {
+                        (
+                            text_of(&pair.head).to_owned(),
+                            text_of(&pair.tail).to_owned(),
+                        )
+                    })
+                    .collect();
+                (name, pairs)
+            })
+            .collect())
     }
 
     pub fn extract_relations_with_confidence(
         &self,
-        _text: &str,
-        _relation_types: &[String],
-        _threshold: f32,
+        text: &str,
+        relation_types: &[String],
+        threshold: f32,
     ) -> Result<FormattedRelationExtraction> {
-        Err(relations_pending())
+        self.extract_relations_with_options(text, relation_types, threshold, true, false)
     }
 
     pub fn extract_relations_with_spans(
         &self,
-        _text: &str,
-        _relation_types: &[String],
-        _threshold: f32,
+        text: &str,
+        relation_types: &[String],
+        threshold: f32,
     ) -> Result<FormattedRelationExtraction> {
-        Err(relations_pending())
+        self.extract_relations_with_options(text, relation_types, threshold, false, true)
     }
 
     pub fn extract_relations_with_confidence_and_spans(
         &self,
-        _text: &str,
-        _relation_types: &[String],
-        _threshold: f32,
+        text: &str,
+        relation_types: &[String],
+        threshold: f32,
     ) -> Result<FormattedRelationExtraction> {
-        Err(relations_pending())
+        self.extract_relations_with_options(text, relation_types, threshold, true, true)
     }
 
     pub fn extract_relations_with_options(
         &self,
-        _text: &str,
-        _relation_types: &[String],
-        _threshold: f32,
-        _include_confidence: bool,
-        _include_spans: bool,
+        text: &str,
+        relation_types: &[String],
+        threshold: f32,
+        include_confidence: bool,
+        include_spans: bool,
     ) -> Result<FormattedRelationExtraction> {
-        Err(relations_pending())
+        let specs = relation_types
+            .iter()
+            .cloned()
+            .map(crate::schema_spec::RelationSpec::new)
+            .collect::<Vec<_>>();
+        self.extract_relations_with_specs(
+            text,
+            &specs,
+            threshold,
+            include_confidence,
+            include_spans,
+        )
     }
 
     pub fn batch_extract_relations<T: AsRef<str>>(
         &self,
-        _texts: &[T],
-        _relation_types: &[String],
-        _threshold: f32,
-        _batch_size: usize,
+        texts: &[T],
+        relation_types: &[String],
+        threshold: f32,
+        batch_size: usize,
     ) -> Result<Vec<RelationExtraction>> {
-        Err(relations_pending())
+        ensure!(batch_size > 0, "batch_size must be > 0");
+        let mut output = Vec::with_capacity(texts.len());
+        for chunk in texts.chunks(batch_size) {
+            for text in chunk {
+                output.push(self.extract_relations(text.as_ref(), relation_types, threshold)?);
+            }
+        }
+        Ok(output)
     }
+}
+
+fn map_relation_mention(
+    prepared: &PreparedTokens,
+    offsets: &[WordOffset],
+    [raw_start, raw_end]: [usize; 2],
+) -> Result<Option<RelationMention>> {
+    let Some(start) = raw_start.checked_sub(prepared.choice_prefix_words) else {
+        return Ok(None);
+    };
+    let Some(end) = raw_end.checked_sub(prepared.choice_prefix_words) else {
+        return Ok(None);
+    };
+    if start >= end || end > offsets.len() {
+        return Ok(None);
+    }
+    let mapped = map_half_open_utf8(&prepared.original_text, offsets, start, end)?;
+    if mapped.start >= mapped.end {
+        return Ok(None);
+    }
+    let source = prepared
+        .original_text
+        .get(mapped.start..mapped.end)
+        .context("mapped relation span is not a UTF-8 source slice")?;
+    let surface = source.trim_matches(is_python_whitespace).to_owned();
+    if surface.is_empty() {
+        return Ok(None);
+    }
+    Ok(Some(RelationMention {
+        text: surface,
+        start: mapped.start,
+        end: mapped.end,
+    }))
+}
+
+fn is_python_whitespace(character: char) -> bool {
+    matches!(
+        character,
+        '\u{0009}'..='\u{000D}'
+            | '\u{001C}'..='\u{001F}'
+            | '\u{0020}'
+            | '\u{0085}'
+            | '\u{00A0}'
+            | '\u{1680}'
+            | '\u{2000}'..='\u{200A}'
+            | '\u{2028}'
+            | '\u{2029}'
+            | '\u{202F}'
+            | '\u{205F}'
+            | '\u{3000}'
+    )
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1813,6 +2155,9 @@ fn validate_schema_thresholds(schema: &SchemaSpec, default_threshold: f32) -> Re
     for entity in &schema.entities {
         validate_optional_threshold("entity", &entity.name, entity.threshold)?;
     }
+    for relation in &schema.relations {
+        validate_optional_threshold("relation", &relation.name, relation.threshold)?;
+    }
     for classification in &schema.classifications {
         ensure!(
             classification.cls_threshold.is_finite()
@@ -1833,19 +2178,6 @@ fn validate_optional_threshold(kind: &str, name: &str, threshold: Option<f32>) -
         );
     }
     Ok(())
-}
-
-fn reject_pending_schema(schema: &SchemaSpec) -> Result<()> {
-    if !schema.relations.is_empty() {
-        return Err(relations_pending());
-    }
-    Ok(())
-}
-
-fn relations_pending() -> anyhow::Error {
-    anyhow!(
-        "boundary relation extraction is a pending feature (milestone M6); request rejected before inference"
-    )
 }
 
 fn required_file(bundle: &Path, name: &str) -> Result<std::path::PathBuf> {

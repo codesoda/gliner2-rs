@@ -15,6 +15,9 @@ pub mod record_decode;
 mod record_prepare;
 pub mod record_schema;
 pub mod records;
+pub mod relation_decode;
+pub mod relation_pairs;
+pub mod relations;
 pub mod scorer;
 
 pub use explicit_spans::{ExplicitSpanScore, ExplicitSpanScores};

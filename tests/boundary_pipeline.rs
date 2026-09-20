@@ -42,6 +42,7 @@ fn bundle() -> Result<Option<PathBuf>> {
         "boundary_scorer.onnx",
         "boundary_explicit_scorer.onnx",
         "boundary_records.onnx",
+        "boundary_relations.onnx",
     ];
     let missing: Vec<_> = required
         .iter()
@@ -622,7 +623,7 @@ fn formatted_input_and_gathered_states_match_committed_stage_fixture() -> Result
 }
 
 #[test]
-fn q0_pending_raw_api_and_adapter_swap_are_explicit_and_lossless() -> Result<()> {
+fn q0_relation_preflight_raw_api_and_adapter_swap_are_explicit_and_lossless() -> Result<()> {
     let Some(bundle) = bundle()? else {
         return Ok(());
     };
@@ -668,15 +669,18 @@ fn q0_pending_raw_api_and_adapter_swap_are_explicit_and_lossless() -> Result<()>
             .is_empty()
     );
 
-    let pending = SchemaSpec {
-        relations: vec![RelationSpec::new("related to")],
+    let invalid_relation = SchemaSpec {
+        relations: vec![RelationSpec::new("related to").threshold(f32::NAN)],
         ..SchemaSpec::default()
     };
     let error = pipeline
-        .extract("must not encode", &pending, 0.5)
+        .extract("must not encode", &invalid_relation, 0.5)
         .unwrap_err()
         .to_string();
-    ensure!(error.contains("pending feature") && error.contains("before inference"));
+    ensure!(
+        error.contains("relation threshold") && error.contains("[0,1]"),
+        "{error}"
+    );
 
     let adapter = tempdir()?;
     fs::copy(

@@ -24,6 +24,7 @@ fn bundle() -> Result<Option<PathBuf>> {
         "boundary_scorer.onnx",
         "boundary_explicit_scorer.onnx",
         "boundary_records.onnx",
+        "boundary_relations.onnx",
     ];
     let missing: Vec<_> = required
         .iter()

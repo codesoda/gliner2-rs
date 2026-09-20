@@ -3,7 +3,7 @@ use std::{fs, path::Path};
 use anyhow::{Context, Result, anyhow, ensure};
 use serde_json::{Map, Value};
 
-use super::{decode::OverlapPolicy, pool::PoolConfig};
+use super::{decode::OverlapPolicy, pool::PoolConfig, relation_pairs::RelationProposalConfig};
 use crate::config::{Architecture, ModelConfig};
 
 /// Runtime settings which are not baked into the boundary ONNX graphs.
@@ -13,9 +13,11 @@ pub struct BoundaryRuntimeConfig {
     pub pair_temperature: f32,
     pub classification_temperature: f32,
     pub record_temperature: f32,
+    pub relation_temperature: f32,
     pub abstention_threshold: f32,
     pub overlap_policy: OverlapPolicy,
     pub pool: PoolConfig,
+    pub relation_proposals: RelationProposalConfig,
 }
 
 impl BoundaryRuntimeConfig {
@@ -114,10 +116,21 @@ impl BoundaryRuntimeConfig {
         let classification_temperature =
             positive_f32(head, "classification_temperature", 1.0, path)?;
         let record_temperature = positive_f32(head, "record_temperature", 1.0, path)?;
+        let relation_temperature = positive_f32(head, "relation_temperature", 1.0, path)?;
         let abstention_threshold = probability(head, "abstention_threshold", 0.5, path)?;
         let boundary_top_k = positive_usize(head, "pool_boundary_top_k", 32, path)?;
         let capacity = positive_usize(head, "pool_size", 192, path)?;
         let min_per_query = positive_usize(head, "min_pool_per_query", 8, path)?;
+        let heads_per_relation = positive_usize(head, "relation_heads_per_type", 32, path)?;
+        let tails_per_relation = positive_usize(head, "relation_tails_per_type", 32, path)?;
+        let pair_cap = positive_usize(head, "relation_pair_cap", 64, path)?;
+        ensure!(
+            heads_per_relation.checked_mul(tails_per_relation).is_some(),
+            "boundary relation_heads_per_type * relation_tails_per_type overflows usize in {}",
+            path.display()
+        );
+        let argument_threshold =
+            probability(head, "relation_argument_proposal_threshold", 0.2, path)?;
         ensure!(
             min_per_query <= capacity,
             "boundary min_pool_per_query {min_per_query} exceeds pool_size {capacity} in {}",
@@ -136,12 +149,19 @@ impl BoundaryRuntimeConfig {
             pair_temperature,
             classification_temperature,
             record_temperature,
+            relation_temperature,
             abstention_threshold,
             overlap_policy,
             pool: PoolConfig {
                 boundary_top_k,
                 capacity,
                 min_per_query,
+            },
+            relation_proposals: RelationProposalConfig {
+                heads_per_relation,
+                tails_per_relation,
+                pair_cap,
+                argument_threshold,
             },
         })
     }

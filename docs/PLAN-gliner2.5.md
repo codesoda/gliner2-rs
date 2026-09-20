@@ -372,6 +372,19 @@ not claim raw empty-dimension graph support.
    all24 applicable real fixtures in debug and release; compatibility/proposal
    floats pass the original numerical gate. No set-equality or pool-order
    exception is approved.
+   M6 relation proposals expose another discrete-selection sensitivity: the
+   algebraically stable negative sigmoid branch can round differently from
+   upstream `1/(1+exp(-x))`. For example, two nearby logits around-1.386 tie in
+   source but differed in the initial Rust implementation, changing a capped
+   endpoint/pair selection. No tie exception is accepted. The proposal-only fix
+   preserves source scalar algebra and ports the pinned PyTorch2.8 AArch64
+   SLEEF `expf_u10` vector arithmetic, including FMA grouping, constants and
+   TensorIterator vector-block/tail traversal. Negative-stride logit views are
+   explicitly unsupported because pinned Torch cannot represent them. Global
+   entity/record confidence code is unchanged. Exact-bit source probes and
+   public-API layout regressions cover the fix; the broad arithmetic probe is
+   bounded evidence on macOSarm64, not a claim of universal host-libm identity
+   for scalar tails. The SLEEF adaptation carries its full Boost license.
 7. **ONNX attention/export:** preserve full graph-affecting flags (directional,
    rotary, content, 8-head compatibility). Dynamic-shape multi-length tests are
    mandatory, not single dummy-input export success. Rust wrappers must follow
