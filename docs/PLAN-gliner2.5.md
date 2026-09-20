@@ -44,7 +44,11 @@ saying float16; always cast and verify rather than relying on either assumption.
 `ort = =2.0.0-rc.13` / matching ort-sys, the latest published versions verified
 against the live crates.io registry. This supersedes the original rc.9 freeze
 in the implementation prompt. rc.13 targets ONNX Runtime 1.28 and requires
-Rust 1.88; the local compiler is 1.95. M0–M4 historical evidence used rc.9 /
+Rust 1.88 itself, but the locked Hugging Face/Xet dependency graph requires
+Rust 1.91 (`str::floor_char_boundary`). The declared project floor is corrected
+to 1.91 after actual 1.88/1.89 failures and a successful isolated 1.91 model,
+no-model and six-tutorial gate. The usual local compiler is 1.95.
+M0–M4 historical evidence used rc.9 /
 native 1.20 and is not retroactively relabeled. The pinned Python oracle remains
 unchanged; new Rust-runtime comparisons must independently satisfy its gates.
 Keep public `infer(&self)` signatures via per-session synchronization because
@@ -90,7 +94,7 @@ Export remains opset 17, fp32, with finite `-1e4` masks and no Python inference.
   relation sessions. Use a small private direct-ORT session helper (4 CPU
   threads, Level3 optimization) and named tensor I/O as in encoder/extractor.
   Validate shapes at module boundaries; return errors rather than indexing
-  panics. ORP is being removed under the user-approved migration above.
+  panics. ORP was removed in the accepted user-approved migration at a3ecbfa.
 - Keep the old schema/result types. Extend schemas additively for record modes
   and overlap options if required; preserve defaults for existing callers.
   Existing SchemaSpec/StructureSpec/JsonSchema have public fields and support
@@ -99,10 +103,46 @@ Export remains opset 17, fp32, with finite `-1e4` masks and no Python inference.
   accepted by additive `extract_with_records` / `extract_json_with_records`
   methods. Existing extraction methods remain unannotated legacy-record mode.
   Do not hide record metadata in global state or overload label strings.
+- M5 record orchestration must use upstream's ragged `forward_group`, not its
+  dense training variant: natural seeds include every live anchor candidate,
+  latent seeds concatenate all fields (including duplicate spans), and anchorless
+  attention uses the same field-major duplicated context. Trim padded graph
+  assignment columns before decoding so padding cannot alter softmax outcomes.
+- Choice lookup has three distinct Unicode operations: prefix lookup uses
+  lowercase equality, formatted-surface matching uses full casefold, and literal
+  ownership uses Python `re.IGNORECASE` with Python word boundaries. They are not
+  interchangeable (for example, sharp-s folds to `ss` but is not an IGNORECASE
+  literal match for `ss`). Prepare compact pinned Python3.12/Unicode15 data in
+  Rust source, generated only by export tooling, to avoid a hidden inference
+  dependency or host Rust/regex Unicode-version drift. Verify literal ownership
+  against the unchanged upstream method and convert its character offsets to
+  the public UTF-8 byte contract. No additional committed tensor fixtures needed.
+- The mandatory high-level explicit primitive will be
+  `BoundaryPipeline::score_explicit_spans(text, labels, spans)`, where labels are
+  ordered entity-style extraction queries and spans are ordered half-open UTF-8
+  byte pairs in the original text. Return one typed group per label and one
+  typed score per supplied span, including original text/bounds, raw logit and
+  pair-temperature-calibrated confidence. Preserve duplicate labels/spans and
+  caller order; no candidate pool, threshold, abstention, overlap or dedup step.
+  Encode all labels once, run marginals once, then the separate explicit scorer
+  with the same supplied spans for every query. The existing low-level
+  `ExplicitInput` remains available for query-specific tensor candidates.
+  Require nonempty, valid UTF-8 spans exactly aligned with retained word-token
+  boundaries: reject truncation, partial-word spans and synthetic punctuation
+  rather than silently snapping coordinates. Empty label/candidate axes bypass
+  native heads. Add AutoPipeline forwarding with an explicit unsupported error
+  on span architecture (no emulation through v2). Prove byte/token mapping,
+  duplicate/order preservation and separate-head parity, and provide a Rust
+  line-scoring example with whitespace-trimmed line bounds. This API does not
+  promise constrained probabilities summing to one or optional M8 features.
 - Byte offsets remain the crate-wide contract, including boundary output, so
   `text[start..end]` is safe. Golden comparison explicitly converts Python
   Unicode code-point offsets to UTF-8 byte offsets; labels/text/order must match.
   Do not pretend byte positions equal Python positions on non-ASCII input.
+  Selection metrics must still use Python codepoint distances/lengths: record
+  choice proximity and M6 relation canonical-mention/nearest-occurrence ranking
+  can change if calculated in bytes. Convert to bytes only for public coordinates
+  or count codepoints in the corresponding validated original-text slices.
 - Boundary classification decoding needs its own source-faithful selection:
   upstream runtime._extract_classification_result retains multi-label hits in
   schema order (not confidence order), and argmax ties/fallback select the first

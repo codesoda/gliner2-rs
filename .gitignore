@@ -12,6 +12,8 @@ target/
 /scripts/**/__pycache__/
 *.py[cod]
 /fixtures/gliner2.5-base-v1/
+/fixtures/gliner2.5-records/
+/fixtures/gliner2.5-explicit/
 
 # Private working notes.
 /plan.md

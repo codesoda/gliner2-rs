@@ -1337,6 +1337,32 @@ impl AutoPipeline {
         )
     }
 
+    /// Boundary-only record formation; span models reject metadata explicitly.
+    #[allow(clippy::too_many_arguments)]
+    pub fn extract_json_with_records(
+        &self,
+        text: &str,
+        schema: &JsonSchema,
+        metadata: &crate::boundary::record_schema::RecordMetadata,
+        threshold: f32,
+        include_confidence: bool,
+        include_spans: bool,
+    ) -> Result<JsonExtraction> {
+        match self {
+            Self::Boundary(pipeline) => pipeline.extract_json_with_records(
+                text,
+                schema,
+                metadata,
+                threshold,
+                include_confidence,
+                include_spans,
+            ),
+            Self::Span(_) => Err(anyhow!(
+                "record metadata is unsupported for span models; use a boundary architecture"
+            )),
+        }
+    }
+
     pub fn extract_relations(
         &self,
         text: &str,
@@ -1452,6 +1478,32 @@ impl AutoPipeline {
             self,
             extract_with_confidence_and_spans(text, schema, threshold)
         )
+    }
+
+    /// Boundary-only record formation; span models reject metadata explicitly.
+    #[allow(clippy::too_many_arguments)]
+    pub fn extract_with_records(
+        &self,
+        text: &str,
+        schema: &SchemaSpec,
+        metadata: &crate::boundary::record_schema::RecordMetadata,
+        threshold: f32,
+        include_confidence: bool,
+        include_spans: bool,
+    ) -> Result<ExtractionResult> {
+        match self {
+            Self::Boundary(pipeline) => pipeline.extract_with_records(
+                text,
+                schema,
+                metadata,
+                threshold,
+                include_confidence,
+                include_spans,
+            ),
+            Self::Span(_) => Err(anyhow!(
+                "record metadata is unsupported for span models; use a boundary architecture"
+            )),
+        }
     }
 
     pub fn classify_text(

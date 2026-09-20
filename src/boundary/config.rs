@@ -12,6 +12,7 @@ pub struct BoundaryRuntimeConfig {
     pub max_len: usize,
     pub pair_temperature: f32,
     pub classification_temperature: f32,
+    pub record_temperature: f32,
     pub abstention_threshold: f32,
     pub overlap_policy: OverlapPolicy,
     pub pool: PoolConfig,
@@ -68,6 +69,8 @@ impl BoundaryRuntimeConfig {
             ("candidate_pool", Value::String("shared".to_owned())),
             ("boundary_dim", Value::from(128)),
             ("pair_dim", Value::from(128)),
+            ("record_dim", Value::from(128)),
+            ("record_instance_queries", Value::from(32)),
             ("boundary_attention_layers", Value::from(2)),
             ("boundary_attention_heads", Value::from(4)),
             ("boundary_attention_window", Value::from(128)),
@@ -110,6 +113,7 @@ impl BoundaryRuntimeConfig {
         let pair_temperature = positive_f32(head, "pair_temperature", 1.0, path)?;
         let classification_temperature =
             positive_f32(head, "classification_temperature", 1.0, path)?;
+        let record_temperature = positive_f32(head, "record_temperature", 1.0, path)?;
         let abstention_threshold = probability(head, "abstention_threshold", 0.5, path)?;
         let boundary_top_k = positive_usize(head, "pool_boundary_top_k", 32, path)?;
         let capacity = positive_usize(head, "pool_size", 192, path)?;
@@ -131,6 +135,7 @@ impl BoundaryRuntimeConfig {
             max_len,
             pair_temperature,
             classification_temperature,
+            record_temperature,
             abstention_threshold,
             overlap_policy,
             pool: PoolConfig {

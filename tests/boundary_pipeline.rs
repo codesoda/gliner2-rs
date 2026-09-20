@@ -18,7 +18,8 @@ use gliner2_rs::{
     pipeline::{AutoPipeline, BoundaryPipeline as PublicBoundaryPipeline},
     schema::format_input_with_mapping,
     schema_spec::{
-        ClassificationOptions, EntitySpec, FieldDtype, SchemaBuilder, SchemaSpec, StructureSpec,
+        ClassificationOptions, EntitySpec, FieldDtype, RelationSpec, SchemaBuilder, SchemaSpec,
+        StructureSpec,
     },
     tokenizer::RuntimeTokenizer,
 };
@@ -39,6 +40,8 @@ fn bundle() -> Result<Option<PathBuf>> {
         "classifier.onnx",
         "boundary_marginals.onnx",
         "boundary_scorer.onnx",
+        "boundary_explicit_scorer.onnx",
+        "boundary_records.onnx",
     ];
     let missing: Vec<_> = required
         .iter()
@@ -651,11 +654,22 @@ fn q0_pending_raw_api_and_adapter_swap_are_explicit_and_lossless() -> Result<()>
             .is_empty()
     );
 
-    let pending = SchemaSpec {
+    let empty_structure = SchemaSpec {
         structures: vec![StructureSpec {
             name: "record".to_owned(),
             fields: Vec::new(),
         }],
+        ..SchemaSpec::default()
+    };
+    ensure!(
+        pipeline
+            .extract("fieldless structures are valid", &empty_structure, 0.5)?
+            .structures
+            .is_empty()
+    );
+
+    let pending = SchemaSpec {
+        relations: vec![RelationSpec::new("related to")],
         ..SchemaSpec::default()
     };
     let error = pipeline

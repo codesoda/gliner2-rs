@@ -333,6 +333,26 @@ prompt-to-evidence checklist. Model-free test success is not model parity.
   remain preparations; JSON/records/relations deliberately error until integrated.
   M5–M7, public explicit scoring, model publication and release remain open.
 
+## M5 preparation — low-level components verified, high-level gate still open
+
+- Parent independently exported both new graphs to a separate directory and
+  reproduced their hashes exactly. The record graph passes four real and four
+  synthetic original `forward_group` comparisons; the separate explicit sparse
+  scorer passes24 full-head cases, choice captures and dynamic/invalid cases.
+  Original tolerances remain unchanged; no shared-scorer substitution was used.
+- Assignment/record/explicit runtime vectors and the17-case record decoder
+  fixture regenerate byte-identically. Typed helpers now compile through actual
+  library modules rather than private source includes. Parent debug/release
+  assignment+record tests pass; record decoder unit/integration tests pass8/8
+  in each profile after correcting heap-fallback ordering and rejecting
+  temperature-scaling overflow. LLVM and GLiNER2 source notices are included.
+- Encoding/marginal/shared-candidate stages were factored out without adding new
+  high-level behavior. Parent old-runtime workspace baseline passes102 tests
+  with zero skips and reproduces all six original v2 tutorial result payloads.
+- Evidence: `docs/evidence/m5-preparation.json`. This is not M5 acceptance:
+  JSON/record/choice formatting orchestration, public explicit scoring,
+  structure end-to-end parity and tutorial3 remain open.
+
 ## User-approved direct ORT migration — implemented, acceptance issue open
 
 - User explicitly approved removing ORP and using the latest published ORT.
@@ -402,6 +422,38 @@ prompt-to-evidence checklist. Model-free test success is not model parity.
 - Evidence: `docs/evidence/ort-migration.json`. This accepts the runtime change,
   not M5–M7, the public explicit-span API, bundle publication or a release tag.
 
+## M5 continuation — typed metadata prepared
+
+- The additive `RecordMetadata` sidecar selects natural/latent/anchorless modes
+  without changing existing public schema struct fields. Compilation routes
+  Content queries by schema/field identity, including noncontiguous global query
+  IDs; rejects unknown/ambiguous metadata and invalid anchors; preserves legacy
+  behavior for unannotated structures. Defaults and explicit cardinality/exclusive
+  overrides follow upstream.
+- Parent read the complete implementation and verified12 unit tests in debug and
+  release, plus library Clippy. A fresh debug rerun again passes12/12. This is
+  preparation only: metadata is not yet wired to public extraction methods.
+- Ragged candidate/seed preparation is now implemented and parent-verified with9
+  unit tests: uncapped natural anchors, field-major duplicate latent seeds and
+  anchorless context, empty-native bypasses, and ragged assignment trimming.
+  Runtime configuration adds record temperature and rejects incompatible baked
+  record dimensions; parent5 config tests pass.
+- Legacy JSON now shares one encoder invocation with entities/classification,
+  emits a single instance, and scores choice prefixes through the separate
+  explicit graph. Parent inspected the changes and ran11 strict model tests
+  (4 legacy JSON plus7 existing pipeline tests), zero skips; original legacy
+  structure output and M4 fixtures pass. All-target/all-feature Clippy passes.
+- Unicode choice tables reproduce byte-identically. Parent independently compared
+  Rust and Python output for all1,112,064 Unicode scalar values (lowercase,
+  casefold, IGNORECASE representatives and word membership):23,222,132 bytes
+  exact. Separately,600 deterministic literal-ownership cases exactly match the
+  untouched upstream static method after converting offsets to UTF8 bytes.
+  Parent corrected nearest-choice ranking to count Python codepoints rather
+  than byte gaps;14 helper tests pass, including a multilingual counterexample.
+- These are local, uncommitted preparations, not M5 acceptance. Full record-mode
+  orchestration/formatting, all four annotated structure goldens, and the public
+  explicit primitive still need their final gates before the release work.
+
 ## Direct ORT follow-up — project MSRV verified and corrected
 
 - An isolated build of accepted commit a3ecbfa exposed an incorrect Rust1.88
@@ -418,3 +470,32 @@ prompt-to-evidence checklist. Model-free test success is not model parity.
 - Cargo/README now declare1.91. Evidence: `docs/evidence/msrv-verification.json`.
   Verification excludes uncommitted M5 work and is local macOS arm64 evidence;
   this follow-up is not a completed GLiNER2.5 release or new tag.
+
+## M5 — records and JSON extraction accepted
+
+- Existing JSON methods now perform boundary legacy single-instance extraction;
+  additive typed-sidecar methods support natural, latent and anchorless records
+  on BoundaryPipeline and AutoPipeline. Unannotated schemas keep legacy behavior;
+  span architecture rejects record metadata explicitly. Existing schema struct
+  fields and v2 methods are unchanged.
+- Real ragged head orchestration, assignment/exclusivity/cardinality decoding,
+  field validators, calibrated candidate/assignment confidence, source-order
+  literal choice ownership and fallback formatting are wired into the single
+  joint encoder path. Separate explicit weights are used for choice scoring.
+  Source notices accompany the GLiNER2, libc++ and Unicode adaptations.
+- Parent corrected codepoint-versus-byte proximity and synthetic-suffix mapping,
+  and removed a spurious unsupported-path test skip by using the existing split
+  v2 tokenizer/ONNX fixture layout. No numerical tolerance was loosened.
+- All5 frozen structure cases pass exact shape/text/order/UTF8-coordinate parity.
+  Record maximum confidence error is3.6805868e-6 (original allowed1e-3), identical
+  in debug/release and on declared Rust1.91. Parent suites:162 strict model tests
+  with zero skips on1.95 and1.91;162 no-model tests with36 artifact skip messages;
+  75 optimized helper/head/pipeline tests with zero skips; fmt and all-target,
+  all-feature Clippy pass. Full tutorial3 runs on2.5 in release mode.
+- Fresh six-v2-tutorial comparator passes, with only the previously approved
+  5.364418e-7 confidence change;15 comparator unit tests pass. Committed/intended
+  fixture total is1,980,912bytes, below the2MB limit. Full fixtures and graphs
+  remain ignored.
+- Evidence: `docs/evidence/m5.json`, backed by preparation/export and Unicode
+  verification records. Public explicit-span scoring, M6 relations, M7 bundles,
+  publication/readback, external consumer proof and a release tag remain open.

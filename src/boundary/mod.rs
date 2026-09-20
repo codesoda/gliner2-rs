@@ -1,10 +1,19 @@
+pub mod assignment;
+#[rustfmt::skip] // Deterministic generated tables; checked against the generator.
+mod choice_unicode;
+mod choices;
 pub mod classification;
 pub mod config;
 pub mod decode;
+pub mod explicit;
 pub mod marginals;
 pub mod pipeline;
 pub mod pool;
 pub mod preprocessing;
+pub mod record_decode;
+mod record_prepare;
+pub mod record_schema;
+pub mod records;
 pub mod scorer;
 
 pub use pipeline::BoundaryPipeline;

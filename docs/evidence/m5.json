@@ -1,0 +1,80 @@
+{
+  "status": "accepted_M5_records_JSON_gate_not_overall_release",
+  "upstream_commit": "d7c727458bf6929bc9ef5ee04e13c3f717a7c455",
+  "base_hf_revision": "78cea040597df251eedefa9d7ee2a756af39fe64",
+  "runtime": {
+    "rust_ort": "2.0.0-rc.13",
+    "native_ort": "1.28.0",
+    "python_validation_ort": "1.20.1",
+    "usual_rustc": "1.95.0",
+    "independently_tested_msrv": "1.91.0"
+  },
+  "low_level_evidence": "m5-preparation.json",
+  "graphs": {
+    "boundary_records.onnx": "6bd790da3bfb4492d952f44cb8dd6b988b168e836df0ddf871521f28e2382537",
+    "boundary_explicit_scorer.onnx": "3589a13f67655601f96ab52c24b43535c62d568fe6664deb88b4077a605f7a0f"
+  },
+  "graph_export_caveat": "The explicit graph exporter contains guarded metadata/rank/axis repairs for legacy ONNX lowering of dynamic stack/rotary/endpoint-difference shapes. Original learned modules remain unchanged; independent re-export hashes, full upstream-method comparisons, dynamic batch/candidate cases and invalid-coordinate probes passed. This is not an unmodified generic torch exporter guarantee.",
+  "public_surfaces": [
+    "Existing BoundaryPipeline and AutoPipeline extract_json variants use source-faithful single-instance legacy decoding.",
+    "Additive extract_with_records and extract_json_with_records accept a typed RecordMetadata sidecar; existing public schema fields are unchanged.",
+    "Natural, latent and anchorless record modes preserve ragged field-major candidate/seed semantics and source decoding/cardinality/exclusivity rules.",
+    "Span architecture explicitly rejects the new record-sidecar methods; existing v2 methods remain unchanged.",
+    "Structure/entity/classification schemas share a single encoder invocation with validated global query routing.",
+    "Choice-prefix values use the separate learned explicit scorer, not the shared-pool scorer. Literal ownership and Unicode matching follow pinned Python behavior."
+  ],
+  "final_structure_oracle": {
+    "case_ids": ["json_legacy_event", "json_natural_people", "json_natural_choice", "json_latent_products", "json_anchorless_list"],
+    "shape_text_order_and_utf8_coordinates": "exact",
+    "confidence_atol": 0.001,
+    "record_max_absolute_confidence_error_by_case": {
+      "json_natural_people": 0.0000010728836,
+      "json_natural_choice": 0.00000011920929,
+      "json_latent_products": 0.0000036805868,
+      "json_anchorless_list": 0.0
+    },
+    "legacy_confidence_result": "Passes original 1e-3 threshold; no separate maximum reported.",
+    "record_maximum_reproduced_in": ["debug Rust1.95", "release Rust1.95", "debug Rust1.91"],
+    "record_case_ids_fail_closed": true
+  },
+  "parent_verification": {
+    "full_strict_model_tests": 162,
+    "full_strict_model_skip_messages": 0,
+    "full_no_model_tests": 162,
+    "full_no_model_explicit_skip_messages": 36,
+    "optimized_helper_head_and_record_pipeline_tests": 75,
+    "optimized_skip_messages": 0,
+    "msrv_1_91_full_strict_model_tests": 162,
+    "msrv_1_91_skip_messages": 0,
+    "fmt": "pass",
+    "clippy_all_targets_all_features_warnings_denied": "pass",
+    "boundary_tutorial_3_release": "pass",
+    "six_v2_tutorial_regression_gate": "pass; one approved confidence delta 5.364418029785156e-7, all other normalized output exact",
+    "v2_comparator_unit_tests": 15,
+    "tracked_plus_intended_fixture_bytes": 1980912
+  },
+  "parent_review_corrections": [
+    "Nearest literal-choice selection measures Python codepoint gaps, not UTF8 byte gaps; multilingual counterexample is tested.",
+    "Record mapping safely clamps spans extending into synthetic terminal punctuation like existing boundary decoding, while wholly synthetic spans are omitted.",
+    "Span-side unsupported-path tests instantiate the existing split v2 tokenizer/ONNX layout, so strict combined-model verification does not silently skip that branch.",
+    "Padded assignment columns are trimmed before record decoder softmax; natural anchors are not capped at 32 and latent/context duplication is retained.",
+    "RecordModel borrows RecordInput, avoiding unnecessary cloning or partially moved prepared groups."
+  ],
+  "logs": [
+    "/tmp/gliner25-work/m5-parent-full-models.log",
+    "/tmp/gliner25-work/m5-parent-full-no-models.log",
+    "/tmp/gliner25-work/m5-parent-final-records.log",
+    "/tmp/gliner25-work/m5-parent-release-tests.log",
+    "/tmp/gliner25-work/m5-parent-msrv-1.91-models.log",
+    "/tmp/gliner25-work/m5-parent-final-clippy.log",
+    "/tmp/gliner25-work/m5-parent-tutorial3-boundary.log",
+    "/tmp/gliner25-work/m5-parent-v2-gate.json"
+  ],
+  "remaining": [
+    "Public high-level explicit-span scoring method and example (low-level graph/wrapper are already used for choices)",
+    "M6 relations",
+    "M7 complete small/base/multi bundles, publication/readback, downloaders, docs/benchmarks/CI and external Rust consumer",
+    "Verified GitHub release tag"
+  ],
+  "limitations": "Local macOS arm64 verification, not an exhaustive cross-platform proof. Mixed record/entity routing is tested, but its synthetic mixed request is not an additional upstream golden. Original four record corpus cases and legacy structure case are the final parity gate."
+}

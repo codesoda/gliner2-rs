@@ -1,0 +1,366 @@
+{
+  "status": "preparation_evidence_superseded_by_m5_json_for_final_M5_acceptance",
+  "completed_surfaces": [
+    "Record graph export and original forward_group parity",
+    "Separate learned explicit scorer export and full upstream explicit method parity",
+    "Typed record and explicit native-runtime wrappers",
+    "Pure Hungarian and record-group decoding",
+    "Typed additive record metadata sidecar and query routing compilation",
+    "Ragged candidate/seed preparation and positive-dimension output trimming",
+    "Legacy non-record JSON extraction with separate explicit choice scoring",
+    "Pinned Unicode choice matching and source-faithful literal ownership"
+  ],
+  "surfaces_open_at_preparation_time": [
+    "High-level natural/latent/anchorless record orchestration",
+    "Choice-field and validator formatting",
+    "Public explicit-span primitive and example",
+    "Structure golden end-to-end gate and tutorial 3"
+  ],
+  "python_record_graph_validation": {
+    "onnx": "onnx/gliner2.5-base-v1/boundary_records.onnx",
+    "onnxruntime": "1.20.1",
+    "atol": 0.0001,
+    "rtol": 0.001,
+    "graph_audit": {
+      "float_constants": 18,
+      "float_initializers": 18,
+      "graphs_recursive": 5,
+      "op_Add": 3,
+      "op_Cast": 5,
+      "op_Concat": 1,
+      "op_Constant": 14,
+      "op_Div": 1,
+      "op_Einsum": 1,
+      "op_Equal": 2,
+      "op_Gemm": 7,
+      "op_Identity": 2,
+      "op_If": 2,
+      "op_MatMul": 4,
+      "op_Not": 3,
+      "op_Softmax": 1,
+      "op_Squeeze": 2,
+      "op_Transpose": 2,
+      "op_Unsqueeze": 6,
+      "op_Where": 3
+    },
+    "case_counts": {
+      "no_instance_bypass_cases": 2,
+      "real_forward_group_cases": 4,
+      "synthetic_dynamic_cases": 4
+    },
+    "same_graph_dynamic_mode_runs": {
+      "anchorless": 3,
+      "latent": 2,
+      "natural": 3
+    },
+    "mask_and_instance_checks": {
+      "instances": 904,
+      "invalid_assignment_columns": 3619
+    },
+    "zero_dimension_policy": "F/C/M/seed-Ni are positive. Rust bypasses natural/latent Ni=0; anchorless empty context is represented by one zero row with mask=false.",
+    "no_instance_bypass_status": {
+      "natural": "natural record has no instances; caller must bypass ONNX",
+      "latent": "latent record has no instances; caller must bypass ONNX"
+    },
+    "onnx_vs_untouched_forward_group_real_per_output": {
+      "instance_states": {
+        "comparisons": 4,
+        "max_abs": 2.384185791015625e-07,
+        "max_rel": 0.0006004401464333326
+      },
+      "object_logits": {
+        "comparisons": 4,
+        "max_abs": 2.5331974029541016e-07,
+        "max_rel": 2.1826197985441925e-05
+      },
+      "assignment_logits": {
+        "comparisons": 4,
+        "max_abs": 3.0517578125e-05,
+        "max_rel": 0.019561210547437407
+      }
+    },
+    "onnx_vs_untouched_forward_group_synthetic_per_output": {
+      "instance_states": {
+        "comparisons": 4,
+        "max_abs": 4.76837158203125e-07,
+        "max_rel": 0.23636363636363636
+      },
+      "object_logits": {
+        "comparisons": 4,
+        "max_abs": 4.76837158203125e-07,
+        "max_rel": 6.2944984010493e-06
+      },
+      "assignment_logits": {
+        "comparisons": 4,
+        "max_abs": 3.814697265625e-05,
+        "max_rel": 0.0011841840016670593
+      }
+    }
+  },
+  "python_explicit_graph_validation": {
+    "onnx": "onnx/gliner2.5-base-v1/boundary_explicit_scorer.onnx",
+    "marginals_onnx": "onnx/gliner2.5-base-v1/boundary_marginals.onnx",
+    "onnxruntime": "1.20.1",
+    "atol": 0.0001,
+    "rtol": 0.001,
+    "final_confidence_atol": 0.001,
+    "graph_audit": {
+      "finite_constants": 12,
+      "fp32_initializers": 28,
+      "opset": 17,
+      "inputs": [
+        "boundary_states",
+        "text_states",
+        "text_mask",
+        "query_states",
+        "query_mask",
+        "start_logits",
+        "end_logits",
+        "inside_prefix",
+        "inside_prefix_mean",
+        "candidate_indices",
+        "candidate_mask"
+      ],
+      "outputs": [
+        "pair_logits",
+        "compatibility",
+        "legal_mask"
+      ],
+      "sha256": "3589a13f67655601f96ab52c24b43535c62d568fe6664deb88b4077a605f7a0f",
+      "bytes": 1154275
+    },
+    "fixture_count": 30,
+    "case_counts": {
+      "batch_two_cases": 2,
+      "candidate_count_192_cases": 24,
+      "candidate_count_1_synthetic_cases": 1,
+      "candidate_count_7_synthetic_cases": 2,
+      "frozen_choice_captures": 2,
+      "invalid_negative_reversed_out_of_range_cases": 1,
+      "isolated_zero_dimension_probes": 3,
+      "long_cases": 3,
+      "query_masked_cases": 1,
+      "shared_indices_explicit_cases": 24,
+      "supplied_false_mask_cases": 1,
+      "synthetic_dynamic_cases": 3
+    },
+    "mask_counts": {
+      "invalid_pairs": 6046,
+      "legal_pairs": 5118
+    },
+    "zero_dimension_contract": "B,L,Q,C must each be >=1; L0/Q0/C0 are rejected by the caller. Native behavior is probed only in isolated subprocesses.",
+    "zero_dimension_status": {
+      "q0": {
+        "label": "q0",
+        "contract": "rejected-before-ORT",
+        "isolated_returncode": 1,
+        "isolated_status": "native-runtime-rejected-or-failed",
+        "stderr_tail": "eError] : 6 : RUNTIME_EXCEPTION : Non-zero status code returned while running Reshape node. Name:'/pair_scorer/Reshape_7' Status Message: /Users/runner/work/1/s/onnxruntime/core/providers/cpu/tensor/reshape_helper.h:41 onnxruntime::ReshapeHelper::ReshapeHelper(const onnxruntime::TensorShape &, onnxruntime::TensorShapeVector &, bool) size != 0 && (input_shape_size % size) == 0 was false. The input tensor cannot be reshaped to the requested shape. Input shape:{1,0,64,2}, requested shape:{1,0,-1}\n\n"
+      },
+      "c0": {
+        "label": "c0",
+        "contract": "rejected-before-ORT",
+        "isolated_returncode": 1,
+        "isolated_status": "native-runtime-rejected-or-failed",
+        "stderr_tail": "Exception: [ONNXRuntimeError] : 6 : RUNTIME_EXCEPTION : Non-zero status code returned while running Reshape node. Name:'/pair_scorer/Reshape_12' Status Message: /Users/runner/work/1/s/onnxruntime/core/providers/cpu/tensor/reshape_helper.h:47 onnxruntime::ReshapeHelper::ReshapeHelper(const onnxruntime::TensorShape &, onnxruntime::TensorShapeVector &, bool) input_shape_size == size was false. The input tensor cannot be reshaped to the requested shape. Input shape:{1,2,0}, requested shape:{1,2,1}\n\n"
+      },
+      "l0": {
+        "label": "l0",
+        "contract": "rejected-before-ORT",
+        "isolated_returncode": 0,
+        "isolated_shapes": {
+          "pair_logits": [
+            1,
+            2,
+            3
+          ],
+          "compatibility": [
+            1,
+            2,
+            3
+          ],
+          "legal_mask": [
+            1,
+            2,
+            3
+          ]
+        },
+        "isolated_finite": true
+      }
+    },
+    "comparison_note": "shared candidate indices are repeated across queries and evaluated only by the learned explicit path; shared-pool pair logits are never used as an explicit-scorer reference",
+    "frozen_wrapper_vs_original_modules": {
+      "pair_logits": {
+        "comparisons": 28,
+        "max_abs": 0.0,
+        "max_rel": 0.0
+      },
+      "compatibility": {
+        "comparisons": 28,
+        "max_abs": 0.0,
+        "max_rel": 0.0
+      },
+      "legal_mask": {
+        "comparisons": 28,
+        "max_abs": 0.0,
+        "max_rel": 0.0
+      },
+      "final_confidence": {
+        "comparisons": 28,
+        "max_abs": 0.0,
+        "max_rel": 0.0
+      }
+    },
+    "explicit_onnx_vs_frozen_original_modules": {
+      "pair_logits": {
+        "comparisons": 26,
+        "max_abs": 0.00012683868408203125,
+        "max_rel": 0.000268997744850134
+      },
+      "compatibility": {
+        "comparisons": 26,
+        "max_abs": 1.1920928955078125e-07,
+        "max_rel": 0.0006126392283928738
+      },
+      "legal_mask": {
+        "comparisons": 26,
+        "max_abs": 0.0,
+        "max_rel": 0.0
+      },
+      "final_confidence": {
+        "comparisons": 26,
+        "max_abs": 2.0951032638549805e-05,
+        "max_rel": 0.0
+      }
+    },
+    "frozen_marginals_vs_full_upstream_method": {
+      "pair_logits": {
+        "comparisons": 29,
+        "max_abs": 0.0,
+        "max_rel": 0.0
+      },
+      "compatibility": {
+        "comparisons": 29,
+        "max_abs": 0.0,
+        "max_rel": 0.0
+      },
+      "legal_mask": {
+        "comparisons": 29,
+        "max_abs": 0.0,
+        "max_rel": 0.0
+      },
+      "final_confidence": {
+        "comparisons": 29,
+        "max_abs": 0.0,
+        "max_rel": 0.0
+      }
+    },
+    "m2_onnx_to_explicit_onnx_vs_full_upstream_method": {
+      "pair_logits": {
+        "comparisons": 26,
+        "max_abs": 0.00012683868408203125,
+        "max_rel": 0.0014045648357160771
+      },
+      "compatibility": {
+        "comparisons": 26,
+        "max_abs": 1.4901161193847656e-07,
+        "max_rel": 0.0008164272707758129
+      },
+      "legal_mask": {
+        "comparisons": 26,
+        "max_abs": 0.0,
+        "max_rel": 0.0
+      },
+      "final_confidence": {
+        "comparisons": 26,
+        "max_abs": 2.1129846572875977e-05,
+        "max_rel": 0.0
+      }
+    },
+    "synthetic_onnx_vs_original_modules": {
+      "pair_logits": {
+        "comparisons": 4,
+        "max_abs": 1.9073486328125e-06,
+        "max_rel": 6.578142035242825e-06
+      },
+      "compatibility": {
+        "comparisons": 4,
+        "max_abs": 1.1920928955078125e-07,
+        "max_rel": 2.6624767226353105e-05
+      },
+      "legal_mask": {
+        "comparisons": 4,
+        "max_abs": 0.0,
+        "max_rel": 0.0
+      },
+      "final_confidence": {
+        "comparisons": 4,
+        "max_abs": 2.980232238769531e-07,
+        "max_rel": 0.0
+      }
+    },
+    "gate_failure_count": 0,
+    "gate_failures": []
+  },
+  "parent_reproduction": {
+    "graphs_reexported_byte_identically": true,
+    "record_runtime_vectors_byte_identical": true,
+    "explicit_runtime_vectors_byte_identical": true,
+    "assignment_vectors_byte_identical": true,
+    "record_decode_vectors_byte_identical": true
+  },
+  "artifact_sha256": {
+    "fixtures/assignment-vectors.json": "8f63b46263a0e88f908a0c2ec2bb7bf4d5559b796232d03c2ba1d7772df8fac6",
+    "fixtures/record-decode-vectors.json": "70c621d330bd1faf78b24d6b4f885330c3421eb2f69a8875597e375089d95a22",
+    "onnx/gliner2.5-base-v1/boundary_records.onnx": "6bd790da3bfb4492d952f44cb8dd6b988b168e836df0ddf871521f28e2382537",
+    "onnx/gliner2.5-base-v1/boundary_explicit_scorer.onnx": "3589a13f67655601f96ab52c24b43535c62d568fe6664deb88b4077a605f7a0f"
+  },
+  "parent_low_level_rust_checks": {
+    "rc9_assignment_and_record_debug_tests": 7,
+    "rc9_assignment_and_record_release_tests": 7,
+    "rc13_record_decoder_debug_tests": 8,
+    "rc13_record_decoder_release_tests": 8,
+    "rc13_record_schema_debug_tests": 12,
+    "rc13_record_schema_release_tests": 12,
+    "rc13_record_prepare_debug_tests": 9,
+    "rc13_choice_helper_debug_tests": 13,
+    "choice_helper_isolated_tests_after_unicode_distance_fix": 14,
+    "rc13_record_config_debug_tests": 5,
+    "rc13_legacy_and_M4_strict_model_tests": 11,
+    "rc13_legacy_and_M4_strict_model_log": "/tmp/gliner25-work/m5-parent-legacy-models.log",
+    "rc13_all_target_all_feature_clippy_log": "/tmp/gliner25-work/m5-parent-current-clippy.log",
+    "rc13_full_strict_workspace_log": "/tmp/gliner25-work/ort-migration/parent-rc13-models.log"
+  },
+  "decoder_review": {
+    "reference": "Darwin arm64 PyTorch 2.8.0 CPU, internal non-SciPy assignment backend",
+    "record_oracle_cases": 17,
+    "committed_argsort_cases": 12,
+    "heap_fallback": "Replaced incorrect reverse with libc++ partial_sort-all / Floyd sift behavior; forced-depth tests cover distinct and tied values. Not exhaustive forced-fallback Torch equivalence.",
+    "finite_checks": "Reject record logits that overflow when temperature-scaled before softmax/sigmoid decoding.",
+    "license_notices": [
+      "THIRD-PARTY-NOTICES.md",
+      "docs/licenses/LLVM-libcxx.txt",
+      "docs/licenses/GLiNER2-Apache-2.0.txt"
+    ]
+  },
+  "choice_matching_review": {
+    "python": "3.12.7",
+    "unicode": "15.0.0",
+    "table_regeneration_byte_identical": true,
+    "rust_vs_python_exhaustive_scalar_count": 1112064,
+    "rust_vs_python_scalar_stream_bytes": 23222132,
+    "rust_vs_python_scalar_stream_sha256": "cdc97cabd9b1352d299e77df3dca18fc179fee35635afb4d896a9223097f684b",
+    "scalar_checks": ["lowercase", "casefold", "IGNORECASE canonical representative", "word membership"],
+    "scalar_limit": "Scalar stream does not by itself prove context-sensitive string behavior; fixed Final_Sigma string tests and independent source-method ownership comparisons supplement it.",
+    "nearest_choice_review": "Corrected byte-gap ranking to Python codepoint-gap ranking while retaining public UTF8 byte coordinates. Regression L你你A.....R selects L (2 codepoints) rather than R (5 codepoints); bytes would incorrectly select R. Fourteen helper tests pass after correction.",
+    "original_static_method_ownership_cases": 600,
+    "ownership_seed": 1729,
+    "ownership_result": "Exact Rust result equality after Python codepoint-to-UTF8 offset conversion, including empty choices, Unicode, tied/missing anchors and duplicate choices.",
+    "logs": [
+      "/tmp/gliner25-work/m5-parent-choice-unicode.log",
+      "/tmp/gliner25-work/m5-parent-choice-unicode-rust-exhaustive.log",
+      "/tmp/gliner25-work/m5-parent-choice-ownership.log"
+    ]
+  },
+  "runtime_migration_note": "Rust wrappers now use direct ORT rc13/native1.28. Python source/graph validation remains pinned1.20.1. Migration accepted and pushed at a3ecbfa: user approved confidence-only absolute drift <=1e-6, with all other normalized v2 output exact; see ort-migration.json. This does not relax boundary parity gates."
+}
