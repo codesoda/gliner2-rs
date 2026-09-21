@@ -87,6 +87,9 @@ jobs:
       - name: Downloader tests
         run: python scripts/test_download_models.py
 
+      - name: Consumer readback identity tests
+        run: python scripts/test_consumer_readback.py
+
       - name: Unsupported-axis probes stay opt-in
         run: python scripts/export/test_unsupported_axis_probes.py
 

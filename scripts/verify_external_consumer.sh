@@ -181,14 +181,12 @@ verify_remote_file() {
   headers="$report_dir/remote-identity/$remote_index.head"
   remote_head "$url" "$remote_revision" "$headers"
   linked=$(header_value "$headers" x-linked-etag) || die "duplicate LFS identity: $url"
-  # HF quotes ETags; never accept weak ETags, SHA-1 or arbitrary strings.
+  # HF quotes ETags. Ordinary Git-backed metadata can have a SHA-1 ETag;
+  # authenticate its actual GET body below instead of treating that as SHA-256.
   if [[ "$linked" == \"*\" ]]; then linked=${linked#\"}; linked=${linked%\"}; fi
-  if [[ -n "$linked" ]]; then
-    [[ "$linked" =~ ^[0-9a-f]{64}$ && "$linked" == "$local_hash" ]] \
-      || die "invalid or mismatched LFS SHA-256: $url"
-  fi
   if [[ "$relative" == *.onnx || "$relative" == *.onnx_data || "$relative" == *.data ]]; then
     [[ "$linked" =~ ^[0-9a-f]{64}$ ]] || die "graph/data lacks LFS SHA-256 (no GET fallback): $url"
+    [[ "$linked" == "$local_hash" ]] || die "mismatched LFS SHA-256: $url"
     method=head-lfs-sha256
     remote_hash=$linked
   else
