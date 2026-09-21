@@ -488,6 +488,16 @@ SIGSEGV evidence remains retained; supported marginal Q=0 checks and Rust
 caller-rejection/bypass tests still run. This changes diagnostic opt-in only,
 not any numerical tolerance or supported graph contract.
 
+M7's multilingual checkpoint exposed a centered-mean reduction-order error
+outside the existing prefix envelope. The export now spells out the pinned
+AArch64 PyTorch fp32 masked-logit sum: four lanes, four interleaved partials,
+four cascade levels, scalar tail then horizontal lane additions. Dynamic scripted
+Loop/If control flow preserves length-dependent behavior; this is not a traced
+fixed-length loop or a more permissive tolerance. The remaining mask/count,
+division, centering and cumsum operations are unchanged. Source ordered sum/mean
+checks are bit-exact on210 saved query rows and68 synthetic positive-shape cases;
+full three-checkpoint gates pass. Frozen original oracles stay unchanged.
+
 Final audit explicitly covers every row in `AUDIT-gliner2.5.md`, actual model
 artifacts, remote GitHub SHA/CI, HF downloads and downstream consumer execution.
 A green no-model test run, a completed checklist file, or a push alone is not

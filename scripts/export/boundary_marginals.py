@@ -15,6 +15,7 @@ from collections.abc import Sequence
 import torch
 
 from common import MASK_LOGIT
+from boundary_reductions import sum_last_axis
 
 OUTPUT_NAMES = (
     "boundary_states",
@@ -162,17 +163,28 @@ class BoundaryMarginalGraph(torch.nn.Module):
         start_all = self.pool_start_projection(boundary_states)
         end_all = self.pool_end_projection(boundary_states)
         batch, queries, _ = query_states.shape
-        # ORT 1.20 leaves a keepdims reduction unreduced when Q=0. Reshaping
-        # this zero-element output preserves the upstream populated-query path
-        # and the promised [B,Q,1] graph ABI.
-        inside_prefix_mean = marginals.inside_prefix_mean.reshape(batch, queries, 1)
+        # Preserve the pinned CPU oracle's fp32 sum order explicitly. ORT's
+        # ReduceSum ordering perturbs the mean, which accumulates across long
+        # centered prefixes (especially the multilingual checkpoint). Nothing
+        # about the original masking, division, centering or scan is changed.
+        token_keep = text_mask.unsqueeze(1) & query_mask.unsqueeze(-1)
+        inside_values = marginals.inside_logits.masked_fill(~token_keep, 0.0).float()
+        valid_count = token_keep.sum(-1, keepdim=True).clamp_min(1)
+        inside_prefix_mean = (sum_last_axis(inside_values) / valid_count).detach()
+        # Keep the explicit [B,Q,1] ABI for supported Q=0 diagnostic cases.
+        inside_prefix_mean = inside_prefix_mean.reshape(batch, queries, 1)
+        centered = (inside_values - inside_prefix_mean) * token_keep.to(torch.float32)
+        zeros = torch.zeros(
+            batch, queries, 1, dtype=torch.float32, device=inside_values.device
+        )
+        inside_prefix = torch.cat((zeros, centered.cumsum(dim=-1)), dim=-1)
         return (
             boundary_states,
             boundary_mask,
             marginals.start_logits,
             marginals.end_logits,
             marginals.inside_logits,
-            marginals.inside_prefix,
+            inside_prefix,
             inside_prefix_mean,
             start_all,
             end_all,

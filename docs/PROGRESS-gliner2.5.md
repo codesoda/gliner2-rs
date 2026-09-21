@@ -602,3 +602,17 @@ prompt-to-evidence checklist. Model-free test success is not model parity.
   L=0, scorer C=0), not ordinary supported-input inference. Those probes are being
   made explicitly opt-in; public Rust guards and supported-axis parity remain
   mandatory. Historical actual crash observations are retained, not hidden.
+- Resolved the multilingual failure by preserving source fp32 reduction order
+  for the centered mean, not by increasing precision or tolerances. New scripted
+  dynamic ONNX control flow reproduces210 saved query sums/means bit-for-bit and
+  passes68 positive-shape synthetic cases through65,537 tokens. Parent reviewed
+  the arithmetic against the previously accepted AArch64 pool reduction.
+  Corrected full seven-stage and native32-case suites pass on all three models.
+  Maximum native confidence errors: small3.159046e-6, base3.680587e-6,
+  multi1.430511e-5. Every non-confidence output matches exactly.
+- Infrastructure pushed at5f93378; first CI passed Python and MSRV but stable1.98
+  exposed a new Clippy lint in benchmark-local SHA code. Reused the existing
+  SHA-256 dependency instead of retaining a second implementation;0f79f41 then
+  passed all three remote CI jobs (run35558285385). Corrected reduction and
+  version0.2.0 are release preparation only; no tag or publication is claimed.
+  Final corrected-artifact MSRV/v2 checks and remaining M7 release gates continue.

@@ -1,10 +1,9 @@
 # GLiNER2.5 validation and benchmark results
 
 **Status: pre-release M7 working document.** M0–M6 and the explicit-span API are
-accepted on the pinned base checkpoint. Fresh small/base bundles have passed
-seven source/ONNX stages and native 30+2-case parity. Multi remains blocked by
-long-input centered-prefix drift under the unchanged numerical gate.
-Authoritative latency measurements, hosted artifact readback, remote
+accepted on the pinned base checkpoint. Fresh small/base/multi bundles have
+passed seven source/ONNX stages and native 30+2-case parity under the unchanged
+numerical gates. Authoritative latency measurements, hosted artifact readback, remote
 CI and external-consumer execution are pending. No release tag, CI run, hosted
 `codesoda/gliner2-onnx` bundle revision or downstream success is claimed here.
 
@@ -80,6 +79,32 @@ and records its historical ORT rc.9/native 1.20 context. It is not relabeled as
 rc.13 evidence. M5, M6, explicit-span and migration gates separately exercise
 the direct rc.13/native 1.28 runtime.
 
+## Fresh three-checkpoint bundle validation
+
+Each checkpoint used independently generated upstream outputs:30 original corpus
+cases, one Unicode mixed-task case and one explicit duplicate-span case. All
+non-confidence values and UTF-8 coordinates match exactly through native ORT1.28.
+
+| Checkpoint | Source/ONNX stages | Native cases | Maximum confidence error | Maximum explicit-logit error |
+| --- | ---: | ---: | ---: | ---: |
+| small | 7/7 | 32/32 | `3.159046e-6` | `1.311302e-5` |
+| base | 7/7 | 32/32 | `3.680587e-6` | `7.152557e-6` |
+| multi | 7/7 | 32/32 | `1.430511e-5` | `3.671646e-5` |
+
+The first multi run failed the centered-prefix gate. The correction preserves
+fp32 and the pinned AArch64 PyTorch reduction order rather than relaxing the
+bound: four interleaved four-lane accumulators with a four-level cascade,
+exported using dynamic ONNX control flow. Masking, count/division, centering and
+cumsum remain unchanged. Tiny-graph tests reproduce210 saved sums/means exactly
+and cover68 synthetic cases through65,537 tokens. Full marginal gates then pass
+for all three checkpoints; their other six graph hashes remain unchanged.
+See [`evidence/m7-integration.json`](evidence/m7-integration.json).
+
+Unsupported native empty-axis diagnostics are now opt-in using
+`--probe-unsupported-axes`, because known Python ORT1.20.1 SIGSEGVs trigger macOS
+crash dialogs. Default reports explicitly mark those probes not run. Supported
+inputs and native Rust caller-rejection/bypass checks remain mandatory.
+
 ## CPU latency benchmark protocol
 
 Authoritative timing is deferred until heavyweight export/validation lanes are
@@ -137,7 +162,7 @@ measured rather than inferred.
 | --- | --- |
 | Complete seven-graph small bundle, source proof and ONNX/native validation | Passed local seven-stage and native 30+2-case checks; not promoted |
 | Complete seven-graph base bundle rebuilt through final bundle tooling | Passed local seven-stage and native 30+2-case checks; not promoted |
-| Complete seven-graph multi bundle, own tokenizer/source proof and validation | Export + independent 30+2 source cases complete; long3000 prefix gate failed, native pending |
+| Complete seven-graph multi bundle, own tokenizer/source proof and validation | Passed local seven-stage and native 30+2-case checks after source-ordered prefix correction; not promoted |
 | Manifest promotion to `validated` + `release_ready: true` | **PENDING parent adjudication** |
 | Hosted Hugging Face immutable revision and clean download/readback | **PENDING; no revision claimed** |
 | Rust and Python selector/hash/path validation against published files | **PENDING integration** |

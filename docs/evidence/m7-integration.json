@@ -34,10 +34,10 @@
       "additional_cases": 2,
       "native_tests": 3,
       "non_confidence_outputs": "exact",
-      "maximum_confidence_abs": 0.0000032782554626464844,
-      "maximum_explicit_logit_abs": 0.0000133514404296875,
-      "report": "/tmp/gliner25-work/m7-small-validation.json",
-      "report_sha256": "9b49b766b4fd8b43064f84f937bad7895dec025782900cb3873f9329beac4afb"
+      "maximum_confidence_abs": 0.000003159046173095703,
+      "maximum_explicit_logit_abs": 0.000013113021850585938,
+      "report": "/tmp/gliner25-work/m7-small-corrected-validation.json",
+      "report_sha256": "d4b5af6c931f05032bb98feee6ed141dd3ceddc8c42970f533573518f18dc9df"
     },
     "base": {
       "status": "passed-local-unpromoted",
@@ -48,19 +48,35 @@
       "non_confidence_outputs": "exact",
       "maximum_confidence_abs": 0.000003680586814880371,
       "maximum_explicit_logit_abs": 0.000007152557373046875,
-      "report": "/tmp/gliner25-work/m7-base-validation.json",
-      "report_sha256": "d872f0e164b27efe9ec7b70feedcc70fffd33835ddc3ab68f49d420c2f33c391"
+      "report": "/tmp/gliner25-work/m7-base-corrected-validation.json",
+      "report_sha256": "aa74f5cd2eb7a906e23a8f6ad400a4978b26d55d78f8546c4b3e89ac18babb28"
     },
     "multi": {
-      "status": "blocked-no-tolerance-relaxation",
-      "source_corpus_cases": 30,
-      "source_additional_cases": 2,
-      "failed_comparison": "long_3000_words/onnx-golden/inside_prefix",
-      "coordinate": [0, 0, 3001],
-      "absolute_error": 0.0071811676025390625,
-      "active_tolerance": 0.00340269073,
-      "native": "not-run"
+      "status": "passed-local-unpromoted",
+      "python_onnx_stages": 7,
+      "corpus_cases": 30,
+      "additional_cases": 2,
+      "native_tests": 3,
+      "non_confidence_outputs": "exact",
+      "maximum_confidence_abs": 0.00001430511474609375,
+      "maximum_explicit_logit_abs": 0.000036716461181640625,
+      "report": "/tmp/gliner25-work/m7-multi-corrected-validation.json",
+      "report_sha256": "65b0a21d19c5d09ab3e3dc78844c3bb75c5bf9158ee403252e5bc0961d24e6fe"
     }
+  },
+  "prefix_correction": {
+    "initial_failed_comparison": "multi/long_3000_words/onnx-golden/inside_prefix",
+    "initial_coordinate": [0, 0, 3001],
+    "initial_absolute_error": 0.0071811676025390625,
+    "unchanged_active_tolerance_at_coordinate": 0.00340269073,
+    "change": "explicit pinned PyTorch AArch64 fp32 sum order for masked inside logits; division, centering and scan unchanged",
+    "tiny_graph_test_count": 7,
+    "bit_exact_saved_query_sums_and_means": 210,
+    "synthetic_positive_cases": 68,
+    "dynamic_length_max_tested": 65537,
+    "corrected_full_marginal_gate_failures": {"small": 0, "base": 0, "multi": 0},
+    "other_six_graph_hashes": "unchanged for each checkpoint",
+    "tolerance_changes": []
   },
   "unsupported_axis_diagnostics": {
     "historical_runs": "isolated ORT1.20 marginals L=0 and shared scorer C=0 probes returned SIGSEGV -11",
@@ -68,8 +84,7 @@
     "supported_inputs_and_rust_rejection_guards": "unchanged"
   },
   "remaining": [
-    "resolve multi prefix drift under existing gate; recheck all affected checkpoints",
-    "MSRV integration and fresh v2 tutorial regression",
+    "final corrected-artifact strict MSRV integration and fresh v2 tutorial regression",
     "complete artifact promotion and immutable HF publication/readback",
     "actual Rust and Python published-bundle downloads",
     "quiet-machine benchmark and reviewed results",
