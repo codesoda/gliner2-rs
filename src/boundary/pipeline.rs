@@ -571,6 +571,11 @@ impl BoundaryPipeline {
                 .collect();
             result.relations.insert(relation.name, pairs);
         }
+        // Upstream format_results retains every requested relation, including
+        // when proposals are empty or every learned score is below threshold.
+        for relation in &schema.relations {
+            result.relations.entry(relation.name.clone()).or_default();
+        }
         Ok(result)
     }
 

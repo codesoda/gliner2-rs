@@ -71,6 +71,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--confidence-atol", type=float, default=1e-3)
     parser.add_argument("--seed", type=int, default=1729)
     parser.add_argument("--report-json")
+    parser.add_argument(
+        "--probe-unsupported-axes",
+        action="store_true",
+        help=(
+            "opt in to isolated ORT Q=0/C=0/L=0 diagnostics outside the supported "
+            "contract; may trigger an OS crash dialog"
+        ),
+    )
     return parser.parse_args()
 
 
@@ -790,18 +798,31 @@ def main() -> None:
     counts["query_masked_cases"] += 1
     counts["batch_two_cases"] += 2
 
-    base = synthetic_case(
-        model, seed=args.seed + 300, batch=1, length=3, queries=2, candidates=3
-    )
+    # Contract rejection is mandatory, not inferred from native behavior.
+    # Opt-in subprocess diagnostics may still trigger OS crash dialogs.
     zero_status = {
-        zero: isolated_zero_probe(
-            onnx_path,
-            zero_inputs(base, zero=zero, hidden=int(model.hidden_size)),
-            zero,
-        )
+        zero: {
+            "label": zero,
+            "contract": "rejected-before-ORT",
+            "isolated_status": "not-run-unsupported-contract",
+            "isolated_returncode": None,
+        }
         for zero in ("q0", "c0", "l0")
     }
-    counts["isolated_zero_dimension_probes"] = 3
+    counts["isolated_zero_dimension_probes"] = 0
+    if args.probe_unsupported_axes:
+        base = synthetic_case(
+            model, seed=args.seed + 300, batch=1, length=3, queries=2, candidates=3
+        )
+        zero_status = {
+            zero: isolated_zero_probe(
+                onnx_path,
+                zero_inputs(base, zero=zero, hidden=int(model.hidden_size)),
+                zero,
+            )
+            for zero in ("q0", "c0", "l0")
+        }
+        counts["isolated_zero_dimension_probes"] = 3
 
     expected_counts = {
         "shared_indices_explicit_cases": 24,
@@ -815,7 +836,7 @@ def main() -> None:
         "supplied_false_mask_cases": 1,
         "query_masked_cases": 1,
         "batch_two_cases": 2,
-        "isolated_zero_dimension_probes": 3,
+        "isolated_zero_dimension_probes": 3 if args.probe_unsupported_axes else 0,
     }
     for name, expected in expected_counts.items():
         if counts[name] != expected:
@@ -834,7 +855,8 @@ def main() -> None:
         "mask_counts": dict(sorted(masks.items())),
         "zero_dimension_contract": (
             "B,L,Q,C must each be >=1; L0/Q0/C0 are rejected by the caller. "
-            "Native behavior is probed only in isolated subprocesses."
+            "Native diagnostics run only with --probe-unsupported-axes in "
+            "isolated subprocesses and may trigger OS crash dialogs."
         ),
         "zero_dimension_status": zero_status,
         "comparison_note": (

@@ -1,6 +1,7 @@
 pub mod adapters;
 pub mod api;
 pub mod boundary;
+pub mod bundle;
 pub mod classification;
 pub mod classifier;
 pub mod config;
@@ -26,5 +27,10 @@ pub mod validators;
 /// Architecture-aware high-level extractor. The low-level ONNX span head
 /// remains available as [`extractor::Extractor`].
 pub type Extractor = pipeline::AutoPipeline;
+
+pub use bundle::{
+    BoundaryModelPin, BundleFileMetadata, BundleManifest, BundleStatus, GraphMetadata,
+    TensorSignature, ValidatedBundle, validate_bundle,
+};
 
 pub type Result<T> = anyhow::Result<T>;

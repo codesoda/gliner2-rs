@@ -1,309 +1,247 @@
-# GLiNER2 vs GLiNER2.5 — differences, and what it takes for `gliner2-rs` to support both
+# GLiNER2 vs GLiNER2.5
 
-_Last reviewed: September 2026, against upstream `fastino-ai/GLiNER2` `main` and
-`fastino/gliner2.5-base-v1` `config.json`._
+This document explains which architecture to load and maps the GLiNER2.5 work to
+its current implementation state. The authoritative implementation and release
+gates remain [`PLAN-gliner2.5.md`](PLAN-gliner2.5.md) and
+[`AUDIT-gliner2.5.md`](AUDIT-gliner2.5.md).
 
-## TL;DR
+> **Release status:** the GLiNER2.5 implementation through M6, plus public
+> explicit-span scoring, has been accepted in the development branch. M7 bundle
+> construction, per-checkpoint validation, publication, download readback,
+> benchmark measurement, CI and an external-consumer test are still in progress.
+> There is not yet a released GLiNER2.5 bundle or release tag to recommend.
 
-- **Same encoder, same prompt format, same classifier head; entirely new
-  extraction head.** GLiNER2.5 keeps DeBERTa-v3, the `[P] [E] [C] [R] [L] [SEP]`
-  schema prompt, the word splitter and the `[L]`-token classification MLP. It
-  replaces the fixed-width span grid (`span_rep` + count MLP + CountLSTM) with a
-  **boundary** head: per-query start/end/inside logits, a sparse candidate pool,
-  and a reranker. No `max_width`, no `[L, W]` score grid, no 20-class count head.
-- **There is no GLiNER2.5 paper.** The only arXiv paper is GLiNER2
-  (2507.18546). GLiNER2.5 is documented in Fastino's blog post and in the code
-  under `gliner2/models/boundary/`. The HF card cites the 2.0 paper.
-- **`gliner2-rs` today implements the v2 span head exactly** (`spans.rs`,
-  `extractor.rs`, `decode.rs`, `extractor_padded.onnx`). None of that transfers.
-  Tokenizer, prompt formatting, encoder export, embedding gather, classifier
-  export, schema/JSON/result types and the adapter mechanism all do.
-- **Effort:** ~1–2 weeks for v2.5 entities + classification (ONNX export of the
-  boundary head is the hard part), ~1–2 more for records + relations, ~4–6 weeks
-  for full parity incl. attributes / JointIE / constrained classification /
-  chunking. Additive to the v2 path; no rewrite of what exists.
+## Which model should I choose?
 
-## Sources
+Choose by architecture and checkpoint behavior, not by treating 2.5 as an
+in-place upgrade:
 
-| What | Where |
+| Choose | When it is the better fit |
 | --- | --- |
-| GLiNER2 paper | https://arxiv.org/abs/2507.18546 |
-| GLiNER2.5 release post | https://fastino.ai/blog/gliner2-5-span-free-information-extraction |
-| Model card | https://huggingface.co/fastino/gliner2.5-base-v1 |
-| Checkpoint config | `https://huggingface.co/fastino/gliner2.5-base-v1/raw/main/config.json` |
-| Upstream code | `gliner2/models/span/` (v2), `gliner2/models/boundary/` (v2.5), `gliner2/processing/`, `gliner2/inference/` |
+| **GLiNER2 (`span`)** | You need the currently published `gliner2-base-v1` or `gliner2-large-v1` ONNX artifacts; depend on a v2 fine-tune or encoder adapter; want the established fixed-width dense span head; or your short-text NER/classification workload already performs well on v2. |
+| **GLiNER2.5 (`boundary`)** | You need candidates beyond v2's fixed span width, boundary record formation, the learned sparse relation head, multilingual 2.5 checkpoints, or direct scoring of caller-supplied spans. Wait for validated bundles if you need a published artifact rather than a development checkout. |
 
-## Implementation source review (pinned follow-up)
+The model families have different extraction heads and training data. Published
+upstream results show task-dependent gains and losses; “2.5” does not mean every
+v2 workload gets higher quality. Weights for a v2 extraction head do not transfer
+to a boundary head.
 
-The implementation plan is [`PLAN-gliner2.5.md`](./PLAN-gliner2.5.md), with
-requirement evidence tracked separately in [`AUDIT-gliner2.5.md`](./AUDIT-gliner2.5.md).
-At upstream commit `d7c727458bf6929bc9ef5ee04e13c3f717a7c455`, source/header
-inspection corrected several assumptions in the original research below:
+Checkpoint choices planned for the first 2.5 bundles are:
 
-- Actual released checkpoint tensors are **F32**, despite encoder configs
-  declaring float16. Export still explicitly casts/validates fp32.
-- Shared-pool endpoint selection uses **stable sort**, not unstable torch.topk.
-  Pool output is padded to 192; quotas use reserved rank priorities and final
-  tie-breaking by encoded span key. See plan for exact ordering.
-- **Explicit-span scoring uses a separate sparse learned scorer**, even on
-  shared-pool models. The two shared-inference graphs are insufficient for
-  JSON choice fields or public explicit scoring; a third graph is required.
-- Legacy JSON uses a single boundary-decoded record, not the v2 count/grid
-  path. Natural record mode can have more than 32 anchor instances.
-- `multi` defaults to whitespace splitting; character splitting is an explicit
-  option. Public upstream inference defaults to no word cap unless supplied;
-  the Rust task explicitly requests the config cap (4096 for these models).
-- The boundary window attention implementation and encoder still use dense
-  attention operations; do not interpret bounded candidate selection as
-  linear end-to-end memory/time.
-- `[R]` is already included in the crate's legacy embedding gather. What is
-  missing is explicit query routing and boundary-specific relation handling.
-
-These corrections override the older descriptions below. They are verified
-source findings, **not claims that Rust 2.5 inference has shipped**. M0 is in
-progress; all mandatory model/export/parity/publication gates remain tracked.
-
-## 1. What is shared
-
-| Component | GLiNER2 | GLiNER2.5 | Notes |
+| Bundle | Upstream checkpoint | Encoder | Typical reason to choose it |
 | --- | --- | --- | --- |
-| Encoder | DeBERTa-v3 base / mDeBERTa / xsmall | same family | 2.5 family: small (74M, xsmall), base (194M), multi (287M, mDeBERTa) |
-| Token pooling | first sub-token | first sub-token | `token_pooling: "first"` |
-| Special tokens | `[P] [E] [C] [L] [SEP]` (+`[R]` in newer 2.x) | `[P] [E] [C] [R] [L] [SEP]` | `processor.py:281-285` |
-| Word splitter | `WhitespaceTokenSplitter` regex | identical regex | `src/text.rs` already matches byte-for-byte; 2.5 adds optional `CharLevelSplitter` for CJK |
-| Prompt layout | `[P] task ([E] a [E] b) [SEP] text…`, multiple schemas concatenated | same | `format_input_with_mapping` in `src/schema.rs` is reusable |
-| Classification head | `create_mlp(H → 2H → 1)` on each `[L]` embedding | identical shape | `classifier.onnx` export reusable; state-dict key names still to be verified |
-| Public API shape | `extract_entities / classify_text / extract_json / extract_relations / extract(schema)` | same + `_long` variants, `Classifier`, `JointIE`, `AttributeGroup` | `AutoExtractor.from_pretrained` dispatches on `config.architecture` |
-| LoRA | `apply_lora` on encoder | `apply_lora` on encoder | crate's "swap merged `encoder.onnx`" approach still applies |
+| `gliner2.5-small-v1` | `fastino/gliner2.5-small-v1` | DeBERTa-v3 xsmall, width 384 | Lowest footprint; must still pass independent validation before publication. |
+| `gliner2.5-base-v1` | `fastino/gliner2.5-base-v1` | DeBERTa-v3 base, width 768 | Reference implementation and accepted M0–M6 parity work. |
+| `gliner2.5-multi-v1` | `fastino/gliner2.5-multi-v1` | mDeBERTa-v3 base, width 768 | Multilingual tokenizer/checkpoint; never substitute the base tokenizer. |
 
-## 2. What changed: the extraction head
+All three default to whitespace word splitting. Character splitting is an
+explicit boundary-pipeline option, not automatic dispatch for the multi model.
 
-### GLiNER2 (span architecture) — what this crate implements
+## Architecture differences
 
-```
-text_emb [L,H] ─┐
-                ├─ span_rep(text, spans[L×W]) ──► span_rep [L, W, H]
-spans_idx ──────┘
-[P] emb ────────── count_pred MLP ──────────► count_logits [20]
-[C]/[E] embs ───── count_embed (GRU over 20 count steps + cross-field transformer)
-                                            ──► struct_proj [20, F, H]
-einsum("lkd,pmd->pmlk") ────────────────────► span_scores [20, F, L, W]
-```
+The two families share DeBERTa-style encoders, schema prompt markers, first
+sub-token pooling and a classification MLP. Their extraction paths differ:
 
-Decode: for each (instance, field), sigmoid every cell of the `[L, W]` grid,
-threshold, greedy non-overlap. Instances = argmax of `count_logits`.
-Relations are a 2-field structure (head, tail). Hard limits: `max_width`
-(crate: 8 words), 20 instances, `MAX_FIELDS` baked into the ONNX (crate: 64).
-
-### GLiNER2.5 (boundary architecture)
-
-Relevant `config.json` values for `gliner2.5-base-v1`:
-
-```
-boundary_dim 128, pair_dim 128, content_dim 64
-boundary_attention_layers 2, heads 4, window 128, refinement_layers 1
-candidate_pool "shared", pool_boundary_top_k 32, pool_size 192, min_pool_per_query 8
-enable_span_content true, enable_rotary_endpoints true, use_inside_evidence true
-enable_abstention true, enable_count_head true
-enable_records true (record_dim 128, record_instance_queries 32)
-enable_relations true (biaffine, heads/tails per type 32, pair_cap 64)
-overlap_policy "flat", max_len 4096
-```
-
-Pipeline (`BoundaryHead.forward`, `pool.py`, `heads.py`, `encoding.py`):
-
-1. **Query routing** (`_encode_core`): every `[E]`/`[C]`/`[R]` marker embedding
-   becomes one *query* vector `[Q, H]`. Text words become `text_states [L, H]`.
-2. **BoundaryEncoder**: builds `L+1` boundary states from (left token, right
-   token) pairs with learned BOS/EOS, projects to 128-d, runs 2 windowed
-   self-attention layers + 1 SwiGLU block → `boundary_states [L+1, 128]`.
-3. **BoundaryQueryHead**: scaled dot products give, per query,
-   `start_logits [Q, L+1]`, `end_logits [Q, L+1]`, `inside_logits [Q, L]`, plus a
-   centred prefix-sum of inside logits (`inside_prefix [Q, L+1]`, `inside_mean`).
-4. **DocumentCandidatePool** (shared across queries): max over queries of
-   start/end logits → top-32 starts × top-32 ends → Cartesian pairs with
-   `end > start` → compat = projected dot product → score = compat + start + end
-   marginal → per-query quota of 8 best pairs, then global fill, dedup → ≤192
-   candidates `indices [C, 2]` (half-open word spans). Uses `topk`, stable
-   `argsort`, dedup: data-dependent ops.
-5. **SharedPoolScorer**: candidate feature = start proj + end proj +
-   `Linear(3)` over `(log1p(len), len/L, rsqrt(len))` + prior proj + span content
-   (mean-pooled value projection via prefix sums) → LayerNorm → FiLM-conditioned
-   MLP per query + dot product + gathered start/end marginals + inside evidence
-   → `pair_logits [Q, C]`.
-6. **Auxiliary heads**: `null_projection` (abstention prob per query, threshold
-   0.5) and `count_head` (log-rate per query, used for adaptive thresholding —
-   off in this checkpoint).
-7. **Decode** (`inference/candidate_decoder.py`): `sigmoid(logit /
-   pair_temperature) ≥ threshold` → per-query overlap policy (default `flat` =
-   weighted interval scheduling; alternatives exist) → char offsets
-   `start_map[s], end_map[e-1]` → stable sort.
-8. **Records** (`RecordHead`, `records.py`): anchor-based instance queries (32)
-   over `candidate_states` (a `Linear(2·128 → H)` over the pooled candidate
-   endpoints); field assignment logits per instance; `decode_group` builds
-   records. Replaces count MLP + CountLSTM. Supports `mode="natural"` with an
-   anchor field; legacy structures still decode via the span-style path.
-9. **Relations** (`relations.py`): `TypedRelationPairGenerator` picks top heads /
-   tails per type from the same candidate pool (argument threshold 0.2, cap 64
-   pairs) → biaffine `SparseRelationScorer`; relation query = concat of the head
-   and tail `[R]` marker states.
-10. **Library-only additions** (no new weights): span attributes via
-    `score_explicit_spans`, `Classifier` with constraint-aware exact/beam
-    decoding, `JointIE` (typed entity–relation graph search), `*_long` chunking
-    with overlap merge.
-
-### Consequences
-
-| | GLiNER2 | GLiNER2.5 |
+| Area | GLiNER2 (`span`) | GLiNER2.5 (`boundary`) |
 | --- | --- | --- |
-| Max span length | `max_width` words (8 here); longer spans never scored | any length within the window |
-| Context | encoder limit, no chunking helper | trained to 4096 words + library chunking |
-| Compute vs length | O(L·W) span grid | linear in L for fixed budget |
-| Recall guarantee | every span ≤ W is scored | a gold span can be dropped at proposal time (pool of 192) |
-| Instance count | 20-class MLP | anchor-based record decoding |
-| Relations | independent head/tail spans | pooled candidates, biaffine, optional joint decoding |
-| Determinism / debuggability | dense grid, trivial | top-k/dedup with tie-break rules |
-| Upstream status | "stable" | README calls boundary "experimental", `architecture_version: 1` |
+| Candidate representation | Dense `[word, max_width]` span grid | Start/end/inside marginals, then a sparse shared pool of at most 192 candidates |
+| Span length | Limited by exported `max_width` | Not limited by v2's width grid; still limited by retained input and model/resource constraints |
+| Entity scoring | Legacy extractor graph | Boundary marginals + Rust pool selection + shared scorer |
+| Records | Count/grid structure path | Legacy single-record path or typed natural/latent/anchorless record metadata and record head |
+| Relations | Relation represented through the v2 structure path | Typed head/tail proposals and separate content-gated biaffine relation graph |
+| Explicit spans | No equivalent learned boundary head | Separate sparse explicit scorer for caller-provided spans |
+| Default word cap | No cap when absent from config | Checkpoint config defaults to 4096 words |
 
-### Published benchmarks (macro F1, from the release post)
+A fixed candidate budget does **not** make the whole 2.5 pipeline linear: the
+encoder and boundary attention contain dense operations, and long inputs can be
+quadratic in memory/time. The 4096 setting is a word cap, not a promise that every
+4096-word request fits every machine.
 
-| Dataset | 2.5 Multi | 2.5 Base | GLiNER2 Multi | GLiNER2 Base |
-| --- | ---: | ---: | ---: | ---: |
-| Overall (16 tasks) | **56.17** | 54.87 | 56.09 | 53.34 |
-| Classification avg | **72.44** | 69.86 | 70.32 | 68.89 |
-| Extraction avg | 46.40 | 45.88 | **47.56** | 44.01 |
-| xnli | **62.30** | 54.49 | 37.55 | 49.01 |
-| few_nerd | 52.37 | **55.14** | 51.49 | 47.22 |
-| ronec (multilingual NER) | **40.13** | 37.01 | 38.86 | 31.55 |
-| crossner_politics | 55.26 | 56.41 | 62.47 | **66.52** |
-| crossner_ai | 45.60 | 50.69 | 50.31 | **52.12** |
-| imdb | 85.96 | 88.10 | 89.42 | **89.70** |
-| clinc_oos (intent) | 61.32 | 62.20 | 62.59 | **63.62** |
-| multilingual_sentiment | 79.42 | 63.14 | **81.30** | 57.57 |
+## Rust API selection
 
-Read: 2.5 is a different model with different (fully synthetic) training data,
-not a strict upgrade. Big wins on NLI, general/multilingual NER, long spans;
-small losses on several CrossNER splits, sentiment and intent.
+Use `AutoPipeline::from_dir` when application code may load either architecture:
 
-## 3. Which to pick
+```rust,ignore
+use gliner2_rs::pipeline::AutoPipeline;
 
-**GLiNER2.5** when you need: spans longer than ~8–12 words; whole documents;
-relations you can trust as a graph; per-span attributes; constrained multi-task
-classification; NLI-style classification; non-English NER.
+let pipeline = AutoPipeline::from_dir("/path/to/one/complete/bundle")?;
+```
 
-**GLiNER2** when: you need it to run in this crate today; the task is short-text
-NER / sentiment / topic / intent (v2 is as good or better on the published
-numbers); you depend on span-architecture fine-tunes (GLiGuard, PII models, your
-own LoRAs — weights do not transfer); you want a dense, deterministic head.
+`config.json` selects `span` or `boundary`; a missing architecture retains the
+legacy span default. Unknown architectures/versions and missing required graph
+files are errors rather than fallback to the other architecture.
 
-They are not mutually exclusive: encoder, prompt format and classifier head are
-shared, so one crate can serve both.
+For source compatibility, `Gliner2Pipeline` remains an alias for `SpanPipeline`,
+and the crate-root `Extractor` alias refers to `AutoPipeline`. This is distinct
+from the existing low-level `extractor::Extractor` v2 ONNX wrapper.
 
-## 4. Mapping onto `gliner2-rs`
+The high-level entity, classification, JSON, relation, combined-schema and
+adapter methods delegate to the selected implementation. Boundary combined
+extraction uses one prompt in structures/entities/relations/classifications
+order; it does not run separate v2 task-family passes.
 
-### Reusable as-is or nearly
+### Coordinates and overlap
 
-| File | Status |
-| --- | --- |
-| `src/text.rs` | ✅ identical regex to upstream `WhitespaceTokenSplitter`; byte offsets vs Python char offsets is pre-existing and internally consistent |
-| `src/tokenizer.rs`, `src/schema.rs` | ✅ same prompt layout |
-| `src/embeddings.rs` | ⚠️ needs `[R]` marker + "one query per marker" enumeration |
-| `src/encoder.rs`, `scripts/export/export_encoder.py` | ✅ same DeBERTa; verify fp16 → fp32 cast and 4096-word sequences |
-| `src/classifier.rs`, `src/classification.rs`, `export_classifier.py` | ✅ same MLP shape |
-| `src/schema_spec.rs`, `src/json.rs`, `src/validators.rs`, `src/entities.rs`, `src/relations.rs`, `src/structures.rs` (types) | ✅ |
-| `src/adapters.rs`, `export_adapter_encoder.py` | ✅ |
+Public spans are half-open UTF-8 **byte** ranges into the caller's original
+text, so `&text[start..end]` is valid. Python reference offsets are Unicode
+code-point offsets and are converted during parity checks; byte and code-point
+positions are not interchangeable on Unicode text. Internal nearest-occurrence
+and relation ranking preserve Python code-point semantics before exposing bytes.
+Synthetic terminal punctuation used by boundary preprocessing is never returned
+as caller text.
 
-### Not reusable for 2.5
+Boundary overlap policies are `Allow`, `Nested`, `Disallow` (the checkpoint's
+`flat` policy) and `Longest`, configurable with
+`AutoPipeline::set_boundary_overlap_policy`. This option is intentionally
+rejected for span models instead of changing v2 behavior.
 
-`src/spans.rs`, `src/extractor.rs`, `src/decode.rs` (grid decode), the count
-loop in `extract_structures_with_specs`, relation-as-structure in
-`extract_relations_with_specs`, `export_extractor*.py`, and the
-`max_width` / `extractor_max_fields` assumptions in `pipeline.rs`.
+### Records
 
-### Gaps that are not 2.5-specific but 2.5 exposes
+Existing JSON/schema methods retain their old signatures. Boundary record
+formation is additive through a sidecar keyed by structure name:
 
-- `max_len` word truncation (`processor.py:580`) is not applied anywhere in the
-  crate.
-- `CharLevelSplitter` not ported (only matters for CJK with the multi model).
+```rust,ignore
+use gliner2_rs::boundary::record_schema::{RecordConfig, RecordMetadata};
 
-## 5. Upgrade plan
+let mut records = RecordMetadata::new();
+records.insert("people".into(), RecordConfig::natural("name"));
+let result = pipeline.extract_json_with_records(
+    text,
+    &schema,
+    &records,
+    0.5,
+    true,  // confidence
+    true,  // spans
+)?;
+```
 
-### Phase 0 — dispatch and scaffolding (½–1 day)
+`RecordConfig::natural(anchor)`, `latent()` and `anchorless()` select the three
+record modes. Per-field cardinality/exclusivity overrides use
+`RecordFieldOptions`. Structures omitted from the sidecar keep legacy boundary
+JSON behavior. Span/v2 models explicitly reject record metadata; it is not
+stored globally or encoded into label strings.
 
-- Read `config.json`; branch on `architecture` (`"span"` default when missing).
-- Introduce an `Extractor` trait (or enum) over the public methods; move the
-  current `Gliner2Pipeline` body to `SpanPipeline`; add `BoundaryPipeline`;
-  add an `AutoExtractor`-style constructor.
-- Apply `max_len` word truncation in the shared preprocessing.
+### Relations
 
-### Phase 1 — boundary head export + entities + classification (1–2 weeks)
+The existing `extract_relations*` and combined-schema methods work on both
+architectures but dispatch to different heads. In a boundary model, endpoints
+come from raw shared-scorer candidates, typed relation queries use distinct head
+and tail states, and the final confidence is the temperature-calibrated learned
+relation score—not a product of endpoint probabilities. The implementation also
+ports upstream canonical-mention, coordinate/semantic deduplication,
+nearest-occurrence and strict token-subset behavior.
 
-Upstream ships no ONNX exporter. The `export_mode` flag only removes a block
-loop in the *per-query* proposer, which this checkpoint doesn't use
-(`candidate_pool: "shared"`). Recommended split:
+### Explicit-span scoring
 
-1. `boundary_marginals.onnx` — `BoundaryEncoder` + `BoundaryQueryHead`.
-   Inputs `text_states [L,H]`, `query_states [Q,H]`; outputs
-   `boundary_states [L+1,128]`, `start_logits`, `end_logits`, `inside_prefix`,
-   `inside_mean`, plus the pool's projected `start_all`/`end_all` [L+1,128].
-   Pure linear/attention/cumsum — exports cleanly. Note masks use a finite
-   sentinel (`MASK_LOGIT = -1e4`) not `-inf`.
-2. **Candidate pool in Rust** (`pool.rs`): max over queries, top-32 starts/ends,
-   Cartesian pairing, compat via the exported projections, per-query quota (8)
-   with rank bonus, global fill, dedup to 192. Replicate stable-sort
-   tie-breaking so parity tests pass.
-3. `boundary_scorer.onnx` — `SharedPoolScorer` given explicit
-   `indices [C,2]`, `mask [C]`, `compat [C]`, plus `null_projection` and
-   `count_head`. Outputs `pair_logits [Q,C]`, `candidate_states [C,H]`
-   (needed for records), `null_logits [Q]`. Mirrors upstream's own
-   `score_explicit_spans` path, so it is a sanctioned graph shape.
-4. Decoder (`boundary_decode.rs`): sigmoid/threshold, overlap policies
-   (`flat` WIS + others in `inference/overlap.py`), abstention, half-open
-   boundary → char offsets, stable ordering.
-5. Golden-parity tests against Python outputs per task; keep the CI
-   skip-when-no-models pattern.
+`BoundaryPipeline::score_explicit_spans` and the matching `AutoPipeline` method
+score each supplied span for each supplied label with the separate learned sparse
+explicit scorer:
 
-Alternative: export the whole head as one graph with `topk`/`argsort`/`unique`
-inside. Faster to try, but ORT support for stable argsort + dedup with dynamic
-shapes is the risk; the split above avoids it.
+```rust,ignore
+let scores = pipeline.score_explicit_spans(
+    "Alice joined Acme.",
+    &["person".into(), "organization".into()],
+    &[[0, 5], [13, 17]],
+)?;
+```
 
-### Phase 2 — records and relations (1–2 weeks)
+Bounds must be nonempty, half-open UTF-8 bytes exactly aligned to retained word
+boundaries. Invalid UTF-8 boundaries, partial words, truncation and wholly
+synthetic punctuation are errors, not silently snapped spans. Labels and spans,
+including duplicates, preserve caller order. The result reports source text,
+bounds, raw logit and pair-temperature-calibrated confidence.
 
-- Export `RecordHead` (`forward_group` path) and port `decode_group`
-  (~200 lines) including anchor / natural mode and legacy structure fallback.
-- Port `TypedRelationPairGenerator` (thresholded top heads/tails, pair cap) and
-  export `SparseRelationScorer`.
+This API deliberately performs no candidate pooling, thresholding, abstention,
+overlap handling or deduplication. Scores are independent sigmoid values and are
+not constrained to sum to one. Empty labels return no groups; empty spans return
+one empty group per label without calling native heads. Span/v2 models return an
+unsupported error rather than emulating this with their grid head.
 
-### Phase 3 — library features (optional, incremental)
+## Complete bundle contract (M7 development)
 
-- Span attributes (`AttributeGroup`, `score_explicit_spans` reuse of the
-  scorer graph).
-- Constrained classification (exact/beam search over per-task probabilities —
-  pure Rust, no new weights).
-- `JointIE` beam search with typed endpoints / uniqueness / no-cycle rules.
-- `*_long` chunking with overlap merge policies.
+A usable 2.5 bundle is not “an encoder plus a head.” It must colocate tokenizer
+and configuration metadata, notices, and exactly these seven graphs:
 
-### Risks / things to confirm early
+1. `encoder.onnx`
+2. `classifier.onnx`
+3. `boundary_marginals.onnx`
+4. `boundary_scorer.onnx`
+5. `boundary_explicit_scorer.onnx`
+6. `boundary_records.onnx`
+7. `boundary_relations.onnx`
 
-- Actual checkpoint headers contain F32 weights; encoder metadata says float16.
-  Cast and inspect exports. Preserve trained relative-position bucket settings;
-  4096 words does not mean resizing position embeddings to 4096. Long sequence
-  numerical/memory tests remain required.
-- Classifier keys confirmed: `classifier.0.{weight,bias}` and
-  `classifier.3.{weight,bias}`. Numerical export parity remains required.
-- Byte vs char offsets: Rust retains UTF-8 byte offsets, golden comparisons
-  explicitly convert Python code-point offsets. Unicode/CJK tests remain required.
-- Upstream is pinned in the plan, but manifests and verified exports are pending.
-- Additional explicit sparse scorer is required for JSON choices and explicit
-  scoring; exporting only the shared scorer is not a parity implementation.
-- Scalar exclusive record assignment requires global matching, not greedy fill;
-  ragged inference differs from dense training. Natural anchors are not capped
-  at 32. Relations require directional 2H queries and text-state endpoint gathers.
-- Cross-framework floating reduction may change compatibility values or pool
-  cutoffs; exact discrete parity remains required. No tolerance exception yet.
-- Encoder-only adapter switching cannot represent head-targeted LoRA; reject
-  unsupported adapter bundles instead of silently ignoring adapted heads.
-- Existing hosted v2 bundles omit tokenizer/config files. Fresh installation
-  must be verified independently of this developer machine's model directories.
-- Current upstream declares transformers<5 while checkpoint metadata names
-  5.8.0. Pin a tested export dependency set and record any compatibility issues.
+It also needs `config.json`, `tokenizer.json`, `tokenizer_config.json`,
+`encoder_config/config.json`, `SOURCE_MODEL_CARD.md`, `LICENSE`, `NOTICE`, and
+`export_manifest.json`. The notice identifies the source/model and the fp32/ONNX
+conversion. The manifest records immutable source/model
+identities, fp32/opset 17 conversion, actual graph signatures, sizes and SHA-256
+checksums. A downloader must reject partial/unvalidated bundles, unsafe relative
+paths, unsupported architecture/version, and size/hash mismatches.
+
+The M7 downloader interface is being extended with selectors `2.5-small`,
+`2.5-base` and `2.5-multi` in addition to v2 `base` and `large`; `all` will mean
+all five and can be a large download. Full bundle names may also be accepted.
+Destination override and immutable repository revision selection are part of the
+M7 contract. These selectors describe the interface under integration, **not a
+claim that validated 2.5 artifacts are already hosted**.
+
+M7 also colocates the previously omitted v2 tokenizer/config metadata with v2
+ONNX files so a fresh consumer does not need a Python checkpoint or warm HF
+cache. Legacy split `models/` + `onnx/` loading remains a compatibility fallback.
+Boundary manifests are not applied retroactively to v2 bundles.
+
+## Runtime and numerical scope
+
+Rust inference uses `ort = 2.0.0-rc.13` directly with native ONNX Runtime 1.28,
+four intra-op threads and Level3 graph optimization. The project minimum is Rust
+1.91 because of the locked Hugging Face/Xet dependency graph. Python is not used
+by the Rust build or inference runtime.
+
+Accepted numerical evidence is CPU fp32 on the pinned base checkpoint. Python
+reference generation uses ONNX Runtime 1.20.1 and pinned Torch 2.8.0; Rust native
+checks use ORT 1.28. Stage comparisons retain `1e-4 + 1e-3*abs(reference)` except
+the explicitly documented centered-prefix coordinate envelope. Discrete pool and
+formatting outputs remain exact; final confidence tolerance is `1e-3`. The v2
+runtime migration permits only finite confidence drift up to `1e-6`, with all
+non-confidence output exact. These are tested reference contracts, not universal
+cross-provider, cross-hardware error guarantees.
+
+Small and multi need independent source, ONNX and native validation. Base results
+must not be relabeled as evidence for those checkpoints. See
+[`RESULTS-gliner2.5.md`](RESULTS-gliner2.5.md) for measured parity evidence and
+pending benchmark fields.
+
+## Implementation requirement map
+
+“Accepted” below means the development gate was reviewed; it does not mean M7
+publication or a tagged release exists.
+
+| Milestone / original requirement | Development status | User-visible mapping |
+| --- | --- | --- |
+| M0 dispatch, compatibility and preprocessing | Accepted | `SpanPipeline`, compatibility alias, `AutoPipeline`, architecture/version checks, query routing, max-length and artifact-root hygiene |
+| M1 pinned environment, corpus and common graphs | Accepted for base | Deterministic 30-case reference corpus, encoder/classifier fp32 validation and immutable pins |
+| M2 marginals | Accepted for base | Dynamic boundary marginal graph/wrapper, guarded empty axes and centered-prefix numerical rule |
+| M3 candidate selection | Accepted for base | Pure Rust stable top-k/quota/dedup/padding with exact discrete reference ordering |
+| M4 shared scorer/entities/classification | Accepted for base | Entity/classification/combined extraction, boundary overlap and source-faithful classification selection |
+| M5 records and JSON | Accepted for base | Record graph, legacy JSON plus typed natural/latent/anchorless sidecars and choice scoring via explicit head |
+| M6 relations | Accepted for base | Typed proposals, relation graph, all relation APIs and upstream postprocessing semantics |
+| Public explicit-span primitive | Accepted for base | Ordered byte-span API, separate learned graph, preflight errors and multiline example |
+| Direct ORT migration | Accepted | rc.13/native 1.28/Rust 1.91, no ORP/Python runtime; v2 confidence-only exception as above |
+| M7 bundles/publication/download/benchmark/CI/consumer | In development | Seven-graph small/base/multi bundles, manifests, selectors, v2 metadata colocation and release proof are pending |
+| M8 optional helpers | Unsupported/not started | Attributes, constrained classification, JointIE and long-document chunk/merge helpers are not promised by ordinary boundary support |
+
+## Immutable sources
+
+- Upstream GLiNER2 source: `d7c727458bf6929bc9ef5ee04e13c3f717a7c455`
+- small: `fastino/gliner2.5-small-v1` at
+  `f1e4d8fdd6fe328f45dee6aca3e6a07c9db4296e`
+- base: `fastino/gliner2.5-base-v1` at
+  `78cea040597df251eedefa9d7ee2a756af39fe64`
+- multi: `fastino/gliner2.5-multi-v1` at
+  `235cf92d6d4318da9bfca0d08975c8fa7250d13b`
+
+Relevant upstream references include the
+[GLiNER2 paper](https://arxiv.org/abs/2507.18546), the
+[GLiNER2.5 release post](https://fastino.ai/blog/gliner2-5-span-free-information-extraction),
+and code under `gliner2/models/{span,boundary}` at the pinned commit. There is no
+separate GLiNER2.5 paper; the model cards refer to the GLiNER2 paper.

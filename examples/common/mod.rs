@@ -18,13 +18,16 @@ pub struct ModelPaths {
     pub classifier: Option<PathBuf>,
 }
 
-/// Load either a boundary bundle or the legacy split-layout span model.
+/// Load either a boundary bundle or a span model.
 ///
-/// Architecture metadata is taken from the ONNX bundle when it contains a
-/// `config.json`; otherwise the legacy metadata/tokenizer directory is used.
+/// A span bundle uses its colocated config and tokenizer when both are present.
+/// The separate `models/<name>` metadata directory remains a fallback for old
+/// ONNX-only downloads. A boundary config is always loaded as a bundle so that
+/// incomplete boundary metadata fails rather than being mistaken for v2.
 #[allow(dead_code)] // Shared by examples that do not load an inference pipeline.
 pub fn load_auto_pipeline(paths: &ModelPaths, with_classifier: bool) -> Result<AutoPipeline> {
-    let config_dir = if paths.onnx_dir.join("config.json").is_file() {
+    let has_bundle_config = paths.onnx_dir.join("config.json").is_file();
+    let config_dir = if has_bundle_config {
         &paths.onnx_dir
     } else {
         &paths.model_dir
@@ -33,7 +36,13 @@ pub fn load_auto_pipeline(paths: &ModelPaths, with_classifier: bool) -> Result<A
     match ModelConfig::from_dir(config_dir)?.architecture {
         Architecture::Boundary => AutoPipeline::from_dir(&paths.onnx_dir),
         Architecture::Span => {
-            let pipeline = SpanPipeline::new(&paths.model_dir, &paths.encoder, &paths.extractor)?;
+            let metadata_dir =
+                if has_bundle_config && paths.onnx_dir.join("tokenizer.json").is_file() {
+                    &paths.onnx_dir
+                } else {
+                    &paths.model_dir
+                };
+            let pipeline = SpanPipeline::new(metadata_dir, &paths.encoder, &paths.extractor)?;
             let pipeline = if with_classifier {
                 let classifier = paths.classifier.as_ref().ok_or_else(|| {
                     anyhow!("missing classifier.onnx in {}", paths.onnx_dir.display())

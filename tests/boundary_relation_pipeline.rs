@@ -293,12 +293,13 @@ fn relation_schema_options_preflight_and_joint_routing_are_supported() -> Result
         relations: vec![RelationSpec::new("works for").threshold(1.0)],
         ..SchemaSpec::default()
     };
-    ensure!(
-        pipeline
-            .extract(text, &suppressed, 0.0)?
-            .relations
-            .is_empty()
-    );
+    let suppressed_output = pipeline.extract(text, &suppressed, 0.0)?;
+    ensure!(suppressed_output.relations.len() == 1);
+    ensure!(suppressed_output.relations["works for"].is_empty());
+    // Empty input and the public relation formatter retain requested labels too.
+    let empty = pipeline.extract_relations("", &["works for".to_owned()], 0.5)?;
+    ensure!(empty.len() == 1);
+    ensure!(empty["works for"].is_empty());
 
     let described = SchemaSpec {
         relations: vec![RelationSpec::new("works for").description("employment relationship")],

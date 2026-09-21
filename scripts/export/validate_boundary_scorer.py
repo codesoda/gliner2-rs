@@ -72,6 +72,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--rtol", type=float, default=1e-3)
     parser.add_argument("--seed", type=int, default=1729)
     parser.add_argument("--report-json")
+    parser.add_argument(
+        "--probe-unsupported-axes",
+        action="store_true",
+        help=(
+            "opt in to isolated ORT Q=0/C=0 diagnostics outside the supported "
+            "contract; may trigger an OS crash dialog"
+        ),
+    )
     return parser.parse_args()
 
 
@@ -318,7 +326,7 @@ def isolated_zero_probe(
     atol: float,
     rtol: float,
 ) -> str:
-    """Keep known ORT native zero-dimension hazards outside this process."""
+    """Opt-in diagnostic only: subprocess crashes may trigger OS crash dialogs."""
     with tempfile.TemporaryDirectory() as temporary:
         root = Path(temporary)
         input_path = root / "inputs.npz"
@@ -485,8 +493,14 @@ def main() -> None:
     invalid_counts.update(behavior)
     counts["synthetic_batch_cases"] += 1
 
+    # Unsupported axes require caller bypass, regardless of diagnostic results.
+    # Even isolated ORT probes may trigger OS crash dialogs, so require opt-in.
     zero_status: dict[str, str] = {}
     for label, queries, candidates in (("q0", 0, 3), ("c0", 2, 0)):
+        counts[f"synthetic_{label}_probes"] = 0
+        if not args.probe_unsupported_axes:
+            zero_status[label] = "not-run-caller-bypass"
+            continue
         zero_inputs = synthetic_inputs(
             args.seed + 300 + len(zero_status),
             batch=1,
@@ -512,15 +526,13 @@ def main() -> None:
                 atol=args.atol,
                 rtol=args.rtol,
             )
-        counts[f"synthetic_{label}_probes"] += 1
+            counts[f"synthetic_{label}_probes"] += 1
 
     expected_counts = {
         "golden_head_cases": 24,
         "long_head_cases": 3,
         "synthetic_dynamic_cases": 4,
         "synthetic_batch_cases": 1,
-        "synthetic_q0_probes": 1,
-        "synthetic_c0_probes": 1,
     }
     for name, expected in expected_counts.items():
         if counts[name] != expected:
@@ -535,8 +547,9 @@ def main() -> None:
         "fixture_count": len(fixtures),
         "case_counts": dict(sorted(counts.items())),
         "zero_dimension_policy": (
-            "Q=0 or C=0 is bypassed by the caller unless the isolated ORT probe "
-            "is validated; zero dimensions are never invoked in-process"
+            "Q=0 or C=0 requires caller bypass regardless of diagnostic results; "
+            "isolated ORT diagnostics run only with --probe-unsupported-axes "
+            "and may trigger OS crash dialogs; never invoked in-process"
         ),
         "zero_dimension_status": zero_status,
         "invalid_mask_checks": dict(sorted(invalid_counts.items())),

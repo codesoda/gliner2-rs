@@ -65,6 +65,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=1729)
     parser.add_argument("--report-json")
     parser.add_argument(
+        "--probe-unsupported-axes",
+        action="store_true",
+        help=(
+            "opt in to isolated ORT L=0 diagnostics outside the supported contract; "
+            "may trigger an OS crash dialog (supported Q=0 checks always run)"
+        ),
+    )
+    parser.add_argument(
         "--strict-prefix",
         action="store_true",
         help=(
@@ -520,67 +528,71 @@ def main() -> None:
     except (RuntimeError, ValueError, IndexError) as exc:
         oracle_status = f"unsupported: {type(exc).__name__}: {exc}"
 
-    # L=0 is outside the supported graph contract. ORT 1.20 is nevertheless
-    # probed in a subprocess because this graph is known to SIGSEGV rather than
-    # raise. Rust must reject L=0 before entering native inference, while the
-    # high-level pipeline normalizes empty user text to a single '.' token.
-    with tempfile.TemporaryDirectory() as temporary:
-        temporary_path = Path(temporary)
-        input_path = temporary_path / "input.npz"
-        output_path = temporary_path / "output.npz"
-        np.savez(input_path, **l0_inputs)
-        child = subprocess.run(
-            [
-                sys.executable,
-                "-c",
-                (
-                    "import numpy as np, onnxruntime as ort, sys; "
-                    "z=np.load(sys.argv[2]); "
-                    "s=ort.InferenceSession(sys.argv[1], providers=['CPUExecutionProvider']); "
-                    "names=[o.name for o in s.get_outputs()]; "
-                    "values=s.run(names,{k:z[k] for k in "
-                    "['text_states','text_mask','query_states','query_mask']}); "
-                    "np.savez(sys.argv[3],**dict(zip(names,values)))"
-                ),
-                str(onnx_path),
-                str(input_path),
-                str(output_path),
-            ],
-            check=False,
-        )
-        if child.returncode == -11:
-            probe_status = "known-ort-1.20-sigsegv-observed"
-        elif child.returncode != 0:
-            raise AssertionError(
-                "unexpected L=0 isolated ORT probe failure: "
-                f"status {child.returncode}; only the known -11 SIGSEGV is tolerated"
+    # L=0 is outside the supported graph contract. Opt-in diagnostics use a
+    # subprocess because ORT 1.20 may SIGSEGV and trigger an OS crash dialog.
+    # Rust must reject L=0 before native inference; the high-level pipeline
+    # normalizes empty user text to a single '.' token. Q=0 checks stay enabled.
+    probe_status = "not-run-unsupported-contract"
+    probe_returncode = None
+    if args.probe_unsupported_axes:
+        with tempfile.TemporaryDirectory() as temporary:
+            temporary_path = Path(temporary)
+            input_path = temporary_path / "input.npz"
+            output_path = temporary_path / "output.npz"
+            np.savez(input_path, **l0_inputs)
+            child = subprocess.run(
+                [
+                    sys.executable,
+                    "-c",
+                    (
+                        "import numpy as np, onnxruntime as ort, sys; "
+                        "z=np.load(sys.argv[2]); "
+                        "s=ort.InferenceSession(sys.argv[1], providers=['CPUExecutionProvider']); "
+                        "names=[o.name for o in s.get_outputs()]; "
+                        "values=s.run(names,{k:z[k] for k in "
+                        "['text_states','text_mask','query_states','query_mask']}); "
+                        "np.savez(sys.argv[3],**dict(zip(names,values)))"
+                    ),
+                    str(onnx_path),
+                    str(input_path),
+                    str(output_path),
+                ],
+                check=False,
             )
-        else:
-            if l0_oracle is None:
+            probe_returncode = child.returncode
+            if child.returncode == -11:
+                probe_status = "known-ort-1.20-sigsegv-observed"
+            elif child.returncode != 0:
                 raise AssertionError(
-                    "L=0 ORT probe returned outputs but the pinned oracle could not "
-                    "provide a numerical reference"
+                    "unexpected L=0 isolated ORT probe failure: "
+                    f"status {child.returncode}; only the known -11 SIGSEGV is tolerated"
                 )
-            with np.load(output_path, allow_pickle=False) as values:
-                actual = {name: values[name].copy() for name in OUTPUT_NAMES}
-            compare_onnx_output_sets(
-                "synthetic-l0-q1-isolated-unsupported-contract",
-                l0_oracle,
-                actual,
-                synthetic_stats,
-                raw_original_failures,
-                atol=args.atol,
-                rtol=args.rtol,
-                strict_prefix=args.strict_prefix,
-                failures=tolerance_failures,
-            )
-            probe_status = "returned-numerically-validated-outputs"
+            else:
+                if l0_oracle is None:
+                    raise AssertionError(
+                        "L=0 ORT probe returned outputs but the pinned oracle could not "
+                        "provide a numerical reference"
+                    )
+                with np.load(output_path, allow_pickle=False) as values:
+                    actual = {name: values[name].copy() for name in OUTPUT_NAMES}
+                compare_onnx_output_sets(
+                    "synthetic-l0-q1-isolated-unsupported-contract",
+                    l0_oracle,
+                    actual,
+                    synthetic_stats,
+                    raw_original_failures,
+                    atol=args.atol,
+                    rtol=args.rtol,
+                    strict_prefix=args.strict_prefix,
+                    failures=tolerance_failures,
+                )
+                probe_status = "returned-numerically-validated-outputs"
 
     l0_status = {
         "contract": "unsupported-L0",
         "oracle_status": oracle_status,
         "isolated_probe_status": probe_status,
-        "isolated_probe_returncode": child.returncode,
+        "isolated_probe_returncode": probe_returncode,
         "known_sigsegv_is_numerical_gate_failure": False,
         "rust_guard_requirement": (
             "MarginalModel must reject L=0 before calling ONNX Runtime"

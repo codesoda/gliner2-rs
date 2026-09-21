@@ -3,10 +3,12 @@
 [![CI](https://github.com/codesoda/gliner2-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/codesoda/gliner2-rs/actions/workflows/ci.yml)
 
 Rust inference for [GLiNER2](https://github.com/fastino-ai/GLiNER2) via ONNX
-Runtime — a Rust crate that runs entity extraction, classification, and
-structured extraction from ONNX exports of the Python `gliner2` models,
-without a Python dependency at inference time. Also includes the Python
-export scripts used to produce those ONNX files.
+Runtime — a Rust crate that runs entity extraction, classification, structured
+records and relations from ONNX exports without a Python build or inference
+dependency. The development branch supports both the legacy GLiNER2 span
+architecture and the GLiNER2.5 boundary architecture; validated hosted 2.5
+bundles and a release tag are still pending M7. Python export/reference tooling
+is included for development only.
 
 ## Using this from your own Rust project
 
@@ -74,26 +76,29 @@ python3 scripts/parity/validate_v2_tutorials.py --run \
   --actual-dir /tmp/gliner2-v2-regression --actual-prefix current
 ```
 
-The tutorials also require tokenizer/config files under
-`models/gliner2-base-v1/`. Python is used only for this development-time
-regression harness, not Rust inference or the Rust build.
+The tutorials use tokenizer/config files colocated with the ONNX graphs, or
+fall back to the legacy `models/gliner2-base-v1/` directory. Python is used only
+for this development-time regression harness, not Rust inference or the Rust build.
 
 ### Tags & versioning
 
 Tagged releases live at `vX.Y.Z` and match the version in `Cargo.toml`.
 Check [existing tags](https://github.com/codesoda/gliner2-rs/tags) or
-`git ls-remote --tags https://github.com/codesoda/gliner2-rs` for what's
-available. Every tag is built and tested by [CI](.github/workflows/ci.yml)
-before/after being pushed. To pin a specific commit instead of a tag, use
-`rev = "<sha>"` in place of `tag = "..."`.
+`git ls-remote --tags https://github.com/codesoda/gliner2-rs` for what actually
+exists. Do not infer that unreleased branch APIs are present in an older tag.
+To pin a specific commit instead of a tag, use `rev = "<sha>"` in place of
+`tag = "..."`. The parent M7 release process will create a matching tag only
+after bundles, remote CI and external-consumer evidence pass.
 
 ### CI
 
-[`.github/workflows/ci.yml`](.github/workflows/ci.yml) builds the crate
-(lib, tests, examples), then runs `cargo test` on every push to `main`,
-every `v*` tag, and every pull request. No model weights are required —
-model-dependent tests detect a missing `onnx/`/`models/` directory and skip
-themselves, so CI stays fast without pulling multi-gigabyte ONNX files.
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) provides the
+model-free build/test surface. The M7 Rust 1.91 + stable fmt/Clippy/locked-test
+workflow update and its first remote run are still integration/release gates;
+this document does not claim that remote result in advance. No model weights
+are required for ordinary CI: model-dependent tests detect absent artifacts and
+emit explicit skips rather than downloading multi-gigabyte files. Consequently,
+a green no-model run is not evidence that every counted test executed inference.
 
 Model tests resolve artifacts from the crate root by default. To test a separate
 artifact tree and make missing files fail instead of skip, run:
@@ -112,39 +117,70 @@ The root must contain `models/gliner2-base-v1/` and
 - `examples/` — tutorials covering classification, NER, JSON extraction,
   relations, adapters, and training data prep.
 - `tests/` — integration tests.
-- `scripts/export/` — Python scripts to export/validate GLiNER2 components
-  (encoder, extractor, classifier) to ONNX.
+- `scripts/export/` — Python development tools to export/validate v2 and the
+  seven-graph GLiNER2.5 boundary bundle; Python is not used by Rust inference.
 - `scripts/download_models.py` — fetches the ONNX exports from Hugging Face.
 
 ## Models
 
-The ONNX exports (`gliner2-base-v1`, `gliner2-large-v1`) are hosted on
-Hugging Face rather than committed here, since they're large binaries:
+The published ONNX exports currently available from Hugging Face are the v2
+`gliner2-base-v1` and `gliner2-large-v1` bundles:
 
 👉 https://huggingface.co/codesoda/gliner2-onnx
 
-Downloading them is a manual, opt-in step — nothing in this crate fetches
-models automatically. Pick one:
+Downloading is manual and opt-in; model acquisition is never part of `cargo
+build` or inference. Select either published v2 model explicitly:
 
 **Rust (no Python required):**
 
 ```bash
-cargo run --example download_models -- --model all     # both models
-cargo run --example download_models -- --model base    # just gliner2-base-v1
+cargo run --example download_models -- --model base
+cargo run --example download_models -- --model large
 ```
 
 **Python:**
 
 ```bash
 pip install huggingface_hub
-python3 scripts/download_models.py          # both models
 python3 scripts/download_models.py --model base
+python3 scripts/download_models.py --model large
 ```
 
-Either way, this populates `./onnx/gliner2-base-v1/` and
-`./onnx/gliner2-large-v1/` (each with `encoder.onnx`,
-`extractor.onnx`/`extractor_padded.onnx`, and `classifier.onnx`), which is
-the layout the examples expect.
+### M7 downloader interface under development
+
+M7 is adding selectors `2.5-small`, `2.5-base` and `2.5-multi`, while preserving
+v2 `base` and `large`. Once integrated, `all` explicitly means all five bundles
+and can download substantially more data. Destination override and immutable
+Hugging Face repository revision selection are also part of the M7 interface.
+These selectors are documented for development coordination; they do **not**
+mean validated 2.5 artifacts have already been published.
+
+A complete boundary bundle is a single directory containing `config.json`,
+`tokenizer.json`, `tokenizer_config.json`, `encoder_config/config.json`,
+`SOURCE_MODEL_CARD.md`, `LICENSE`, `NOTICE`, `export_manifest.json`, and all
+seven graphs:
+
+```text
+encoder.onnx
+classifier.onnx
+boundary_marginals.onnx
+boundary_scorer.onnx
+boundary_explicit_scorer.onnx
+boundary_records.onnx
+boundary_relations.onnx
+```
+
+The M7 downloaders must accept only manifests marked `validated` and
+`release_ready`, then check the architecture/version, required file set,
+streaming SHA-256 hashes and byte sizes. Unsafe absolute/traversal/Windows-style
+manifest paths and partial bundles are rejected. Export success alone does not
+promote a bundle.
+
+M7 also downloads and colocates the tokenizer/config metadata omitted from the
+old hosted v2 directories. This makes a fresh Rust consumer independent of a
+Python checkpoint and preexisting Hugging Face cache. The examples retain their
+legacy split `models/` + `onnx/` fallback. Boundary manifests are not used to
+reinterpret v2 bundles.
 
 ## Rust usage
 
@@ -155,30 +191,74 @@ cargo run --release --example tutorial_1_classification
 Most examples accept `--model <path-to-onnx-dir>` to point at a specific
 downloaded model bundle (see `examples/common/mod.rs`).
 
-### GLiNER2.5 explicit-span scoring (unreleased)
+### GLiNER2.5 boundary API (unreleased)
 
-The development branch provides `BoundaryPipeline::score_explicit_spans`, also
-available through `AutoPipeline`. It uses GLiNER2.5's separate learned sparse
-scorer—not the ordinary candidate-pool scorer. Complete hosted 2.5 bundles and a
-release tag are still pending; the existing `v0.1.0` tag does not contain this API.
+M0–M6 and public explicit-span scoring have passed their development gates on
+the pinned base checkpoint. This is not the M7 release gate: complete validated
+small/base/multi bundles, publication/readback, benchmark results, remote CI and
+an external consumer remain pending. The existing `v0.1.0` tag does not contain
+this API; do not change your dependency to a nonexistent release tag.
+
+Use architecture-aware loading when either family may be selected:
 
 ```rust,ignore
 use gliner2_rs::pipeline::AutoPipeline;
 
-let pipeline = AutoPipeline::from_dir("onnx/gliner2.5-base-v1")?;
+let pipeline = AutoPipeline::from_dir("/path/to/one/complete/bundle")?;
+let entities = pipeline.extract_entities(
+    "Alice joined Acme Corp.",
+    &["person".into(), "organization".into()],
+    0.5,
+)?;
+```
+
+`config.json` dispatches `span` or `boundary`; malformed/unsupported config and
+missing required graphs are errors. `Gliner2Pipeline` remains a compatibility
+alias for `SpanPipeline`, while the crate-root `Extractor` alias selects
+`AutoPipeline`. The high-level classification, entity, JSON, relation, combined
+schema and adapter methods delegate to the loaded architecture without routing a
+boundary model through the v2 extraction head.
+
+All public coordinates are half-open UTF-8 **byte offsets into the original
+text**, so `&text[start..end]` is safe. Python reference character offsets are
+converted explicitly. Synthetic punctuation added during boundary preprocessing
+is not exposed as caller text.
+
+#### Records and relations
+
+Existing schema/JSON signatures remain source-compatible. Boundary callers can
+opt into natural, latent or anchorless record formation with a typed
+`RecordMetadata` sidecar through `extract_with_records` or
+`extract_json_with_records`; structures omitted from the sidecar retain legacy
+record behavior. Span/v2 models explicitly reject this boundary-only metadata.
+
+The existing `extract_relations*` APIs dispatch to the 2.5 typed proposal and
+learned biaffine relation head for boundary models. Relation confidence comes
+from the calibrated relation logit, not a product of entity probabilities. The
+boundary implementation preserves canonical mention selection, deduplication,
+nearest occurrence and token-subset filtering, including Python code-point
+semantics before converting output to UTF-8 bytes.
+
+#### Explicit-span scoring
+
+`BoundaryPipeline::score_explicit_spans`, also available through `AutoPipeline`,
+uses the separate learned sparse scorer—not the ordinary shared candidate-pool
+scorer:
+
+```rust,ignore
 let text = "Alice joined Acme.";
 let labels = vec!["person".to_owned(), "organization".to_owned()];
 let scores = pipeline.score_explicit_spans(text, &labels, &[[0, 5], [13, 17]])?;
 ```
 
-Span bounds are half-open UTF-8 **byte offsets into the original text**, aligned
-to retained word-token boundaries. Invalid, partial-word or truncated spans
-return errors rather than being snapped. Labels and spans retain caller order
-and duplicates; duplicate labels are separate queries in the encoder context.
-Each result contains the original span text/bounds, raw logit and calibrated
-confidence. There is no thresholding, overlap resolution, abstention or dedup;
-confidences need not sum to one. Span-architecture (v2) models explicitly reject
-this API.
+Spans must be nonempty, retained word-aligned byte ranges. Invalid UTF-8
+boundaries, partial words, truncation and synthetic punctuation return errors
+rather than being snapped. Labels and spans preserve order and duplicates. Each
+result contains original text/bounds, raw logit and pair-temperature-calibrated
+confidence. This path performs no candidate pooling, thresholding, abstention,
+overlap resolution or deduplication; independent sigmoid confidences need not sum
+to one. Empty axes bypass native heads, and span/v2 models return an unsupported
+error rather than emulating this method.
 
 For a multiline Unicode example with trimmed line bounds:
 
@@ -186,6 +266,12 @@ For a multiline Unicode example with trimmed line bounds:
 cargo run --release --example explicit_span_scoring -- \
   --model /path/to/complete/gliner2.5-base-v1
 ```
+
+Optional M8 helpers—attributes, constrained classification, JointIE and
+long-document chunk/merge APIs—are not implemented or implied by ordinary
+boundary-model support. See [GLiNER2 vs GLiNER2.5](docs/gliner2-vs-gliner2.5.md)
+and the honest pending measurements in
+[GLiNER2.5 results](docs/RESULTS-gliner2.5.md).
 
 ## Exporting your own ONNX models
 

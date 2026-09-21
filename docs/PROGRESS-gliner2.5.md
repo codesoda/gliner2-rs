@@ -564,3 +564,41 @@ prompt-to-evidence checklist. Model-free test success is not model parity.
   notices, tests, independently regenerated artifacts and measured all gates.
   Evidence: `docs/evidence/m6.json`. M7 bundles/publication/readback/consumer/CI/tag
   remain open; M6 acceptance is not a completed release.
+
+## M7 — integration in progress (not accepted)
+
+- Parallel implementation produced complete-bundle export/validation tooling,
+  explicit Rust/Python downloaders, manifest validation, benchmark and downstream
+  consumer harnesses, documentation and the MSRV/stable CI matrix.
+- Three fresh staged bundles now contain all seven graphs and 14 checked runtime/
+  notice files each. Source encoder widths are independently checked: small384,
+  base768 and multi768. Every manifest remains `exported-unvalidated` with
+  `release_ready: false`; export success is not numerical acceptance.
+- Parent integration review found and corrected mismatched graph-signature
+  schemas, venv subprocess symlink resolution, and oracle metadata confusing
+  upstream-added punctuation with the caller's original text. A model-free
+  regression covers empty, Unicode and punctuation-normalized inputs. Original
+  M0–M6 fixtures and tolerance rules are unchanged.
+- Review also found missing synthetic-export CI dependencies, incomplete benchmark
+  evidence and an unbound downstream HF-revision claim. These are integration
+  work, not waived release gates. The model-free CI now exposes artifact skips.
+- Hugging Face authentication is available through the user-provided shell
+  environment; no secret is stored in this repository. Write permission and
+  publication/readback are not yet proven. Independent per-checkpoint source/
+  ONNX/native checks, final benchmark, clean downloads, external consumer,
+  remote CI and a matching release tag remain required.
+- Independent small validation exposed an actual public-output discrepancy:
+  upstream retains requested relation keys with empty lists, while Rust omitted
+  them after all candidates were rejected. Corrected boundary formatting (not
+  numeric decoding or the comparator) and added suppressed/empty-input coverage.
+  Fresh small and base aggregate reports now pass all seven Python/ONNX stages
+  plus native exact-output checks on30 corpus+mixed+explicit cases each.
+- Multi generation passed all32 source cases; validation is blocked at the
+  long3000 centered prefix: endpoint abs error0.0071811676 exceeds the existing
+  gate0.00340269073. No tolerance change is accepted. Source-ordered fp32 mean
+  reduction is being investigated; small/base success is not relabeled for multi.
+- User reported repeated macOS Python crash dialogs. Diagnostic reports and
+  validation logs identify isolated unsupported-axis ORT1.20.1 probes (marginals
+  L=0, scorer C=0), not ordinary supported-input inference. Those probes are being
+  made explicitly opt-in; public Rust guards and supported-axis parity remain
+  mandatory. Historical actual crash observations are retained, not hidden.

@@ -480,6 +480,14 @@ legacy split-layout fallback. Add model-free malformed/missing/hash-mismatch
 tests, then validate actual published downloads in a clean destination. Keep upload authentication
 outside code and logs; missing local credentials remain an explicit blocker.
 
+Unsupported-axis diagnostic crashes are not a supported-input parity gate.
+After repeated macOS crash dialogs during M7, marginals L=0 and shared/explicit
+scorer unsupported-axis subprocess probes require `--probe-unsupported-axes`.
+Default reports must say not-run, never imply a probe passed. Historical ORT1.20
+SIGSEGV evidence remains retained; supported marginal Q=0 checks and Rust
+caller-rejection/bypass tests still run. This changes diagnostic opt-in only,
+not any numerical tolerance or supported graph contract.
+
 Final audit explicitly covers every row in `AUDIT-gliner2.5.md`, actual model
 artifacts, remote GitHub SHA/CI, HF downloads and downstream consumer execution.
 A green no-model test run, a completed checklist file, or a push alone is not

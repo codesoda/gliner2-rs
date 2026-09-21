@@ -1,0 +1,79 @@
+{
+  "milestone": "M7",
+  "status": "in-progress-not-release-ready",
+  "base_commit": "34321d166e41e85635ca31d065d5625a4c4b999e",
+  "runtime": {
+    "ort": "2.0.0-rc.13",
+    "native_onnx_runtime": "1.28.0",
+    "python_reference_onnxruntime": "1.20.1"
+  },
+  "local_integration": {
+    "rust_all_targets_all_features": {
+      "strict_artifact_tests": 245,
+      "strict_artifact_skip_messages": 0,
+      "no_model_tests": 245,
+      "no_model_skip_messages": 48,
+      "clippy_warnings_denied": "passed",
+      "format_check": "passed",
+      "logs": [
+        "/tmp/gliner25-work/m7-parent-strict.log",
+        "/tmp/gliner25-work/m7-parent-no-model.log",
+        "/tmp/gliner25-work/m7-parent-clippy.log"
+      ]
+    },
+    "python_downloader_unit_tests": 20,
+    "benchmark_unit_tests": 11,
+    "consumer_template_local_path_compile": "passed; not pushed-source or remote-artifact proof",
+    "ci_yaml_actionlint": "passed; no remote CI result claimed"
+  },
+  "bundle_validation": {
+    "small": {
+      "status": "passed-local-unpromoted",
+      "python_onnx_stages": 7,
+      "corpus_cases": 30,
+      "additional_cases": 2,
+      "native_tests": 3,
+      "non_confidence_outputs": "exact",
+      "maximum_confidence_abs": 0.0000032782554626464844,
+      "maximum_explicit_logit_abs": 0.0000133514404296875,
+      "report": "/tmp/gliner25-work/m7-small-validation.json",
+      "report_sha256": "9b49b766b4fd8b43064f84f937bad7895dec025782900cb3873f9329beac4afb"
+    },
+    "base": {
+      "status": "passed-local-unpromoted",
+      "python_onnx_stages": 7,
+      "corpus_cases": 30,
+      "additional_cases": 2,
+      "native_tests": 3,
+      "non_confidence_outputs": "exact",
+      "maximum_confidence_abs": 0.000003680586814880371,
+      "maximum_explicit_logit_abs": 0.000007152557373046875,
+      "report": "/tmp/gliner25-work/m7-base-validation.json",
+      "report_sha256": "d872f0e164b27efe9ec7b70feedcc70fffd33835ddc3ab68f49d420c2f33c391"
+    },
+    "multi": {
+      "status": "blocked-no-tolerance-relaxation",
+      "source_corpus_cases": 30,
+      "source_additional_cases": 2,
+      "failed_comparison": "long_3000_words/onnx-golden/inside_prefix",
+      "coordinate": [0, 0, 3001],
+      "absolute_error": 0.0071811676025390625,
+      "active_tolerance": 0.00340269073,
+      "native": "not-run"
+    }
+  },
+  "unsupported_axis_diagnostics": {
+    "historical_runs": "isolated ORT1.20 marginals L=0 and shared scorer C=0 probes returned SIGSEGV -11",
+    "default_policy": "now opt-in via --probe-unsupported-axes; not-run must remain explicit",
+    "supported_inputs_and_rust_rejection_guards": "unchanged"
+  },
+  "remaining": [
+    "resolve multi prefix drift under existing gate; recheck all affected checkpoints",
+    "MSRV integration and fresh v2 tutorial regression",
+    "complete artifact promotion and immutable HF publication/readback",
+    "actual Rust and Python published-bundle downloads",
+    "quiet-machine benchmark and reviewed results",
+    "pushed-source external consumer with Python execution denied",
+    "remote CI and matching version/tag release"
+  ]
+}
