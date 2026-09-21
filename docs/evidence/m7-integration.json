@@ -26,7 +26,8 @@
     },
     "python_downloader_unit_tests": 20,
     "benchmark_unit_tests": 11,
-    "consumer_template_local_path_compile": "passed; not pushed-source or remote-artifact proof",
+    "consumer_template_local_path_compile": "passed; superseded by actual pushed-source proof in m7-consumer.json",
+    "consumer_policy_unit_tests": 10,
     "ci_yaml_actionlint": "passed",
     "fresh_v2_tutorials": {
       "passed": 6,
@@ -119,14 +120,19 @@
     "python_report_sha256": "72fb25e9d013c5695bb3cf4e75756e143c09a068152e05598a32ab0001def90a"
   },
   "remote_ci": {
-    "commit": "974349ad0700998075c5e8327d7983838a1b18bf",
-    "url": "https://github.com/codesoda/gliner2-rs/actions/runs/35561052287",
+    "commit": "9332af6f10607a161ebfb8eb2a75051732e0495c",
+    "url": "https://github.com/codesoda/gliner2-rs/actions/runs/35563422282",
     "conclusion": "success",
     "jobs": ["Python model-free unit tests", "Rust (MSRV 1.91)", "Rust (stable)"]
   },
+  "external_consumer": {
+    "status": "passed",
+    "source_revision": "9332af6f10607a161ebfb8eb2a75051732e0495c",
+    "evidence": "m7-consumer.json",
+    "python_execution": "Denied for Python-named executable paths; not proof of interpreter absence"
+  },
   "remaining": [
     "quiet-machine benchmark and reviewed results (headless Chrome CPU contention currently blocks timing)",
-    "pushed-source external consumer with Python execution denied",
     "final source/docs commit, green CI and matching version/tag release"
   ]
 }

@@ -1,0 +1,46 @@
+{
+  "status": "passed",
+  "scope": "Fresh out-of-tree remote Git dependency build and structural/runtime API smoke; not accuracy or exhaustive public-method coverage",
+  "source_repository": "https://github.com/codesoda/gliner2-rs.git",
+  "source_revision": "9332af6f10607a161ebfb8eb2a75051732e0495c",
+  "source_revision_verified_in_remote_refs_and_cargo_lock": true,
+  "crate_version": "0.2.0",
+  "toolchain": "1.91.0",
+  "clean_cargo_home_and_target": true,
+  "publication_repository": "codesoda/gliner2-onnx",
+  "publication_revision": "27310cd26099a387b9936a1e13b03d6a0700baf2",
+  "profiles": ["gliner2.5-base-v1", "gliner2-base-v1"],
+  "local_inputs": "Fresh Rust downloader outputs, previously independently streamed and SHA-256 checked against the separate Python download",
+  "remote_file_identities_verified": 24,
+  "remote_readback": "Immutable HF revision and LFS SHA-256 for graphs; bounded GET-body SHA-256 for metadata; v2 metadata verified against original Fastino source pins",
+  "python_policy": {
+    "path_names_shadowed": true,
+    "macos_process_exec_denial": "Case-insensitive Python-prefixed executable basenames, including absolute and framework paths",
+    "denial_wraps": ["Cargo lock generation", "Cargo build", "consumer inference", "descendants"],
+    "absolute_python_preflight_exit": 126,
+    "direct_binary_python_linkage": "none reported by otool -L",
+    "limitation": "Does not prove interpreter absence or prohibit renamed/embedded interpreters against a malicious adversary"
+  },
+  "smoke_checks": [
+    "entity methods and options",
+    "classification text/options/descriptions",
+    "legacy JSON and options",
+    "extract_with_records and extract_json_with_records",
+    "relation/options/batch methods",
+    "explicit span order, finite scores and source slices",
+    "combined extraction requested task presence",
+    "v2 compatibility and boundary-only feature rejection"
+  ],
+  "exit_code": 0,
+  "raw_evidence_sha256": {
+    "run-summary.txt": "a89cd30c965fe004801d32956e056f06ef64f77cfcc93823f3e2912354ecabd8",
+    "Cargo.lock": "b8dcf08d7591cd3ac8a92e5fa0db73546d7d1f9c3d9ac818ee4a69358034a8ba",
+    "process-output.log": "cbf59c65bc540ff79efc7a5a74b36896604721731d3511bdad1ff7c1321cfc8e",
+    "remote-identities.jsonl": "249ca24546b14b9301215caff7720d4979dbad42c9c47b24adef03ea7e5fb138",
+    "python-exec-policy.sb": "1ef7c39e1bdf06d7412d4aa1abb8147376a8c00c76edb8f4ddc1bf4a8a028d63",
+    "python-exec-preflight.txt": "35c416f8057d90aa8592af48dffbaf3b7a61e284001920bf67e73f77538ea34d"
+  },
+  "matching_source_ci": "https://github.com/codesoda/gliner2-rs/actions/runs/35563422282",
+  "ci_conclusion": "success",
+  "release_status": "Benchmark and release tag still pending; this record is not M7 completion"
+}

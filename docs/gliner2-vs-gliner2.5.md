@@ -9,7 +9,8 @@ gates remain [`PLAN-gliner2.5.md`](PLAN-gliner2.5.md) and
 > explicit-span scoring, has been accepted in the development branch. All three
 > M7 bundles are independently validated and published at Hugging Face revision
 > `27310cd26099a387b9936a1e13b03d6a0700baf2`; both downloaders and remote CI pass.
-> Benchmarking and the downstream consumer still gate the v0.2.0 release tag.
+> The clean pushed-source consumer also passes with Python execution denied.
+> Benchmarking still gates the v0.2.0 release tag.
 
 ## Which model should I choose?
 
@@ -215,7 +216,7 @@ pending benchmark fields.
 ## Implementation requirement map
 
 “Accepted” below means the development gate was reviewed. M7 artifact publication
-is complete, but final benchmark/consumer/release acceptance remains open.
+and downstream consumer verification are complete; benchmark/release acceptance remains open.
 
 | Milestone / original requirement | Development status | User-visible mapping |
 | --- | --- | --- |
@@ -228,7 +229,7 @@ is complete, but final benchmark/consumer/release acceptance remains open.
 | M6 relations | Accepted for base | Typed proposals, relation graph, all relation APIs and upstream postprocessing semantics |
 | Public explicit-span primitive | Accepted for base | Ordered byte-span API, separate learned graph, preflight errors and multiline example |
 | Direct ORT migration | Accepted | rc.13/native 1.28/Rust 1.91, no ORP/Python runtime; v2 confidence-only exception as above |
-| M7 bundles/publication/download/benchmark/CI/consumer | Partially accepted | Three seven-graph bundles validated/published; both downloaders, v2 metadata colocation and CI pass. Benchmark, external consumer and release tag remain pending |
+| M7 bundles/publication/download/benchmark/CI/consumer | Partially accepted | Three seven-graph bundles validated/published; both downloaders, v2 metadata colocation and CI pass. Clean pushed-source consumer also passes; benchmark and release tag remain pending |
 | M8 optional helpers | Unsupported/not started | Attributes, constrained classification, JointIE and long-document chunk/merge helpers are not promised by ordinary boundary support |
 
 ## Immutable sources

@@ -8,7 +8,7 @@ records and relations from ONNX exports without a Python build or inference
 dependency. The development branch supports both the legacy GLiNER2 span
 architecture and the GLiNER2.5 boundary architecture. Validated small/base/multi
 2.5 bundles are published; the v0.2.0 release tag is still pending the final M7
-benchmark and downstream-consumer gates. Python export/reference tooling is
+benchmark and release gates. Python export/reference tooling is
 included for development only.
 
 ## Using this from your own Rust project
@@ -95,7 +95,7 @@ after bundles, remote CI and external-consumer evidence pass.
 
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) provides the
 model-free build/test surface. The Rust 1.91 + stable and Python jobs passed at
-[`974349a`](https://github.com/codesoda/gliner2-rs/actions/runs/35561052287).
+[`9332af6`](https://github.com/codesoda/gliner2-rs/actions/runs/35563422282).
 No model weights are required for ordinary CI: model-dependent tests detect absent artifacts and
 emit explicit skips rather than downloading multi-gigabyte files. Consequently,
 a green no-model run is not evidence that every counted test executed inference.
@@ -204,9 +204,11 @@ downloaded model bundle (see `examples/common/mod.rs`).
 
 M0–M6 and public explicit-span scoring passed their development gates. Fresh
 small/base/multi bundles each passed seven source/ONNX stages and 32 native cases,
-and have been published and independently downloaded. Final benchmarking and
-the pushed-source downstream-consumer proof still gate the release. The existing
-`v0.1.0` tag does not contain this API; do not pin a nonexistent release tag.
+and have been published and independently downloaded. A clean remote-Git
+consumer built and ran both architectures on Rust 1.91 with Python-named
+execution denied ([proof](docs/evidence/m7-consumer.json)). Final benchmarking
+still gates the release. The existing `v0.1.0` tag does not contain this API;
+do not pin a nonexistent release tag.
 
 Use architecture-aware loading when either family may be selected:
 

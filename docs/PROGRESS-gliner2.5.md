@@ -653,3 +653,14 @@ prompt-to-evidence checklist. Model-free test success is not model parity.
   no competing application was stopped and no contended timing is presented as
   an authoritative result. M7 remains incomplete until benchmark, consumer,
   final documentation/CI and matching v0.2.0 tag/release are accepted.
+- Fresh downstream rerun passed at pushed source9332af6, on Rust1.91, with its
+  own initially empty Cargo home and target directory. Cargo.lock resolves the
+  exact remote SHA;24 files are bound to immutable HF/source identities. Selected
+  2.5 task/records/options/batch/explicit APIs and v2 compatibility smoke pass
+  under Python-named process execution denial, including absolute/framework
+  paths. No Python linkage is listed by `otool -L`. This is bounded structural/
+  runtime proof, not interpreter absence or accuracy/exhaustive API coverage.
+  Evidence: `evidence/m7-consumer.json`; raw reports/build retained outside git.
+- Matching CI at9332af6 is green (run35563422282). Benchmark still waits for a
+  quiet machine; headless Chrome and unrelated compilation remain CPU-heavy.
+  No release tag is created before that measurement and final review.

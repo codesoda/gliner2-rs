@@ -5,8 +5,8 @@ accepted on the pinned base checkpoint. Fresh small/base/multi bundles have
 passed seven source/ONNX stages and native 30+2-case parity under the unchanged
 numerical gates. Validated bundles are published at immutable Hugging Face revision
 `27310cd26099a387b9936a1e13b03d6a0700baf2`; both actual downloaders passed clean
-readback for all five profiles. Remote CI is green. Authoritative latency
-measurements, external-consumer execution and the release tag remain pending.
+readback for all five profiles. Remote CI and the clean pushed-source downstream
+consumer pass. Authoritative latency measurements and the release tag remain pending.
 
 ## Reproducibility scope
 
@@ -138,8 +138,23 @@ Clippy with warnings denied also passed. The separate no-model gate reports
 All six fresh v2 tutorials passed with the same sole confidence drift
 `5.364418029785156e-7`; other normalized output remains exact.
 
-[Remote CI run 35561052287](https://github.com/codesoda/gliner2-rs/actions/runs/35561052287)
-passed all three jobs at source `974349ad0700998075c5e8327d7983838a1b18bf`.
+[Remote CI run 35563422282](https://github.com/codesoda/gliner2-rs/actions/runs/35563422282)
+passed all three jobs at source `9332af6f10607a161ebfb8eb2a75051732e0495c`.
+
+A fresh external consumer pinned that exact remote Git SHA, generated its own
+Cargo.lock in an empty Cargo home, built on Rust 1.91, and ran against the fresh
+Rust-downloaded base v2 and 2.5 bundles. All 24 files were independently bound to
+immutable remote identities before the build. Selected task-family, records,
+options, batch, explicit-span and v2 compatibility smoke checks passed.
+
+Cargo/build/inference descendants ran under macOS denial of Python-prefixed
+executable basenames, including absolute/framework paths; the absolute-path
+preflight failed with the expected permission denial. This is evidence of a
+Python-independent build and inference path, not proof that the machine lacks
+Python or a defense against renamed/embedded interpreters. The smoke is
+structural/runtime coverage, not an accuracy assertion or exhaustive API test.
+See [`evidence/m7-consumer.json`](evidence/m7-consumer.json) for checked source,
+artifact identities and raw evidence hashes.
 
 ## CPU latency benchmark protocol
 
@@ -206,8 +221,8 @@ measured rather than inferred.
 | Rust and Python selector/hash/path validation against published files | Passed both actual `all` downloads; identical 64 files / 5,150,060,191 bytes |
 | Fresh v2 metadata colocation and legacy split-layout fallback | Both fresh colocated downloads verified; legacy six-tutorial regression passed |
 | CPU benchmark table above | **PENDING quiet machine** |
-| Remote CI at pushed commit | Passed run `35561052287` at `974349a`; final release revision must also pass |
-| External Rust consumer from pushed source, without Python | **PENDING** |
+| Remote CI at pushed commit | Passed run `35563422282` at `9332af6`; final release revision must also pass |
+| External Rust consumer from pushed source, Python execution denied | Passed clean Cargo/build/inference proof at `9332af6`, Rust 1.91; bounded scope documented above |
 | Matching version and GitHub release tag | **PENDING; no tag claimed** |
 
 Optional M8 helpers—attributes, constrained classification, JointIE and
