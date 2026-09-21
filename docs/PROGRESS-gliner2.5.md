@@ -616,3 +616,40 @@ prompt-to-evidence checklist. Model-free test success is not model parity.
   passed all three remote CI jobs (run35558285385). Corrected reduction and
   version0.2.0 are release preparation only; no tag or publication is claimed.
   Final corrected-artifact MSRV/v2 checks and remaining M7 release gates continue.
+
+### M7 — publication and clean download acceptance
+
+- Final corrected-artifact runs pass245 strict tests with zero skips on Rust1.95
+  and1.91. fmt and all-target/all-feature Clippy pass. All six fresh v2 tutorials
+  pass: one confidence difference5.364418029785156e-7, other normalized output
+  exact. The no-model run passes245 cases with48 explicitly reported skips.
+- Parent reviewed all three aggregate reports, source pins, graph audits and
+  actual file hashes before promotion. Public Rust `validate_bundle` accepts
+  all three promoted bundles (16 authenticated files plus manifest each).
+- Published all three bundles to `codesoda/gliner2-onnx` at immutable revision
+  `27310cd26099a387b9936a1e13b03d6a0700baf2`:52 added files including the root
+  model card; no legacy v2 graphs changed. Each bundle retains its unvalidated
+  export manifest and a sanitized numerical report. Credentials were only
+  shell-sourced from the user-provided environment file, never read directly or
+  recorded in repository evidence.
+- Both actual downloader CLIs completed `all` from separate empty destinations
+  and isolated caches. Both produced64 regular nonsymlink files totaling
+  5,150,060,191 bytes with identical paths/sizes/SHA-256 and correct original v2
+  pins. Parent independently rehashed all128 destination files, then removed only
+  the new Python download cache to reclaim space; both destinations remain intact.
+- Fixed downstream readback policy to authenticate Git-backed metadata by bounded
+  GET-body SHA-256 rather than requiring LFS ETags. Graphs still require remote
+  immutable-revision/LFS identity, with no bulk GET fallback. Six model-free
+  readback/sandbox tests pass, including uppercase framework `Python` denial.
+- Remote CI at974349a passed all three jobs (run35561052287). The first actual
+  pushed-source consumer stopped during metadata readback, before Cargo: curl
+  applied a236-byte config cap to HF's286-byte redirect response. Added a bounded
+  4KiB transport floor, counted against the existing total budget; the original
+  final-body cap and SHA-256 check remain mandatory. Ten model-free policy tests
+  and actual remote tiny-file readback pass. A fresh consumer rerun is required,
+  with Python-named execution denied for Cargo/build/inference descendants.
+- The release benchmark binary is built. Timing is deferred because an unrelated
+  persistent headless Chrome process group is consuming roughly eight cores;
+  no competing application was stopped and no contended timing is presented as
+  an authoritative result. M7 remains incomplete until benchmark, consumer,
+  final documentation/CI and matching v0.2.0 tag/release are accepted.

@@ -6,9 +6,10 @@ Rust inference for [GLiNER2](https://github.com/fastino-ai/GLiNER2) via ONNX
 Runtime — a Rust crate that runs entity extraction, classification, structured
 records and relations from ONNX exports without a Python build or inference
 dependency. The development branch supports both the legacy GLiNER2 span
-architecture and the GLiNER2.5 boundary architecture; validated hosted 2.5
-bundles and a release tag are still pending M7. Python export/reference tooling
-is included for development only.
+architecture and the GLiNER2.5 boundary architecture. Validated small/base/multi
+2.5 bundles are published; the v0.2.0 release tag is still pending the final M7
+benchmark and downstream-consumer gates. Python export/reference tooling is
+included for development only.
 
 ## Using this from your own Rust project
 
@@ -93,10 +94,9 @@ after bundles, remote CI and external-consumer evidence pass.
 ### CI
 
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) provides the
-model-free build/test surface. The M7 Rust 1.91 + stable fmt/Clippy/locked-test
-workflow update and its first remote run are still integration/release gates;
-this document does not claim that remote result in advance. No model weights
-are required for ordinary CI: model-dependent tests detect absent artifacts and
+model-free build/test surface. The Rust 1.91 + stable and Python jobs passed at
+[`974349a`](https://github.com/codesoda/gliner2-rs/actions/runs/35561052287).
+No model weights are required for ordinary CI: model-dependent tests detect absent artifacts and
 emit explicit skips rather than downloading multi-gigabyte files. Consequently,
 a green no-model run is not evidence that every counted test executed inference.
 
@@ -123,8 +123,8 @@ The root must contain `models/gliner2-base-v1/` and
 
 ## Models
 
-The published ONNX exports currently available from Hugging Face are the v2
-`gliner2-base-v1` and `gliner2-large-v1` bundles:
+Published ONNX exports include v2 `gliner2-base-v1` / `gliner2-large-v1` and
+validated GLiNER2.5 `gliner2.5-{small,base,multi}-v1` bundles:
 
 👉 https://huggingface.co/codesoda/gliner2-onnx
 
@@ -146,14 +146,23 @@ python3 scripts/download_models.py --model base
 python3 scripts/download_models.py --model large
 ```
 
-### M7 downloader interface under development
+### GLiNER2.5 downloads (current branch; not v0.1.0)
 
-M7 is adding selectors `2.5-small`, `2.5-base` and `2.5-multi`, while preserving
-v2 `base` and `large`. Once integrated, `all` explicitly means all five bundles
-and can download substantially more data. Destination override and immutable
-Hugging Face repository revision selection are also part of the M7 interface.
-These selectors are documented for development coordination; they do **not**
-mean validated 2.5 artifacts have already been published.
+Selectors are `base`, `large`, `2.5-small`, `2.5-base`, `2.5-multi` and `all`.
+Boundary and `all` downloads require an explicit immutable publication revision:
+
+```bash
+HF_REV=27310cd26099a387b9936a1e13b03d6a0700baf2
+cargo run --release --example download_models -- \
+  --model 2.5-base --dest ./onnx --revision "$HF_REV"
+# Alternative Python development tool:
+python3 scripts/download_models.py --model 2.5-base --dest ./onnx --revision "$HF_REV"
+```
+
+Both actual downloaders independently fetched and verified all five profiles at
+this revision: identical 64-file inventories and SHA-256 hashes, totaling
+5,150,060,191 bytes per destination. `all` is opt-in and downloads all five models,
+not just the boundary family. See [results](docs/RESULTS-gliner2.5.md).
 
 A complete boundary bundle is a single directory containing `config.json`,
 `tokenizer.json`, `tokenizer_config.json`, `encoder_config/config.json`,
@@ -170,7 +179,7 @@ boundary_records.onnx
 boundary_relations.onnx
 ```
 
-The M7 downloaders must accept only manifests marked `validated` and
+The downloaders accept only boundary manifests marked `validated` and
 `release_ready`, then check the architecture/version, required file set,
 streaming SHA-256 hashes and byte sizes. Unsafe absolute/traversal/Windows-style
 manifest paths and partial bundles are rejected. Export success alone does not
@@ -193,11 +202,11 @@ downloaded model bundle (see `examples/common/mod.rs`).
 
 ### GLiNER2.5 boundary API (unreleased)
 
-M0–M6 and public explicit-span scoring have passed their development gates on
-the pinned base checkpoint. This is not the M7 release gate: complete validated
-small/base/multi bundles, publication/readback, benchmark results, remote CI and
-an external consumer remain pending. The existing `v0.1.0` tag does not contain
-this API; do not change your dependency to a nonexistent release tag.
+M0–M6 and public explicit-span scoring passed their development gates. Fresh
+small/base/multi bundles each passed seven source/ONNX stages and 32 native cases,
+and have been published and independently downloaded. Final benchmarking and
+the pushed-source downstream-consumer proof still gate the release. The existing
+`v0.1.0` tag does not contain this API; do not pin a nonexistent release tag.
 
 Use architecture-aware loading when either family may be selected:
 

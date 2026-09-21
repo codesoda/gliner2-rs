@@ -6,10 +6,10 @@ gates remain [`PLAN-gliner2.5.md`](PLAN-gliner2.5.md) and
 [`AUDIT-gliner2.5.md`](AUDIT-gliner2.5.md).
 
 > **Release status:** the GLiNER2.5 implementation through M6, plus public
-> explicit-span scoring, has been accepted in the development branch. M7 bundle
-> construction, per-checkpoint validation, publication, download readback,
-> benchmark measurement, CI and an external-consumer test are still in progress.
-> There is not yet a released GLiNER2.5 bundle or release tag to recommend.
+> explicit-span scoring, has been accepted in the development branch. All three
+> M7 bundles are independently validated and published at Hugging Face revision
+> `27310cd26099a387b9936a1e13b03d6a0700baf2`; both downloaders and remote CI pass.
+> Benchmarking and the downstream consumer still gate the v0.2.0 release tag.
 
 ## Which model should I choose?
 
@@ -19,18 +19,18 @@ in-place upgrade:
 | Choose | When it is the better fit |
 | --- | --- |
 | **GLiNER2 (`span`)** | You need the currently published `gliner2-base-v1` or `gliner2-large-v1` ONNX artifacts; depend on a v2 fine-tune or encoder adapter; want the established fixed-width dense span head; or your short-text NER/classification workload already performs well on v2. |
-| **GLiNER2.5 (`boundary`)** | You need candidates beyond v2's fixed span width, boundary record formation, the learned sparse relation head, multilingual 2.5 checkpoints, or direct scoring of caller-supplied spans. Wait for validated bundles if you need a published artifact rather than a development checkout. |
+| **GLiNER2.5 (`boundary`)** | You need candidates beyond v2's fixed span width, boundary record formation, the learned sparse relation head, multilingual 2.5 checkpoints, or direct scoring of caller-supplied spans. Validated bundles are published; the Rust API is still on the development branch pending the release tag. |
 
 The model families have different extraction heads and training data. Published
 upstream results show task-dependent gains and losses; “2.5” does not mean every
 v2 workload gets higher quality. Weights for a v2 extraction head do not transfer
 to a boundary head.
 
-Checkpoint choices planned for the first 2.5 bundles are:
+The three independently validated and published 2.5 bundles are:
 
 | Bundle | Upstream checkpoint | Encoder | Typical reason to choose it |
 | --- | --- | --- | --- |
-| `gliner2.5-small-v1` | `fastino/gliner2.5-small-v1` | DeBERTa-v3 xsmall, width 384 | Lowest footprint; must still pass independent validation before publication. |
+| `gliner2.5-small-v1` | `fastino/gliner2.5-small-v1` | DeBERTa-v3 xsmall, width 384 | Lowest parameter footprint; its own source/ONNX/native validation passed. |
 | `gliner2.5-base-v1` | `fastino/gliner2.5-base-v1` | DeBERTa-v3 base, width 768 | Reference implementation and accepted M0–M6 parity work. |
 | `gliner2.5-multi-v1` | `fastino/gliner2.5-multi-v1` | mDeBERTa-v3 base, width 768 | Multilingual tokenizer/checkpoint; never substitute the base tokenizer. |
 
@@ -157,7 +157,7 @@ not constrained to sum to one. Empty labels return no groups; empty spans return
 one empty group per label without calling native heads. Span/v2 models return an
 unsupported error rather than emulating this with their grid head.
 
-## Complete bundle contract (M7 development)
+## Complete bundle contract
 
 A usable 2.5 bundle is not “an encoder plus a head.” It must colocate tokenizer
 and configuration metadata, notices, and exactly these seven graphs:
@@ -178,12 +178,12 @@ identities, fp32/opset 17 conversion, actual graph signatures, sizes and SHA-256
 checksums. A downloader must reject partial/unvalidated bundles, unsafe relative
 paths, unsupported architecture/version, and size/hash mismatches.
 
-The M7 downloader interface is being extended with selectors `2.5-small`,
-`2.5-base` and `2.5-multi` in addition to v2 `base` and `large`; `all` will mean
-all five and can be a large download. Full bundle names may also be accepted.
-Destination override and immutable repository revision selection are part of the
-M7 contract. These selectors describe the interface under integration, **not a
-claim that validated 2.5 artifacts are already hosted**.
+Both downloaders accept `2.5-small`, `2.5-base` and `2.5-multi` in addition to
+v2 `base` and `large`; `all` means all five (about 5.15 GB). Use `--dest DIR` and,
+for boundary/all downloads, explicit immutable
+`--revision 27310cd26099a387b9936a1e13b03d6a0700baf2`. Both actual clean `all`
+downloads passed with identical paths, sizes and SHA-256 values for all 64 files.
+See the [README](../README.md#models) for complete commands.
 
 M7 also colocates the previously omitted v2 tokenizer/config metadata with v2
 ONNX files so a fresh consumer does not need a Python checkpoint or warm HF
@@ -197,7 +197,8 @@ four intra-op threads and Level3 graph optimization. The project minimum is Rust
 1.91 because of the locked Hugging Face/Xet dependency graph. Python is not used
 by the Rust build or inference runtime.
 
-Accepted numerical evidence is CPU fp32 on the pinned base checkpoint. Python
+Accepted numerical evidence is CPU fp32 on independently pinned small/base/multi
+checkpoints. Python
 reference generation uses ONNX Runtime 1.20.1 and pinned Torch 2.8.0; Rust native
 checks use ORT 1.28. Stage comparisons retain `1e-4 + 1e-3*abs(reference)` except
 the explicitly documented centered-prefix coordinate envelope. Discrete pool and
@@ -206,15 +207,15 @@ runtime migration permits only finite confidence drift up to `1e-6`, with all
 non-confidence output exact. These are tested reference contracts, not universal
 cross-provider, cross-hardware error guarantees.
 
-Small and multi need independent source, ONNX and native validation. Base results
-must not be relabeled as evidence for those checkpoints. See
+Small and multi passed independent source, ONNX and native validation; no base
+results were relabeled as evidence for those checkpoints. See
 [`RESULTS-gliner2.5.md`](RESULTS-gliner2.5.md) for measured parity evidence and
 pending benchmark fields.
 
 ## Implementation requirement map
 
-“Accepted” below means the development gate was reviewed; it does not mean M7
-publication or a tagged release exists.
+“Accepted” below means the development gate was reviewed. M7 artifact publication
+is complete, but final benchmark/consumer/release acceptance remains open.
 
 | Milestone / original requirement | Development status | User-visible mapping |
 | --- | --- | --- |
@@ -227,7 +228,7 @@ publication or a tagged release exists.
 | M6 relations | Accepted for base | Typed proposals, relation graph, all relation APIs and upstream postprocessing semantics |
 | Public explicit-span primitive | Accepted for base | Ordered byte-span API, separate learned graph, preflight errors and multiline example |
 | Direct ORT migration | Accepted | rc.13/native 1.28/Rust 1.91, no ORP/Python runtime; v2 confidence-only exception as above |
-| M7 bundles/publication/download/benchmark/CI/consumer | In development | Seven-graph small/base/multi bundles, manifests, selectors, v2 metadata colocation and release proof are pending |
+| M7 bundles/publication/download/benchmark/CI/consumer | Partially accepted | Three seven-graph bundles validated/published; both downloaders, v2 metadata colocation and CI pass. Benchmark, external consumer and release tag remain pending |
 | M8 optional helpers | Unsupported/not started | Attributes, constrained classification, JointIE and long-document chunk/merge helpers are not promised by ordinary boundary support |
 
 ## Immutable sources

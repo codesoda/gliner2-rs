@@ -9,14 +9,17 @@
   },
   "local_integration": {
     "rust_all_targets_all_features": {
-      "strict_artifact_tests": 245,
+      "strict_toolchains": ["1.95", "1.91"],
+      "strict_artifact_tests_per_toolchain": 245,
       "strict_artifact_skip_messages": 0,
       "no_model_tests": 245,
       "no_model_skip_messages": 48,
       "clippy_warnings_denied": "passed",
       "format_check": "passed",
       "logs": [
-        "/tmp/gliner25-work/m7-parent-strict.log",
+        "/tmp/gliner25-work/m7-final-rust-1.95.log",
+        "/tmp/gliner25-work/m7-final-rust-1.91.log",
+        "/tmp/gliner25-work/m7-final-v2.log",
         "/tmp/gliner25-work/m7-parent-no-model.log",
         "/tmp/gliner25-work/m7-parent-clippy.log"
       ]
@@ -24,11 +27,18 @@
     "python_downloader_unit_tests": 20,
     "benchmark_unit_tests": 11,
     "consumer_template_local_path_compile": "passed; not pushed-source or remote-artifact proof",
-    "ci_yaml_actionlint": "passed; no remote CI result claimed"
+    "ci_yaml_actionlint": "passed",
+    "fresh_v2_tutorials": {
+      "passed": 6,
+      "confidence_differences": 1,
+      "maximum_confidence_abs": 5.364418029785156e-7,
+      "other_normalized_output": "exact"
+    }
   },
   "bundle_validation": {
     "small": {
-      "status": "passed-local-unpromoted",
+      "status": "validated-published-readback-passed",
+      "manifest_sha256": "5c691ff523278268f9046a42e8107c91fc084514f7f3f91cf88fc2fb9eb3e905",
       "python_onnx_stages": 7,
       "corpus_cases": 30,
       "additional_cases": 2,
@@ -40,7 +50,8 @@
       "report_sha256": "d4b5af6c931f05032bb98feee6ed141dd3ceddc8c42970f533573518f18dc9df"
     },
     "base": {
-      "status": "passed-local-unpromoted",
+      "status": "validated-published-readback-passed",
+      "manifest_sha256": "b986177cfc3a14e388d03d79b18b040e5873c47ad713e2b68396d3abfbc4ec5c",
       "python_onnx_stages": 7,
       "corpus_cases": 30,
       "additional_cases": 2,
@@ -52,7 +63,8 @@
       "report_sha256": "aa74f5cd2eb7a906e23a8f6ad400a4978b26d55d78f8546c4b3e89ac18babb28"
     },
     "multi": {
-      "status": "passed-local-unpromoted",
+      "status": "validated-published-readback-passed",
+      "manifest_sha256": "ff51c54d0df6b870d204ee569dd6379d6607b43652dc142d1b4433dd277f3179",
       "python_onnx_stages": 7,
       "corpus_cases": 30,
       "additional_cases": 2,
@@ -83,12 +95,38 @@
     "default_policy": "now opt-in via --probe-unsupported-axes; not-run must remain explicit",
     "supported_inputs_and_rust_rejection_guards": "unchanged"
   },
+  "publication": {
+    "repository": "codesoda/gliner2-onnx",
+    "revision": "27310cd26099a387b9936a1e13b03d6a0700baf2",
+    "previous_revision": "e8cbde3ddfd3d3681a2134f8af2cbb041ead7530",
+    "reviewed_source_commit": "39ab95485c7beb2e319ec33497fa8c7642d69b81",
+    "added_files": 52,
+    "legacy_v2_graph_changes": 0,
+    "rust_validate_bundle": "passed on all three promoted bundles, 16 authenticated files each"
+  },
+  "downloader_readback": {
+    "status": "passed",
+    "selectors": ["base", "large", "2.5-small", "2.5-base", "2.5-multi"],
+    "cli_exit_codes": {"python": 0, "rust": 0},
+    "fresh_destinations_and_isolated_caches": true,
+    "files_per_destination": 64,
+    "bytes_per_destination": 5150060191,
+    "identical_paths_sizes_sha256": true,
+    "parent_independently_rehashed_destination_files": 128,
+    "regular_nonsymlink_files_only": true,
+    "v2_original_pins_verified": true,
+    "report_sha256": "b37b8b6f682085f0efa2a1e20943ab4124b962c616353665ce41d27d80f26a15",
+    "python_report_sha256": "72fb25e9d013c5695bb3cf4e75756e143c09a068152e05598a32ab0001def90a"
+  },
+  "remote_ci": {
+    "commit": "974349ad0700998075c5e8327d7983838a1b18bf",
+    "url": "https://github.com/codesoda/gliner2-rs/actions/runs/35561052287",
+    "conclusion": "success",
+    "jobs": ["Python model-free unit tests", "Rust (MSRV 1.91)", "Rust (stable)"]
+  },
   "remaining": [
-    "final corrected-artifact strict MSRV integration and fresh v2 tutorial regression",
-    "complete artifact promotion and immutable HF publication/readback",
-    "actual Rust and Python published-bundle downloads",
-    "quiet-machine benchmark and reviewed results",
+    "quiet-machine benchmark and reviewed results (headless Chrome CPU contention currently blocks timing)",
     "pushed-source external consumer with Python execution denied",
-    "remote CI and matching version/tag release"
+    "final source/docs commit, green CI and matching version/tag release"
   ]
 }

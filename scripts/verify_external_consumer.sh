@@ -139,17 +139,22 @@ remote_head() {
 }
 
 small_get() {
-  local url=$1 output=$2 cap=$3 status
+  local url=$1 output=$2 cap=$3 status transport_cap
   [[ "$cap" =~ ^[0-9]+$ ]] || die "invalid metadata readback cap: $url"
   ((cap > 0 && cap <= SMALL_FILE_LIMIT)) || die "small metadata exceeds readback cap: $url"
-  small_bytes_reserved=$((small_bytes_reserved + cap))
+  # curl applies --max-filesize to redirect responses too. HF's redirect body
+  # can exceed a tiny JSON payload, so reserve bounded transport headroom while
+  # retaining the caller's exact final-body cap below and SHA-256 verification.
+  transport_cap=$cap
+  ((transport_cap >= 4096)) || transport_cap=4096
+  small_bytes_reserved=$((small_bytes_reserved + transport_cap))
   ((small_bytes_reserved <= SMALL_TOTAL_LIMIT)) || die "total metadata readback cap exceeded"
   # No auth, no curlrc, no HTTP downgrade, at most five HTTPS redirects. New curl
-  # enforces the cap while streaming, including chunked responses. Never called
-  # for ONNX files, even if a graph is smaller than this limit.
+  # enforces the transport cap while streaming, including chunked responses.
+  # Never called for ONNX files, even if a graph is smaller than this limit.
   status=$(curl -q --silent --show-error --fail --location --max-redirs 5 \
     --proto '=https' --proto-redir '=https' --connect-timeout 20 --max-time 120 \
-    --max-filesize "$cap" --dump-header "$output.headers" \
+    --max-filesize "$transport_cap" --dump-header "$output.headers" \
     --output "$output" --write-out '%{http_code}' "$url") \
     || die "bounded metadata GET failed: $url"
   [[ "$status" == 200 ]] || die "invalid GET status $status: $url"

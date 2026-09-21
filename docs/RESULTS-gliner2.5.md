@@ -3,9 +3,10 @@
 **Status: pre-release M7 working document.** M0–M6 and the explicit-span API are
 accepted on the pinned base checkpoint. Fresh small/base/multi bundles have
 passed seven source/ONNX stages and native 30+2-case parity under the unchanged
-numerical gates. Authoritative latency measurements, hosted artifact readback, remote
-CI and external-consumer execution are pending. No release tag, CI run, hosted
-`codesoda/gliner2-onnx` bundle revision or downstream success is claimed here.
+numerical gates. Validated bundles are published at immutable Hugging Face revision
+`27310cd26099a387b9936a1e13b03d6a0700baf2`; both actual downloaders passed clean
+readback for all five profiles. Remote CI is green. Authoritative latency
+measurements, external-consumer execution and the release tag remain pending.
 
 ## Reproducibility scope
 
@@ -15,16 +16,15 @@ CI and external-consumer execution are pending. No release tag, CI run, hosted
 | Reference model | `fastino/gliner2.5-base-v1` at `78cea040597df251eedefa9d7ee2a756af39fe64` |
 | Reference platform | macOS arm64, CPU fp32; pinned Torch reference uses one thread |
 | Rust runtime | direct `ort = 2.0.0-rc.13`, native ONNX Runtime 1.28, four intra-op threads, Level3 optimization |
-| Rust toolchains verified at M6 | 1.95 and minimum supported 1.91 |
+| Rust toolchains verified at M7 | 1.95 and minimum supported 1.91; 245 strict tests each, zero skips |
 | Python reference environment | `scripts/export/env`, Torch 2.8.0, ONNX Runtime 1.20.1 |
 | Export | ONNX opset 17, fp32 |
 | Candidate-pool frozen reference | pinned PyTorch 2.8 CPU fp32 AArch64 arithmetic/order |
 
 These results establish a bounded CPU/reference contract. They are not a claim
 of bit identity on every CPU architecture, execution provider, ONNX Runtime
-version or regenerated host-native Torch oracle. In particular, small and multi
-need independent source, graph and native validation; base measurements cannot
-be reused or relabeled for them.
+version or regenerated host-native Torch oracle. Small and multi have their own independent source, graph and native validation;
+base measurements are not reused or relabeled for them.
 
 The usual numerical gate is:
 
@@ -105,10 +105,47 @@ Unsupported native empty-axis diagnostics are now opt-in using
 crash dialogs. Default reports explicitly mark those probes not run. Supported
 inputs and native Rust caller-rejection/bypass checks remain mandatory.
 
+## Published artifacts and final native gates
+
+All three manifests were promoted only after review of the actual seven-stage
+and native reports, unchanged tolerances, source pins, recursive graph audits,
+and streamed file hashes. The public Rust `validate_bundle` accepted all three:
+16 authenticated files plus the manifest in each directory. Each includes a
+sanitized validation report and the original unvalidated export manifest.
+
+Publication: [`codesoda/gliner2-onnx@27310cd`](https://huggingface.co/codesoda/gliner2-onnx/commit/27310cd26099a387b9936a1e13b03d6a0700baf2).
+The commit adds 52 files (three 17-file bundles and the root model card); no legacy
+v2 graph was changed. Manifest SHA-256 values:
+
+| Profile | Manifest SHA-256 |
+| --- | --- |
+| small | `5c691ff523278268f9046a42e8107c91fc084514f7f3f91cf88fc2fb9eb3e905` |
+| base | `b986177cfc3a14e388d03d79b18b040e5873c47ad713e2b68396d3abfbc4ec5c` |
+| multi | `ff51c54d0df6b870d204ee569dd6379d6607b43652dc142d1b4433dd277f3179` |
+
+Actual Python and Rust `--model all --revision 27310cd26099a387b9936a1e13b03d6a0700baf2`
+downloads used separate initially absent destinations and isolated caches. Both
+returned zero and produced exactly 64 regular, nonsymlink files totaling
+5,150,060,191 bytes each. Every path, size and SHA-256 matched, including original
+v2 graph/metadata pins. Parent review independently rehashed all 128 destination
+files. Readback report SHA-256:
+`b37b8b6f682085f0efa2a1e20943ab4124b962c616353665ce41d27d80f26a15`.
+
+Final corrected-artifact gates passed on both Rust 1.95 and 1.91: **245 tests,
+zero failures and zero artifact skips** each; fmt and all-target/all-feature
+Clippy with warnings denied also passed. The separate no-model gate reports
+245 passing cases with **48 expected artifact skips**, not 245 inference tests.
+All six fresh v2 tutorials passed with the same sole confidence drift
+`5.364418029785156e-7`; other normalized output remains exact.
+
+[Remote CI run 35561052287](https://github.com/codesoda/gliner2-rs/actions/runs/35561052287)
+passed all three jobs at source `974349ad0700998075c5e8327d7983838a1b18bf`.
+
 ## CPU latency benchmark protocol
 
-Authoritative timing is deferred until heavyweight export/validation lanes are
-idle. The final run must use complete, independently validated base v2 and base
+Authoritative timing is deferred until competing CPU-heavy activity is idle.
+The release benchmark binary has been built, but a persistent headless Chrome
+process group consuming roughly eight cores currently prevents a quiet run. The final run must use complete, independently validated base v2 and base
 2.5 bundles and record the following before values replace `PENDING`:
 
 - exact Git commit and clean/dirty state;
@@ -134,11 +171,12 @@ than silently changed. Report median and distribution tails from raw durations.
 Peak memory should be measured by one documented method and reported as process
 RSS (or clearly labeled if a different metric is used).
 
-The benchmark lane owns `scripts/benchmark_gliner2.sh`; its exact invocation is
-**PENDING** until that interface lands. Before publication, replace this note
-with the output of `scripts/benchmark_gliner2.sh --help` and the exact command
-used to produce the retained machine-readable report. Merely having the script
-or running `--help` is not benchmark evidence.
+The harness is implemented in `scripts/benchmark_gliner2.sh` and
+`examples/benchmark_gliner2.rs`; its 11 model-free tests pass. The wrapper uses a
+fresh process per model and records `/usr/bin/time` whole-process peak RSS,
+raw timing samples and actual tokenizer counts. See
+[`BENCHMARK-gliner2.5.md`](BENCHMARK-gliner2.5.md) for its invocation. The actual
+measured report remains pending; compilation or `--help` is not timing evidence.
 
 ### Pending latency table
 
@@ -160,15 +198,15 @@ measured rather than inferred.
 
 | Gate | Current result |
 | --- | --- |
-| Complete seven-graph small bundle, source proof and ONNX/native validation | Passed local seven-stage and native 30+2-case checks; not promoted |
-| Complete seven-graph base bundle rebuilt through final bundle tooling | Passed local seven-stage and native 30+2-case checks; not promoted |
-| Complete seven-graph multi bundle, own tokenizer/source proof and validation | Passed local seven-stage and native 30+2-case checks after source-ordered prefix correction; not promoted |
-| Manifest promotion to `validated` + `release_ready: true` | **PENDING parent adjudication** |
-| Hosted Hugging Face immutable revision and clean download/readback | **PENDING; no revision claimed** |
-| Rust and Python selector/hash/path validation against published files | **PENDING integration** |
-| Fresh v2 metadata colocation and legacy split-layout fallback | **PENDING integration** |
-| CPU benchmark table above | **PENDING** |
-| Remote CI at pushed commit | **PENDING; no run claimed** |
+| Complete seven-graph small bundle, source proof and ONNX/native validation | Passed seven-stage and native 30+2-case checks; published |
+| Complete seven-graph base bundle rebuilt through final bundle tooling | Passed seven-stage and native 30+2-case checks; published |
+| Complete seven-graph multi bundle, own tokenizer/source proof and validation | Passed seven-stage and native 30+2-case checks after source-ordered prefix correction; published |
+| Manifest promotion to `validated` + `release_ready: true` | Passed parent adjudication and actual Rust manifest verification, all three profiles |
+| Hosted Hugging Face immutable revision and clean download/readback | Passed at `27310cd26099a387b9936a1e13b03d6a0700baf2` |
+| Rust and Python selector/hash/path validation against published files | Passed both actual `all` downloads; identical 64 files / 5,150,060,191 bytes |
+| Fresh v2 metadata colocation and legacy split-layout fallback | Both fresh colocated downloads verified; legacy six-tutorial regression passed |
+| CPU benchmark table above | **PENDING quiet machine** |
+| Remote CI at pushed commit | Passed run `35561052287` at `974349a`; final release revision must also pass |
 | External Rust consumer from pushed source, without Python | **PENDING** |
 | Matching version and GitHub release tag | **PENDING; no tag claimed** |
 

@@ -91,6 +91,67 @@ verify_remote_file "$TEST_ROOT/local" "$TEST_FILENAME" owner/repo \
         self.assertIsNone(receipt)
 
 
+@unittest.skipUnless(shutil.which("bash"), "requires bash")
+class SmallMetadataTransportTests(unittest.TestCase):
+    def run_get(self, payload, final_cap, reserved=0):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "payload").write_bytes(payload)
+            helpers = SCRIPT.read_text().split("\nsource_url=", 1)[0]
+            harness = helpers + r'''
+curl() {
+  local limit=0 output=
+  while (($#)); do
+    case "$1" in
+      --max-filesize) limit=$2; shift 2 ;;
+      --output) output=$2; shift 2 ;;
+      *) shift ;;
+    esac
+  done
+  printf '%s\n' "$limit" > "$TEST_ROOT/transport-cap"
+  # Emulate curl rejecting HF's 286-byte redirect before its tiny final body.
+  ((limit >= 286)) || return 63
+  (($(wc -c < "$TEST_ROOT/payload") <= limit)) || return 63
+  cp "$TEST_ROOT/payload" "$output"
+  printf 200
+}
+small_bytes_reserved=$TEST_RESERVED
+small_get https://example.invalid/config.json "$TEST_ROOT/result" "$TEST_CAP"
+printf '%s\n' "$small_bytes_reserved" > "$TEST_ROOT/reserved"
+'''
+            process = subprocess.run(
+                ["bash", "-c", harness], capture_output=True, text=True,
+                env=dict(os.environ, TEST_ROOT=str(root), TEST_CAP=str(final_cap),
+                         TEST_RESERVED=str(reserved)),
+            )
+            values = {}
+            for name in ("transport-cap", "reserved"):
+                path = root / name
+                values[name] = int(path.read_text()) if path.exists() else None
+            return process, values
+
+    def test_tiny_metadata_allows_bounded_redirect_headroom(self):
+        process, values = self.run_get(b"{}", 2)
+        self.assertEqual(process.returncode, 0, process.stderr)
+        self.assertEqual(values, {"transport-cap": 4096, "reserved": 4096})
+
+    def test_redirect_headroom_does_not_relax_final_body_cap(self):
+        process, _ = self.run_get(b"oversized", 2)
+        self.assertNotEqual(process.returncode, 0)
+        self.assertIn("metadata readback exceeded cap", process.stderr)
+
+    def test_transport_headroom_counts_against_total_budget(self):
+        process, values = self.run_get(b"{}", 2, 67108864 - 4095)
+        self.assertNotEqual(process.returncode, 0)
+        self.assertIn("total metadata readback cap exceeded", process.stderr)
+        self.assertIsNone(values["transport-cap"])
+
+    def test_larger_metadata_keeps_its_original_transport_limit(self):
+        process, values = self.run_get(b"x" * 5000, 5000)
+        self.assertEqual(process.returncode, 0, process.stderr)
+        self.assertEqual(values, {"transport-cap": 5000, "reserved": 5000})
+
+
 @unittest.skipUnless(sys.platform == "darwin" and shutil.which("sandbox-exec"), "macOS sandbox test")
 class PythonExecutionPolicyTests(unittest.TestCase):
     def test_absolute_lowercase_and_framework_python_names_are_denied(self):
