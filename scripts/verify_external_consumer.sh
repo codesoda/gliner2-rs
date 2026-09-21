@@ -43,8 +43,9 @@ The report retains checked identities, headers, manifests, pins, source remote
 proof, Cargo.lock, and process output. Keep bundles unchanged during the run.
 Default Python evidence is PATH-name blocking only, not an interpreter sandbox:
 absolute paths, renamed interpreters and later PATH changes are not blocked.
---deny-python-exec additionally denies process-exec paths matching /python[^/]*$
-(including absolute /usr/bin/python3) for Cargo and its descendants on macOS.
+--deny-python-exec additionally denies Python-prefixed executable basenames
+(case-insensitive, including absolute framework paths and /usr/bin/python3)
+for Cargo and its descendants on macOS.
 It does not deny renamed/embedded interpreters or model a malicious adversary.
 Truly absent Python still needs a separate CI container. This smoke is not
 exhaustive public-method coverage, an accuracy assessment, or a release-readiness
@@ -248,7 +249,7 @@ keep_work=0
 deny_python_exec=0
 python_exec_denied=false
 python_scope='PATH-name blocking only; not an interpreter sandbox'
-python_policy='(version 1) (allow default) (deny process-exec (regex #"/python[^/]*$"))'
+python_policy='(version 1) (allow default) (deny process-exec (regex #"/[Pp][Yy][Tt][Hh][Oo][Nn][^/]*$"))'
 
 while (($#)); do
   case "$1" in
@@ -599,7 +600,7 @@ if ((deny_python_exec)); then
   grep -Fq 'Operation not permitted' "$report_dir/python-exec-preflight.txt" \
     || die "sandbox absolute-path Python denial preflight lacked the expected denial diagnostic"
   python_exec_denied=true
-  python_scope='PATH shadows plus macOS process-exec denial for /python[^/]*$ paths; not interpreter absence'
+  python_scope='PATH shadows plus macOS process-exec denial for Python-prefixed basenames (case-insensitive); not interpreter absence'
 fi
 printf '%s\n' "$python_scope" \
   'Discovered PATH names and probes are recorded in python-*-names/preflight evidence.' \

@@ -4,6 +4,8 @@
 import hashlib
 import json
 import os
+import re
+import sys
 from pathlib import Path
 import shutil
 import subprocess
@@ -87,6 +89,32 @@ verify_remote_file "$TEST_ROOT/local" "$TEST_FILENAME" owner/repo \
         self.assertIn("mismatched LFS SHA-256", process.stderr)
         self.assertFalse(fetched)
         self.assertIsNone(receipt)
+
+
+@unittest.skipUnless(sys.platform == "darwin" and shutil.which("sandbox-exec"), "macOS sandbox test")
+class PythonExecutionPolicyTests(unittest.TestCase):
+    def test_absolute_lowercase_and_framework_python_names_are_denied(self):
+        match = re.search(r"^python_policy='(.+)'$", SCRIPT.read_text(), re.MULTILINE)
+        self.assertIsNotNone(match)
+        policy = match.group(1)
+        with tempfile.TemporaryDirectory() as temporary:
+            for name in ("python3.12", "Python", "PYTHON3"):
+                with self.subTest(name=name):
+                    executable = Path(temporary) / name
+                    shutil.copyfile("/bin/echo", executable)
+                    executable.chmod(0o755)
+                    process = subprocess.run(
+                        ["sandbox-exec", "-p", policy, "/bin/sh", "-c", '"$1" forbidden', "sh", str(executable)],
+                        capture_output=True, text=True,
+                    )
+                    self.assertEqual(process.returncode, 126, process.stderr)
+                    self.assertNotIn("forbidden", process.stdout)
+            process = subprocess.run(
+                ["sandbox-exec", "-p", policy, "/bin/echo", "allowed"],
+                capture_output=True, text=True,
+            )
+            self.assertEqual(process.returncode, 0, process.stderr)
+            self.assertEqual(process.stdout.strip(), "allowed")
 
 
 if __name__ == "__main__":
