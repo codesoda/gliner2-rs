@@ -7,38 +7,7 @@
 use anyhow::{Result, ensure};
 
 use crate::classification::{ClassAct, ClassificationOutput};
-
-fn sigmoid(value: f32) -> f32 {
-    if value >= 0.0 {
-        1.0 / (1.0 + (-value).exp())
-    } else {
-        let exponential = value.exp();
-        exponential / (1.0 + exponential)
-    }
-}
-
-fn softmax(logits: &[f32]) -> Vec<f32> {
-    let maximum = logits.iter().copied().fold(f32::NEG_INFINITY, f32::max);
-    let exponentials: Vec<_> = logits
-        .iter()
-        .map(|&value| (value - maximum).exp())
-        .collect();
-    let total: f32 = exponentials.iter().sum();
-    exponentials
-        .into_iter()
-        .map(|value| value / total)
-        .collect()
-}
-
-fn first_argmax(values: &[f32]) -> usize {
-    let mut best = 0;
-    for index in 1..values.len() {
-        if values[index] > values[best] {
-            best = index;
-        }
-    }
-    best
-}
+use crate::scores::{Activation, ClassificationScores};
 
 /// Decode one boundary-classifier output after temperature scaling.
 ///
@@ -46,6 +15,11 @@ fn first_argmax(values: &[f32]) -> usize {
 /// order. If none pass, the first maximum is retained. Single-label decoding
 /// always returns the first maximum. Invalid inputs are errors rather than
 /// indexing or assertion panics.
+///
+/// This is the selection view of [`ClassificationScores`]; both share one
+/// arithmetic path. Duplicate labels are accepted here for compatibility with
+/// the historical decoder, so the distribution is formed on de-duplicated
+/// positions and then re-expanded.
 pub fn decode_classification(
     labels: &[String],
     logits: &[f32],
@@ -55,62 +29,37 @@ pub fn decode_classification(
     classification_temperature: f32,
 ) -> Result<ClassificationOutput> {
     ensure!(
-        !labels.is_empty(),
-        "classification labels must be non-empty"
-    );
-    ensure!(
-        labels.len() == logits.len(),
-        "classification labels/logits length mismatch: {} != {}",
-        labels.len(),
-        logits.len()
-    );
-    ensure!(
-        classification_temperature.is_finite() && classification_temperature > 0.0,
-        "classification temperature must be finite and positive, got {classification_temperature}"
-    );
-    ensure!(
         cls_threshold.is_finite() && (0.0..=1.0).contains(&cls_threshold),
         "classification threshold must be finite and in [0,1], got {cls_threshold}"
     );
-    for (index, &logit) in logits.iter().enumerate() {
-        ensure!(
-            logit.is_finite(),
-            "classification logit {index} must be finite, got {logit}"
-        );
-    }
-
-    let scaled: Vec<_> = logits
-        .iter()
-        .map(|&logit| logit / classification_temperature)
-        .collect();
-    let probabilities: Vec<f32> = match class_act {
-        ClassAct::Sigmoid => scaled.into_iter().map(sigmoid).collect(),
-        ClassAct::Softmax => softmax(&scaled),
-        ClassAct::Auto if multi_label => scaled.into_iter().map(sigmoid).collect(),
-        ClassAct::Auto => softmax(&scaled),
-    };
-    ensure!(
-        probabilities.iter().all(|value| value.is_finite()),
-        "classification activation produced non-finite probabilities after temperature scaling"
-    );
-
-    if multi_label {
-        let mut chosen: Vec<_> = labels
-            .iter()
-            .cloned()
-            .zip(probabilities.iter().copied())
-            .filter(|(_, probability)| *probability >= cls_threshold)
-            .collect();
-        if chosen.is_empty() {
-            let best = first_argmax(&probabilities);
-            chosen.push((labels[best].clone(), probabilities[best]));
+    // Positional stand-in names keep the arithmetic identical when a caller
+    // repeats a label string; the real labels are restored afterwards.
+    let positions: Vec<String> = (0..labels.len()).map(|index| index.to_string()).collect();
+    let scores = ClassificationScores::new(
+        "",
+        positions,
+        logits.to_vec(),
+        classification_temperature,
+        Activation::from_class_act(class_act, multi_label),
+    )?;
+    let restore = |position: &str| labels[position.parse::<usize>().expect("position")].clone();
+    Ok(if multi_label {
+        match scores.select_multi(cls_threshold) {
+            ClassificationOutput::Multi { labels: chosen } => ClassificationOutput::Multi {
+                labels: chosen
+                    .into_iter()
+                    .map(|(position, probability)| (restore(&position), probability))
+                    .collect(),
+            },
+            single => single,
         }
-        Ok(ClassificationOutput::Multi { labels: chosen })
     } else {
-        let best = first_argmax(&probabilities);
-        Ok(ClassificationOutput::Single {
-            label: labels[best].clone(),
-            confidence: probabilities[best],
-        })
-    }
+        match scores.select_single() {
+            ClassificationOutput::Single { label, confidence } => ClassificationOutput::Single {
+                label: restore(&label),
+                confidence,
+            },
+            multi => multi,
+        }
+    })
 }

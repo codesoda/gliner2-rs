@@ -104,7 +104,9 @@ impl BoundaryPreprocessingPolicy {
     pub fn prepare(self, text: &str, choice_prefix: &[String]) -> PreparedTokens {
         let (normalized_text, synthetic_suffix_added) = normalize_terminal_punctuation(text);
         let split = split_with_offsets(&normalized_text, self.splitter);
+        let split_words = split.len();
         let retained = split.into_iter().take(self.max_len()).collect::<Vec<_>>();
+        let truncated_words = split_words - retained.len();
 
         let mut text_tokens = Vec::with_capacity(choice_prefix.len() + retained.len());
         text_tokens.extend(choice_prefix.iter().cloned());
@@ -122,6 +124,7 @@ impl BoundaryPreprocessingPolicy {
             original_offsets,
             choice_prefix_words: choice_prefix.len(),
             synthetic_suffix_added,
+            truncated_words,
         }
     }
 }
@@ -195,6 +198,9 @@ pub struct PreparedTokens {
     pub original_offsets: Vec<OriginalTokenOffset>,
     pub choice_prefix_words: usize,
     pub synthetic_suffix_added: bool,
+    /// Normalized words dropped by the `max_len` cap. Zero means the whole
+    /// text reached the encoder.
+    pub truncated_words: usize,
 }
 
 impl PreparedTokens {

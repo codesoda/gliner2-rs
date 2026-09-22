@@ -3,6 +3,7 @@ use std::path::Path;
 use ndarray::{Array1, Array2, Array4, Ix2, Ix4};
 
 use crate::Result;
+use crate::options::RuntimeOptions;
 use crate::runtime::{RuntimeSession, extract, tensor};
 
 const INPUTS: &[&str] = &["text_emb", "schema_emb_padded", "schema_mask", "spans_idx"];
@@ -20,8 +21,12 @@ pub struct ExtractorOutput {
 
 impl Extractor {
     pub fn new(model_path: impl AsRef<Path>) -> Result<Self> {
+        Self::new_with_options(model_path, RuntimeOptions::default())
+    }
+
+    pub fn new_with_options(model_path: impl AsRef<Path>, options: RuntimeOptions) -> Result<Self> {
         Ok(Self {
-            session: RuntimeSession::load(model_path, "extractor", INPUTS, OUTPUTS)?,
+            session: RuntimeSession::load_with(model_path, "extractor", INPUTS, OUTPUTS, options)?,
         })
     }
 

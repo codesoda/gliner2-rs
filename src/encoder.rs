@@ -3,6 +3,7 @@ use std::path::Path;
 use ndarray::{Array2, Array3, Ix3};
 
 use crate::Result;
+use crate::options::RuntimeOptions;
 use crate::runtime::{RuntimeSession, extract, tensor};
 
 const INPUTS: &[&str] = &["input_ids", "attention_mask"];
@@ -15,8 +16,12 @@ pub struct Encoder {
 
 impl Encoder {
     pub fn new(model_path: impl AsRef<Path>) -> Result<Self> {
+        Self::new_with_options(model_path, RuntimeOptions::default())
+    }
+
+    pub fn new_with_options(model_path: impl AsRef<Path>, options: RuntimeOptions) -> Result<Self> {
         Ok(Self {
-            session: RuntimeSession::load(model_path, "encoder", INPUTS, OUTPUTS)?,
+            session: RuntimeSession::load_with(model_path, "encoder", INPUTS, OUTPUTS, options)?,
         })
     }
 

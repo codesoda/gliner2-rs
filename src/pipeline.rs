@@ -23,6 +23,7 @@ use crate::{
     },
     extractor::{Extractor as SpanExtractor, ExtractorOutput},
     json::{JsonExtraction, JsonSchema},
+    options::{RuntimeOptions, RuntimeReport},
     preprocessing::PreprocessingPolicy,
     relations::{
         FormattedRelationExtraction, FormattedRelationPair, RelationExtraction,
@@ -52,6 +53,7 @@ pub struct SpanPipeline {
     max_width: usize,
     extractor_max_fields: usize,
     preprocessing: PreprocessingPolicy,
+    options: RuntimeOptions,
 }
 
 /// Backward-compatible name for the GLiNER2 span implementation.
@@ -67,6 +69,23 @@ impl SpanPipeline {
         encoder_onnx: impl AsRef<Path>,
         extractor_onnx: impl AsRef<Path>,
     ) -> Result<Self> {
+        Self::new_with_options(
+            model_dir,
+            encoder_onnx,
+            extractor_onnx,
+            RuntimeOptions::default(),
+        )
+    }
+
+    /// Construct with explicit runtime options that apply to every session
+    /// this instance opens, including classifier and adapter encoders.
+    pub fn new_with_options(
+        model_dir: impl AsRef<Path>,
+        encoder_onnx: impl AsRef<Path>,
+        extractor_onnx: impl AsRef<Path>,
+        options: RuntimeOptions,
+    ) -> Result<Self> {
+        options.validate().context("invalid span runtime options")?;
         let model_dir = model_dir.as_ref();
         let config = ModelConfig::from_dir(model_dir)?;
         if config.architecture != Architecture::Span {
@@ -77,9 +96,9 @@ impl SpanPipeline {
 
         Ok(Self {
             tokenizer: RuntimeTokenizer::from_dir(model_dir)?,
-            encoder: Encoder::new(encoder_onnx)?,
+            encoder: Encoder::new_with_options(encoder_onnx, options)?,
             base_encoder: None,
-            extractor: SpanExtractor::new(extractor_onnx)?,
+            extractor: SpanExtractor::new_with_options(extractor_onnx, options)?,
             classifier: None,
             adapter_config: None,
             max_width: 8,
@@ -94,22 +113,43 @@ impl SpanPipeline {
             // 4) rerun `cd gliner2-rs && cargo test`.
             extractor_max_fields: 64,
             preprocessing: PreprocessingPolicy::new(config.max_len),
+            options,
         })
     }
 
     /// Load a complete span bundle with tokenizer and all ONNX graphs colocated.
     pub fn from_dir(bundle: impl AsRef<Path>) -> Result<Self> {
+        Self::from_dir_with_options(bundle, RuntimeOptions::default())
+    }
+
+    pub fn from_dir_with_options(
+        bundle: impl AsRef<Path>,
+        options: RuntimeOptions,
+    ) -> Result<Self> {
         let bundle = bundle.as_ref();
         required_file(bundle, "tokenizer.json")?;
         let encoder = required_file(bundle, "encoder.onnx")?;
         let extractor = required_file(bundle, "extractor_padded.onnx")?;
         let classifier = required_file(bundle, "classifier.onnx")?;
-        Self::new(bundle, encoder, extractor)?.with_classifier(classifier)
+        Self::new_with_options(bundle, encoder, extractor, options)?.with_classifier(classifier)
     }
 
     pub fn with_classifier(mut self, classifier_onnx: impl AsRef<Path>) -> Result<Self> {
-        self.classifier = Some(Classifier::new(classifier_onnx)?);
+        self.classifier = Some(Classifier::new_with_options(classifier_onnx, self.options)?);
         Ok(self)
+    }
+
+    /// Options every session of this instance was built with.
+    pub fn runtime_report(&self) -> RuntimeReport {
+        let mut sessions = vec!["encoder", "extractor"];
+        if self.classifier.is_some() {
+            sessions.push("classifier");
+        }
+        RuntimeReport::new(self.options, sessions)
+    }
+
+    pub const fn runtime_options(&self) -> RuntimeOptions {
+        self.options
     }
 
     pub fn has_adapter(&self) -> bool {
@@ -134,7 +174,7 @@ impl SpanPipeline {
             ));
         }
 
-        let new_encoder = Encoder::new(&encoder_onnx)?;
+        let new_encoder = Encoder::new_with_options(&encoder_onnx, self.options)?;
         let old_encoder = std::mem::replace(&mut self.encoder, new_encoder);
 
         // First adapter load: stash base encoder so `unload_adapter()` is O(1).
@@ -1181,13 +1221,30 @@ macro_rules! delegate_auto {
 
 impl AutoPipeline {
     pub fn from_dir(bundle: impl AsRef<Path>) -> Result<Self> {
+        Self::from_dir_with_options(bundle, RuntimeOptions::default())
+    }
+
+    pub fn from_dir_with_options(
+        bundle: impl AsRef<Path>,
+        options: RuntimeOptions,
+    ) -> Result<Self> {
         let bundle = bundle.as_ref();
         match ModelConfig::from_dir(bundle)?.architecture {
-            Architecture::Span => Ok(Self::Span(Box::new(SpanPipeline::from_dir(bundle)?))),
-            Architecture::Boundary => Ok(Self::Boundary(Box::new(BoundaryPipeline::from_dir(
-                bundle,
+            Architecture::Span => Ok(Self::Span(Box::new(SpanPipeline::from_dir_with_options(
+                bundle, options,
             )?))),
+            Architecture::Boundary => Ok(Self::Boundary(Box::new(
+                BoundaryPipeline::from_dir_with_options(bundle, options)?,
+            ))),
         }
+    }
+
+    pub fn runtime_report(&self) -> RuntimeReport {
+        delegate_auto!(self, runtime_report())
+    }
+
+    pub fn runtime_options(&self) -> RuntimeOptions {
+        delegate_auto!(self, runtime_options())
     }
 
     pub fn with_classifier(self, classifier_onnx: impl AsRef<Path>) -> Result<Self> {

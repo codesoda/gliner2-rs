@@ -664,3 +664,28 @@ prompt-to-evidence checklist. Model-free test success is not model parity.
 - Matching CI at9332af6 is green (run35563422282). Benchmark still waits for a
   quiet machine; headless Chrome and unrelated compilation remain CPU-heavy.
   No release tag is created before that measurement and final review.
+
+## Classification gate for downstream consumers (issues #6, #7, #8)
+
+- Added `scores::ClassificationScores` / `ClassificationRequest`: complete
+  ordered distribution with raw and temperature-scaled logits, activation
+  semantics (softmax categorical, sigmoid independent and never renormalised),
+  first-max ties, duplicate/reserved-marker/unknown-description rejection, and
+  encoder usage (input tokens, words dropped by `max_len`). The boundary
+  `decode_classification` is now the selection view of the same struct; all
+  existing classification tests pass unchanged.
+- Added `options::RuntimeOptions` / `RuntimeReport` and `_with_options`
+  constructors for every model and pipeline. Defaults equal the historical
+  fixed settings. CPU only; CoreML/CUDA requests are rejected at validation
+  with the supported list. Adapter swaps reuse the instance's options.
+- Added `ClassificationPipeline` (tokenizer + encoder + classifier only) with
+  `required_paths` / `missing_files`. A four-file directory loads it and is
+  still rejected as a complete bundle.
+- New goldens `fixtures/classification-scores/gliner2.5-{small,base,multi}-v1.json`
+  from `scripts/parity/gen_classification_scores.py` (public `extract` path,
+  classifier forward hook, torch-side activation). Measured on this machine:
+  max |Δlogit| 4.673e-5 / 4.113e-5 / 1.287e-4 and max |Δp| 7.1e-6 / 6.3e-6 /
+  2.1e-5 for small / base / multi; argmax and public winners identical on all
+  17 task outputs per checkpoint; token counts and truncation exact.
+- Not measured: classifier-only load time and RSS versus the full pipeline;
+  any provider other than CPU. Not claimed: classification quality.

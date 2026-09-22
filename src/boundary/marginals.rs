@@ -4,6 +4,7 @@ use anyhow::{Context, anyhow, ensure};
 use ndarray::{Array2, Array3, Ix2, Ix3};
 
 use crate::Result;
+use crate::options::RuntimeOptions;
 use crate::runtime::{RuntimeSession, extract, tensor};
 
 const INPUTS: &[&str] = &["text_states", "text_mask", "query_states", "query_mask"];
@@ -49,8 +50,18 @@ pub struct MarginalModel {
 
 impl MarginalModel {
     pub fn new(model_path: impl AsRef<Path>) -> Result<Self> {
+        Self::new_with_options(model_path, RuntimeOptions::default())
+    }
+
+    pub fn new_with_options(model_path: impl AsRef<Path>, options: RuntimeOptions) -> Result<Self> {
         Ok(Self {
-            session: RuntimeSession::load(model_path, "boundary marginal", INPUTS, OUTPUTS)?,
+            session: RuntimeSession::load_with(
+                model_path,
+                "boundary marginal",
+                INPUTS,
+                OUTPUTS,
+                options,
+            )?,
         })
     }
 
