@@ -3,6 +3,7 @@ pub mod assignment;
 mod choice_unicode;
 mod choices;
 pub mod classification;
+pub mod classification_pipeline;
 pub mod config;
 pub mod decode;
 pub mod explicit;
@@ -20,5 +21,6 @@ pub mod relation_pairs;
 pub mod relations;
 pub mod scorer;
 
+pub use classification_pipeline::ClassificationPipeline;
 pub use explicit_spans::{ExplicitSpanScore, ExplicitSpanScores};
 pub use pipeline::BoundaryPipeline;

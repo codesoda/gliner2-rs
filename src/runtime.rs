@@ -8,7 +8,9 @@ use ndarray::{Array, ArrayBase, Data, Dimension, IxDyn};
 use ort::session::{Session, SessionInputs, SessionOutputs, builder::GraphOptimizationLevel};
 use ort::value::{PrimitiveTensorElementType, Tensor};
 
-/// A directly-owned ONNX Runtime session with the crate's fixed CPU settings.
+use crate::options::{ExecutionProvider, OptimizationLevel, RuntimeOptions};
+
+/// A directly-owned ONNX Runtime session built from explicit [`RuntimeOptions`].
 ///
 /// `ort` requires mutable session access for inference. The lock is per model,
 /// so independent model sessions can still execute concurrently.
@@ -18,20 +20,39 @@ pub(crate) struct RuntimeSession {
 }
 
 impl RuntimeSession {
-    pub(crate) fn load(
+    /// Load one session. Options are validated before the file is opened, so a
+    /// rejected provider or thread count never partially constructs a model.
+    pub(crate) fn load_with(
         model_path: impl AsRef<Path>,
         model_name: &'static str,
         expected_inputs: &[&str],
         expected_outputs: &[&str],
+        options: RuntimeOptions,
     ) -> Result<Self> {
+        options
+            .validate()
+            .with_context(|| format!("invalid runtime options for {model_name}"))?;
         let model_path = model_path.as_ref();
         let mut builder = Session::builder()
             .with_context(|| format!("failed to create {model_name} ONNX Runtime session"))?;
-        builder = builder.with_intra_threads(4).map_err(|error| {
-            anyhow!("failed to configure {model_name} intra-op threads: {error}")
-        })?;
+        // Only the CPU provider passes validation. ORT registers CPU implicitly,
+        // so no provider registration call is needed and none can fall back.
+        debug_assert_eq!(options.provider(), ExecutionProvider::Cpu);
         builder = builder
-            .with_optimization_level(GraphOptimizationLevel::Level3)
+            .with_intra_threads(options.intra_threads())
+            .map_err(|error| {
+                anyhow!("failed to configure {model_name} intra-op threads: {error}")
+            })?;
+        if let Some(inter) = options.inter_threads() {
+            builder = builder.with_parallel_execution(true).map_err(|error| {
+                anyhow!("failed to configure {model_name} parallel execution: {error}")
+            })?;
+            builder = builder.with_inter_threads(inter).map_err(|error| {
+                anyhow!("failed to configure {model_name} inter-op threads: {error}")
+            })?;
+        }
+        builder = builder
+            .with_optimization_level(graph_level(options.optimization_level()))
             .map_err(|error| {
                 anyhow!("failed to configure {model_name} graph optimizations: {error}")
             })?;
@@ -79,6 +100,15 @@ impl RuntimeSession {
             .with_context(|| format!("{} ONNX Runtime inference failed", self.model_name))?;
         decode(&outputs)
             .with_context(|| format!("failed to decode {} ONNX outputs", self.model_name))
+    }
+}
+
+fn graph_level(level: OptimizationLevel) -> GraphOptimizationLevel {
+    match level {
+        OptimizationLevel::Disable => GraphOptimizationLevel::Disable,
+        OptimizationLevel::Basic => GraphOptimizationLevel::Level1,
+        OptimizationLevel::Extended => GraphOptimizationLevel::Level2,
+        OptimizationLevel::All => GraphOptimizationLevel::Level3,
     }
 }
 

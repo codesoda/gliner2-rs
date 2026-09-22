@@ -20,7 +20,7 @@ you; see [Tags & versioning](#tags--versioning) for what's available.
 ```toml
 # Cargo.toml
 [dependencies]
-gliner2-rs = { git = "https://github.com/codesoda/gliner2-rs", tag = "v0.1.0" }
+gliner2-rs = { git = "https://github.com/codesoda/gliner2-rs", tag = "v0.2.0" }
 ```
 
 You'll also need the ONNX model files locally — they're not part of the
@@ -57,7 +57,7 @@ extraction, relation extraction, validators, and LoRA adapters.
 
 ### Runtime compatibility
 
-The current branch uses `ort` **2.0.0-rc.13** directly (native ONNX Runtime
+`v0.2.0` uses `ort` **2.0.0-rc.13** directly (native ONNX Runtime
 **1.28**), without ORP. It requires Rust **1.91+** (the locked Hugging Face/Xet
 transitive dependencies require newer APIs than ORT's own Rust 1.88 floor).
 Existing inference methods and public `ndarray` **0.16** types are retained.
@@ -146,7 +146,7 @@ python3 scripts/download_models.py --model base
 python3 scripts/download_models.py --model large
 ```
 
-### GLiNER2.5 downloads (current branch; not v0.1.0)
+### GLiNER2.5 downloads (v0.2.0 and later)
 
 Selectors are `base`, `large`, `2.5-small`, `2.5-base`, `2.5-multi` and `all`.
 Boundary and `all` downloads require an explicit immutable publication revision:
@@ -200,15 +200,15 @@ cargo run --release --example tutorial_1_classification
 Most examples accept `--model <path-to-onnx-dir>` to point at a specific
 downloaded model bundle (see `examples/common/mod.rs`).
 
-### GLiNER2.5 boundary API (unreleased)
+### GLiNER2.5 boundary API (v0.2.0)
 
 M0–M6 and public explicit-span scoring passed their development gates. Fresh
 small/base/multi bundles each passed seven source/ONNX stages and 32 native cases,
 and have been published and independently downloaded. A clean remote-Git
 consumer built and ran both architectures on Rust 1.91 with Python-named
-execution denied ([proof](docs/evidence/m7-consumer.json)). Final benchmarking
-still gates the release. The existing `v0.1.0` tag does not contain this API;
-do not pin a nonexistent release tag.
+execution denied ([proof](docs/evidence/m7-consumer.json)). One CPU latency
+run is recorded in [RESULTS-gliner2.5.md](docs/RESULTS-gliner2.5.md) with its
+caveats. `v0.1.0` does not contain this API; pin `v0.2.0` or later.
 
 Use architecture-aware loading when either family may be selected:
 
@@ -278,6 +278,80 @@ cargo run --release --example explicit_span_scoring -- \
   --model /path/to/complete/gliner2.5-base-v1
 ```
 
+#### Complete classification distributions
+
+`score_classification` / `score_classifications` return every requested label
+with its raw logit, temperature-scaled logit and probability, in the caller's
+order, with no threshold pruning. The checkpoint's `classification_temperature`
+is applied once. Several tasks share one encoder pass:
+
+```rust,ignore
+use gliner2_rs::{Activation, ClassificationRequest};
+
+let request = ClassificationRequest::new(
+    "intent",
+    vec!["billing".into(), "support".into(), "sales".into()],
+    Activation::Softmax,
+)
+.with_instruction("Pick the department that should handle this message.");
+let scores = pipeline.score_classification(text, &request)?;
+for (label, p) in scores.labels().iter().zip(scores.probabilities()) {
+    println!("{label}: {p:.4}");
+}
+let winner = &scores.labels()[scores.argmax()];
+```
+
+`Activation::Softmax` gives one categorical distribution (sum within `1e-4` of
+one, checked). `Activation::Sigmoid` gives one independent probability per
+label; `is_categorical()` is false and the values are **not** renormalised. Do
+not build a categorical decision from thresholded sigmoid outputs; request
+softmax instead. Ties resolve to the earlier label. Duplicate labels, reserved
+prompt markers (`[P]`, `[L]`, …) and descriptions for unknown labels are
+rejected before inference. `usage()` reports the encoder token count and how
+many words the checkpoint's `max_len` cap dropped, so a caller can refuse a
+truncated request. The historical `classify_*` methods are the selection view
+of the same arithmetic.
+
+`fixtures/classification-scores/` holds goldens from the pinned upstream for
+all three 2.5 checkpoints (instructions, descriptions, Unicode, many labels,
+sigmoid/softmax, empty text, near-ties, multi-task, truncation). `tests/
+classification_scores.rs` checks raw logits within the existing classifier
+gate (`1e-4 + 1e-3·|x|`) and probabilities within `1e-4`; measured maxima are
+`4.7e-5 / 4.1e-5 / 1.3e-4` logits and `≤ 2.1e-5` probabilities for small /
+base / multi. This is numerical parity with upstream, not a claim about
+classification quality. `boolean_false_true` in the corpus is a worked example
+of label wording changing the answer.
+
+#### Classifier-only loading
+
+`ClassificationPipeline::from_dir` opens only `config.json`, `tokenizer.json`,
+`encoder.onnx` and `classifier.onnx`; the five extraction heads are neither
+required nor opened, and `required_paths` / `missing_files` state exactly
+which files are needed. It exposes the same `score_classification*` and
+`classify*` methods and is tested to produce identical scores to
+`BoundaryPipeline` on the same bundle. A directory holding only those four
+files is **not** a complete bundle: `BoundaryPipeline::from_dir` and
+`validate_bundle` still reject it. Load time and memory against the full
+pipeline have not been measured; no improvement is claimed.
+
+```bash
+cargo run --release --example classification_scores -- onnx/gliner2.5-base-v1
+```
+
+#### Runtime options
+
+Every loader has a `_with_options` form taking `RuntimeOptions`: execution
+provider, intra-/inter-op threads and graph optimization level. Defaults
+reproduce the historical fixed settings (CPU, four intra-op threads, full
+optimization), so existing constructors are unchanged. Options are validated
+before any file is opened, apply to every session the instance creates
+(adapter encoders included), and never leak between instances.
+`runtime_report()` returns what the instance actually runs with plus the
+native ONNX Runtime build string. **Only the CPU provider is supported**;
+`ExecutionProvider::CoreMl` / `Cuda` are rejected with a message listing the
+supported set. There is no silent fallback: nothing in this crate reads the
+environment to pick a device.
+
 Optional M8 helpers—attributes, constrained classification, JointIE and
 long-document chunk/merge APIs—are not implemented or implied by ordinary
 boundary-model support. See [GLiNER2 vs GLiNER2.5](docs/gliner2-vs-gliner2.5.md)
@@ -294,3 +368,9 @@ them from the repo root, e.g.:
 ```bash
 python3 scripts/export/export_encoder.py --model-dir models/gliner2-base-v1 --out-dir onnx/gliner2-base-v1
 ```
+
+## License
+
+Apache License 2.0, the same license as the upstream
+[GLiNER2](https://github.com/fastino-ai/GLiNER2) project this crate ports.
+See [LICENSE](LICENSE) and [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

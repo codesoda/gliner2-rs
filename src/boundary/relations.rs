@@ -3,6 +3,7 @@ use std::path::Path;
 use anyhow::{Context, Result, ensure};
 use ndarray::{Array1, Array3, Ix1};
 
+use crate::options::RuntimeOptions;
 use crate::runtime::{RuntimeSession, extract, tensor};
 
 const INPUTS: &[&str] = &[
@@ -63,8 +64,18 @@ pub struct RelationModel {
 
 impl RelationModel {
     pub fn new(model_path: impl AsRef<Path>) -> Result<Self> {
+        Self::new_with_options(model_path, RuntimeOptions::default())
+    }
+
+    pub fn new_with_options(model_path: impl AsRef<Path>, options: RuntimeOptions) -> Result<Self> {
         Ok(Self {
-            session: RuntimeSession::load(model_path, "boundary relations", INPUTS, OUTPUTS)?,
+            session: RuntimeSession::load_with(
+                model_path,
+                "boundary relations",
+                INPUTS,
+                OUTPUTS,
+                options,
+            )?,
         })
     }
 

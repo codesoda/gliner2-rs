@@ -44,6 +44,7 @@ use crate::{
         build_entities_schema_tokens_with_descriptions,
     },
     json::{JsonExtraction, JsonRecord, JsonSchema},
+    options::{RuntimeOptions, RuntimeReport},
     relations::{
         FormattedRelationExtraction, FormattedRelationPair, RelationExtraction,
         build_relation_schema_tokens,
@@ -53,6 +54,7 @@ use crate::{
         ClassificationSpec, EntityLabels, ExtractionResult, FieldDtype, QuickClassificationTask,
         SchemaBuilder, SchemaSpec, StructureSpec,
     },
+    scores::{ClassificationRequest, ClassificationScores, ScoringUsage},
     structures::{build_structure_choice_prefix, build_structure_schema_tokens},
     tokenizer::RuntimeTokenizer,
 };
@@ -74,6 +76,7 @@ pub struct BoundaryPipeline {
     adapter_config: Option<AdapterConfig>,
     runtime: BoundaryRuntimeConfig,
     preprocessing: BoundaryPreprocessingPolicy,
+    options: RuntimeOptions,
 }
 
 #[derive(Default)]
@@ -105,16 +108,193 @@ enum RawStructureValue {
     Choices(Vec<(String, f32)>),
 }
 
-struct PreparedBoundaryEncoding {
+pub(super) struct PreparedBoundaryEncoding {
+    pub(super) prepared: PreparedTokens,
+    pub(super) embeddings: ExtractedEmbeddings,
+    pub(super) queries: BoundaryQueryEmbeddings,
+    /// Sub-word length of the encoder sequence, prompt included.
+    pub(super) input_tokens: usize,
+}
+
+/// Format the prompt, run the encoder once and pool marker/text states.
+pub(super) fn encode_prepared(
+    tokenizer: &RuntimeTokenizer,
+    encoder: &Encoder,
     prepared: PreparedTokens,
-    embeddings: ExtractedEmbeddings,
-    queries: BoundaryQueryEmbeddings,
+    schema_tokens: &[Vec<String>],
+) -> Result<PreparedBoundaryEncoding> {
+    let formatted = format_input_with_mapping(tokenizer, schema_tokens, &prepared.text_tokens)?;
+    let sequence = formatted.input_ids.len();
+    ensure!(
+        formatted.attention_mask.len() == sequence,
+        "boundary formatted input has {sequence} token IDs but {} attention values",
+        formatted.attention_mask.len()
+    );
+    let input_ids = Array2::from_shape_vec((1, sequence), formatted.input_ids.clone())?;
+    let attention_mask = Array2::from_shape_vec((1, sequence), formatted.attention_mask.clone())?;
+    let hidden = encoder.infer(input_ids, attention_mask)?;
+    let (batch, hidden_sequence, hidden_size) = hidden.dim();
+    ensure!(
+        batch == 1 && hidden_sequence == sequence && hidden_size > 0,
+        "boundary encoder output shape {:?}, expected [1,{sequence},H] with H > 0",
+        hidden.shape()
+    );
+
+    let embeddings = extract_embeddings(&hidden, &formatted, schema_tokens.len())?;
+    ensure!(
+        embeddings.schema_embs.len() == schema_tokens.len(),
+        "boundary schema pooling produced {} schema groups for {} schemas",
+        embeddings.schema_embs.len(),
+        schema_tokens.len()
+    );
+    ensure!(
+        embeddings.text_emb.dim() == (prepared.text_tokens.len(), hidden_size),
+        "boundary text pooling produced shape {:?} for {} prepared tokens and encoder width {hidden_size}",
+        embeddings.text_emb.dim(),
+        prepared.text_tokens.len()
+    );
+
+    let queries = extract_boundary_queries(&hidden, &formatted, schema_tokens.len())?;
+    ensure!(
+        queries.query_emb.dim() == (queries.metadata.len(), hidden_size),
+        "boundary query pooling produced shape {:?} for {} routed queries and encoder width {hidden_size}",
+        queries.query_emb.dim(),
+        queries.metadata.len()
+    );
+
+    Ok(PreparedBoundaryEncoding {
+        prepared,
+        embeddings,
+        queries,
+        input_tokens: sequence,
+    })
+}
+
+/// Gather the `[L]` states of one classification schema and run the
+/// classifier head. Returns one raw logit per label, in label order.
+pub(super) fn classification_logits(
+    classifier: &Classifier,
+    embeddings: &ExtractedEmbeddings,
+    schema_index: usize,
+    task: &str,
+    label_count: usize,
+) -> Result<Vec<f32>> {
+    let states = embeddings
+        .schema_embs
+        .get(schema_index)
+        .context("missing boundary classification schema embeddings")?;
+    ensure!(
+        states.len() == label_count + 1,
+        "classification task {task:?} expected [P] plus {label_count} [L] states, got {} marker states",
+        states.len()
+    );
+    let hidden_size = embeddings.text_emb.ncols();
+    let mut label_states = Array2::zeros((label_count, hidden_size));
+    for (row, embedding) in states.iter().skip(1).enumerate() {
+        ensure!(
+            embedding.len() == hidden_size,
+            "classification label state width {} differs from encoder width {hidden_size}",
+            embedding.len()
+        );
+        label_states.row_mut(row).assign(embedding);
+    }
+    let logits = classifier.infer(label_states)?;
+    ensure!(
+        logits.len() == label_count,
+        "classifier returned {} logits for {label_count} labels in task {task:?}",
+        logits.len()
+    );
+    Ok(logits.to_vec())
+}
+
+/// Shared full-distribution path for the complete and classifier-only
+/// pipelines: validate, build the upstream prompt tokens, encode once, score
+/// each task, and attach encoder usage.
+pub(super) fn score_classifications(
+    tokenizer: &RuntimeTokenizer,
+    encoder: &Encoder,
+    classifier: &Classifier,
+    preprocessing: BoundaryPreprocessingPolicy,
+    temperature: f32,
+    text: &str,
+    requests: &[ClassificationRequest],
+) -> Result<Vec<ClassificationScores>> {
+    ensure!(
+        !requests.is_empty(),
+        "at least one classification request is required"
+    );
+    for request in requests {
+        request
+            .validate()
+            .with_context(|| format!("invalid classification request {:?}", request.task))?;
+    }
+    let schema_tokens: Vec<Vec<String>> = requests
+        .iter()
+        .map(|request| {
+            if request.label_descriptions.is_empty() {
+                build_classification_schema_tokens(
+                    &request.task,
+                    &request.labels,
+                    request.instruction.as_deref(),
+                )
+            } else {
+                build_classification_schema_tokens_with_descriptions(
+                    &request.task,
+                    &request.labels,
+                    request.instruction.as_deref(),
+                    &request.label_descriptions,
+                )
+            }
+        })
+        .collect();
+    let prepared = preprocessing.prepare(text, &[]);
+    let truncated_words = prepared.truncated_words;
+    let encoding = encode_prepared(tokenizer, encoder, prepared, &schema_tokens)?;
+    let usage = ScoringUsage {
+        input_tokens: encoding.input_tokens,
+        truncated_words,
+    };
+    requests
+        .iter()
+        .enumerate()
+        .map(|(schema_index, request)| {
+            let logits = classification_logits(
+                classifier,
+                &encoding.embeddings,
+                schema_index,
+                &request.task,
+                request.labels.len(),
+            )?;
+            let scores = ClassificationScores::new(
+                request.task.clone(),
+                request.labels.clone(),
+                logits,
+                temperature,
+                request.activation,
+            )
+            .with_context(|| format!("classification task {:?}", request.task))?;
+            Ok(scores.with_usage(usage))
+        })
+        .collect()
 }
 
 impl BoundaryPipeline {
     /// Load and validate the boundary entity, classification, JSON/record and
-    /// explicit-scoring graphs.
+    /// explicit-scoring graphs with the default CPU runtime options.
     pub fn from_dir(bundle: impl AsRef<Path>) -> Result<Self> {
+        Self::from_dir_with_options(bundle, RuntimeOptions::default())
+    }
+
+    /// Load every boundary graph with explicit runtime options. The options
+    /// are validated before any file is opened and apply to all sessions this
+    /// instance creates, including later adapter encoders.
+    pub fn from_dir_with_options(
+        bundle: impl AsRef<Path>,
+        options: RuntimeOptions,
+    ) -> Result<Self> {
+        options
+            .validate()
+            .context("invalid boundary runtime options")?;
         let bundle = bundle.as_ref();
         let runtime = BoundaryRuntimeConfig::from_dir(bundle)?;
         required_file(bundle, "tokenizer.json")?;
@@ -136,38 +316,38 @@ impl BoundaryPipeline {
                     bundle.display()
                 )
             })?,
-            encoder: Encoder::new(&encoder).with_context(|| {
+            encoder: Encoder::new_with_options(&encoder, options).with_context(|| {
                 format!("failed to load boundary encoder at {}", encoder.display())
             })?,
             base_encoder: None,
-            classifier: Classifier::new(&classifier).with_context(|| {
+            classifier: Classifier::new_with_options(&classifier, options).with_context(|| {
                 format!(
                     "failed to load boundary classifier at {}",
                     classifier.display()
                 )
             })?,
-            marginals: MarginalModel::new(&marginals).with_context(|| {
+            marginals: MarginalModel::new_with_options(&marginals, options).with_context(|| {
                 format!(
                     "failed to load boundary marginals at {}",
                     marginals.display()
                 )
             })?,
-            scorer: ScorerModel::new(&scorer).with_context(|| {
+            scorer: ScorerModel::new_with_options(&scorer, options).with_context(|| {
                 format!("failed to load boundary scorer at {}", scorer.display())
             })?,
-            explicit: ExplicitModel::new(&explicit).with_context(|| {
+            explicit: ExplicitModel::new_with_options(&explicit, options).with_context(|| {
                 format!(
                     "failed to load boundary explicit scorer at {}",
                     explicit.display()
                 )
             })?,
-            records: RecordModel::new(&records).with_context(|| {
+            records: RecordModel::new_with_options(&records, options).with_context(|| {
                 format!(
                     "failed to load boundary record head at {}",
                     records.display()
                 )
             })?,
-            relations: RelationModel::new(&relations).with_context(|| {
+            relations: RelationModel::new_with_options(&relations, options).with_context(|| {
                 format!(
                     "failed to load boundary relation head at {}",
                     relations.display()
@@ -176,12 +356,34 @@ impl BoundaryPipeline {
             adapter_config: None,
             runtime,
             preprocessing,
+            options,
         })
+    }
+
+    /// The options every session of this instance was built with, plus the
+    /// native runtime identity. Adapter swaps keep the same options.
+    pub fn runtime_report(&self) -> RuntimeReport {
+        RuntimeReport::new(
+            self.options,
+            vec![
+                "encoder",
+                "classifier",
+                "boundary marginal",
+                "boundary scorer",
+                "boundary explicit scorer",
+                "boundary records",
+                "boundary relations",
+            ],
+        )
+    }
+
+    pub const fn runtime_options(&self) -> RuntimeOptions {
+        self.options
     }
 
     /// Replace the classifier graph while retaining all boundary heads.
     pub fn with_classifier(mut self, classifier_onnx: impl AsRef<Path>) -> Result<Self> {
-        self.classifier = Classifier::new(classifier_onnx)?;
+        self.classifier = Classifier::new_with_options(classifier_onnx, self.options)?;
         Ok(self)
     }
 
@@ -233,7 +435,7 @@ impl BoundaryPipeline {
             "adapter bundle missing `encoder.onnx` at {} (export a merged ONNX encoder for this adapter)",
             encoder_onnx.display()
         );
-        let replacement = Encoder::new(&encoder_onnx)?;
+        let replacement = Encoder::new_with_options(&encoder_onnx, self.options)?;
         let previous = std::mem::replace(&mut self.encoder, replacement);
         if self.base_encoder.is_none() {
             self.base_encoder = Some(previous);
@@ -313,7 +515,7 @@ impl BoundaryPipeline {
         // Do not route through SchemaBuilder: duplicate labels are real,
         // ordered schema queries in this API.
         let schema_tokens = vec![build_entities_schema_tokens(labels, None)];
-        let encoding = self.encode_prepared(prepared, &schema_tokens)?;
+        let encoding = encode_prepared(&self.tokenizer, &self.encoder, prepared, &schema_tokens)?;
         let expected_metadata: Vec<_> = (0..labels.len())
             .map(|field_idx| QueryMetadata {
                 schema_idx: 0,
@@ -586,60 +788,7 @@ impl BoundaryPipeline {
         choice_prefix_tokens: &[String],
     ) -> Result<PreparedBoundaryEncoding> {
         let prepared = self.preprocessing.prepare(text, choice_prefix_tokens);
-        self.encode_prepared(prepared, schema_tokens)
-    }
-
-    fn encode_prepared(
-        &self,
-        prepared: PreparedTokens,
-        schema_tokens: &[Vec<String>],
-    ) -> Result<PreparedBoundaryEncoding> {
-        let formatted =
-            format_input_with_mapping(&self.tokenizer, schema_tokens, &prepared.text_tokens)?;
-        let sequence = formatted.input_ids.len();
-        ensure!(
-            formatted.attention_mask.len() == sequence,
-            "boundary formatted input has {sequence} token IDs but {} attention values",
-            formatted.attention_mask.len()
-        );
-        let input_ids = Array2::from_shape_vec((1, sequence), formatted.input_ids.clone())?;
-        let attention_mask =
-            Array2::from_shape_vec((1, sequence), formatted.attention_mask.clone())?;
-        let hidden = self.encoder.infer(input_ids, attention_mask)?;
-        let (batch, hidden_sequence, hidden_size) = hidden.dim();
-        ensure!(
-            batch == 1 && hidden_sequence == sequence && hidden_size > 0,
-            "boundary encoder output shape {:?}, expected [1,{sequence},H] with H > 0",
-            hidden.shape()
-        );
-
-        let embeddings = extract_embeddings(&hidden, &formatted, schema_tokens.len())?;
-        ensure!(
-            embeddings.schema_embs.len() == schema_tokens.len(),
-            "boundary schema pooling produced {} schema groups for {} schemas",
-            embeddings.schema_embs.len(),
-            schema_tokens.len()
-        );
-        ensure!(
-            embeddings.text_emb.dim() == (prepared.text_tokens.len(), hidden_size),
-            "boundary text pooling produced shape {:?} for {} prepared tokens and encoder width {hidden_size}",
-            embeddings.text_emb.dim(),
-            prepared.text_tokens.len()
-        );
-
-        let queries = extract_boundary_queries(&hidden, &formatted, schema_tokens.len())?;
-        ensure!(
-            queries.query_emb.dim() == (queries.metadata.len(), hidden_size),
-            "boundary query pooling produced shape {:?} for {} routed queries and encoder width {hidden_size}",
-            queries.query_emb.dim(),
-            queries.metadata.len()
-        );
-
-        Ok(PreparedBoundaryEncoding {
-            prepared,
-            embeddings,
-            queries,
-        })
+        encode_prepared(&self.tokenizer, &self.encoder, prepared, schema_tokens)
     }
 
     fn run_marginals(
@@ -913,34 +1062,16 @@ impl BoundaryPipeline {
             .iter()
             .zip(&classification_schema_indices)
         {
-            let embeddings = encoding
-                .embeddings
-                .schema_embs
-                .get(schema_index)
-                .context("missing boundary classification schema embeddings")?;
-            ensure!(
-                embeddings.len() == classification.labels.len() + 1,
-                "classification task {:?} expected [P] plus {} [L] states, got {} marker states",
-                classification.task,
+            let logits = classification_logits(
+                &self.classifier,
+                &encoding.embeddings,
+                schema_index,
+                &classification.task,
                 classification.labels.len(),
-                embeddings.len()
-            );
-            let hidden_size = encoding.embeddings.text_emb.ncols();
-            let mut label_states = Array2::zeros((classification.labels.len(), hidden_size));
-            for (row, embedding) in embeddings.iter().skip(1).enumerate() {
-                ensure!(
-                    embedding.len() == hidden_size,
-                    "classification label state width {} differs from encoder width {hidden_size}",
-                    embedding.len()
-                );
-                label_states.row_mut(row).assign(embedding);
-            }
-            let logits = self.classifier.infer(label_states)?;
+            )?;
             let decoded = decode_classification(
                 &classification.labels,
-                logits
-                    .as_slice()
-                    .context("classifier logits are not contiguous")?,
+                &logits,
                 classification.multi_label,
                 classification.cls_threshold,
                 classification.class_act,
@@ -1444,6 +1575,42 @@ impl BoundaryPipeline {
             outputs.len()
         );
         Ok(outputs.remove(0).1)
+    }
+
+    /// Score one classification task and return the complete distribution.
+    /// See [`score_classifications`](Self::score_classifications).
+    pub fn score_classification(
+        &self,
+        text: &str,
+        request: &ClassificationRequest,
+    ) -> Result<ClassificationScores> {
+        let mut scores = self.score_classifications(text, std::slice::from_ref(request))?;
+        ensure!(
+            scores.len() == 1,
+            "single classification request produced {} task outputs",
+            scores.len()
+        );
+        Ok(scores.remove(0))
+    }
+
+    /// Score several classification tasks over one encoder pass and return
+    /// every label's raw logit and probability, in request order, with no
+    /// threshold pruning. The checkpoint's classification temperature is
+    /// applied once. Requests are validated before inference.
+    pub fn score_classifications(
+        &self,
+        text: &str,
+        requests: &[ClassificationRequest],
+    ) -> Result<Vec<ClassificationScores>> {
+        score_classifications(
+            &self.tokenizer,
+            &self.encoder,
+            &self.classifier,
+            self.preprocessing,
+            self.runtime.classification_temperature,
+            text,
+            requests,
+        )
     }
 
     pub fn extract_json(&self, text: &str, schema: &JsonSchema) -> Result<JsonExtraction> {

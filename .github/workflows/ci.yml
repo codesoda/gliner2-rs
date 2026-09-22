@@ -63,9 +63,10 @@ jobs:
           set -o pipefail
           cargo test --locked --all-targets -- --nocapture 2>&1 | tee no-model-tests.log
           grep 'SKIP:' no-model-tests.log >> "$GITHUB_STEP_SUMMARY" || true
-          # 47 legacy artifact guards plus the new per-checkpoint bundle gate.
+          # 47 legacy artifact guards, the per-checkpoint bundle gate, and the
+          # four classification_scores tests (one SKIP each without bundles).
           # Update only alongside an explicitly reviewed change in test scope.
-          test "$(grep -o 'SKIP:' no-model-tests.log | wc -l)" -eq 48
+          test "$(grep -o 'SKIP:' no-model-tests.log | wc -l)" -eq 52
 
   python-unit:
     name: Python model-free unit tests

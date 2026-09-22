@@ -3,6 +3,7 @@ use std::path::Path;
 use anyhow::{Context, Result, anyhow, ensure};
 use ndarray::{Array1, Array2, Array3, Ix1, Ix2, Ix3, arr0};
 
+use crate::options::RuntimeOptions;
 use crate::runtime::{RuntimeSession, extract, tensor};
 
 const INPUTS: &[&str] = &[
@@ -60,8 +61,18 @@ pub struct RecordModel {
 
 impl RecordModel {
     pub fn new(model_path: impl AsRef<Path>) -> Result<Self> {
+        Self::new_with_options(model_path, RuntimeOptions::default())
+    }
+
+    pub fn new_with_options(model_path: impl AsRef<Path>, options: RuntimeOptions) -> Result<Self> {
         Ok(Self {
-            session: RuntimeSession::load(model_path, "boundary records", INPUTS, OUTPUTS)?,
+            session: RuntimeSession::load_with(
+                model_path,
+                "boundary records",
+                INPUTS,
+                OUTPUTS,
+                options,
+            )?,
         })
     }
 
