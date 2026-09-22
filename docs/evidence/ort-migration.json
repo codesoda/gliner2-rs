@@ -1,0 +1,118 @@
+{
+  "status": "accepted_after_user_approved_confidence_exception_and_executable_regression_gate",
+  "authorization": "User explicitly requested removing ORP and using the latest ORT; broader GLiNER2.5 release goal remains active.",
+  "before": {
+    "orp": "0.9.2",
+    "ort": "2.0.0-rc.9",
+    "native_runtime": "1.20.0",
+    "strict_model_tests_passed": 102,
+    "strict_model_tests_skipped": 0,
+    "strict_command": "GLINER2_TEST_ROOT=/tmp/gliner25-work/combined-model-root GLINER2_REQUIRE_MODELS=1 GLINER2_REQUIRE_BOUNDARY_MODELS=1 GLINER2_BOUNDARY_FULL_FIXTURES=1 GLINER2_POOL_FULL_FIXTURES=1 cargo test --all-features -- --nocapture",
+    "strict_log": "/tmp/gliner25-work/ort-migration/rc9-models.log",
+    "v2_tutorials_match_original_baseline": true,
+    "v2_normalization": "Only lines starting model load took:, inference took:, batch inference took:, or batch took: are excluded. No result or confidence normalization.",
+    "v2_normalized_sha256": {
+      "tutorial_1_classification": "6d419dd4833d8f3ad02c55b387496396569c126106b76f9910d80271bbe20242",
+      "tutorial_2_ner": "51982dcfb71709747e8ff2c26f9d9a0a5ab79f9a9e46b69a01c6ca42a67ac2d4",
+      "tutorial_3_json_extraction": "2c1d38de6c8e0f6295a619ee2dfdbd75acb4e7295d026a2961ad559861f9502f",
+      "tutorial_4_combined": "b77ee5cb41bb642ba72ba4363b07e33a67a96991e2f42a29c43eb8b49c929902",
+      "tutorial_5_validator": "1aa77586e815f68884ccbc77808343efdea4fafff2e3794270a91d09202bfe69",
+      "tutorial_6_relation_extraction": "29ef8e1db814938cc69ddf1b32c3d10338f20f68140e3d95998e15b99e000e44"
+    }
+  },
+  "target": {
+    "ort": "2.0.0-rc.13",
+    "ort_sys": "2.0.0-rc.13",
+    "upstream_advertised_native_runtime": "1.28",
+    "ort_dependency_msrv": "1.88",
+    "verified_project_msrv": "1.91",
+    "project_msrv_correction": "The original 1.88 declaration was too low for locked hf-hub/Xet transitive dependencies; see msrv-verification.json for actual failed and successful compiler runs.",
+    "local_rustc": "1.95.0",
+    "public_ndarray": "0.16",
+    "intra_op_threads": 4,
+    "graph_optimization": "Level3",
+    "session_access": "Per-model mutex preserving public infer(&self); copy outputs before releasing guard"
+  },
+  "after": {
+    "native_build_info": "ORT Build Info: git-branch=rel-1.28.0, git-commit-id=da9b5e3, fp8-kv-cache=1, build type=Release",
+    "parent_runtime_unit_tests_passed": 6,
+    "parent_strict_model_tests_passed": 110,
+    "parent_strict_model_tests_skipped": 0,
+    "parent_no_model_tests_passed": 110,
+    "parent_no_model_explicit_skip_messages": 29,
+    "parent_fmt_passed": true,
+    "parent_clippy_all_targets_all_features_passed": true,
+    "parent_full_boundary_tutorials_passed": ["tutorial_1_classification", "tutorial_2_ner"],
+    "v2_byte_comparison": {
+      "identical_tutorials": ["tutorial_2_ner", "tutorial_3_json_extraction", "tutorial_4_combined", "tutorial_5_validator", "tutorial_6_relation_extraction"],
+      "differing_tutorial": "tutorial_1_classification",
+      "differing_result_values": 1,
+      "value": "topics technology confidence",
+      "old_f32": 0.8674003481864929,
+      "new_f32": 0.8674008846282959,
+      "absolute_difference": 0.0000005364418029785156,
+      "ulp_difference": 9,
+      "labels_text_order_other_values_identical": true,
+      "accepted": true,
+      "approved_absolute_confidence_tolerance": 0.000001,
+      "note": "User explicitly approved confidence drift <=1e-6 while labels/text/spans/order and other result values stay exact. No output rounding or bias is permitted; other stage gates remain unchanged."
+    },
+    "logs_directory": "/tmp/gliner25-work/ort-migration",
+    "logs": ["parent-runtime-unit.log", "parent-rc13-models.log", "parent-rc13-no-models.log", "parent-rc13-clippy.log", "parent-rc13-fmt.log", "rc13-v2-comparison.json", "rc13-tutorial_1_classification.diff"]
+  },
+  "diagnosis": {
+    "directory": "/tmp/gliner25-work/ort-migration/diagnostic",
+    "reports": ["analysis.json", "options-analysis.json"],
+    "input_ids_attention_masks_subwords_identical": true,
+    "old_and_new_repeated_runs_deterministic": true,
+    "encoder_changed_coordinates": 24543,
+    "encoder_total_coordinates": 25344,
+    "encoder_max_absolute_difference": 0.000019073486328125,
+    "classifier_cross_feed_same_inputs_bit_identical_both_directions": true,
+    "localized_stage": "Native encoder execution differs between runtimes; individual kernel/fusion root cause not yet established.",
+    "settings_tested_without_restoring_old_encoder_bytes": ["Disable graph optimization", "Level1", "Level2", "Level3", "Level3 deterministic compute", "Level3 no weight prepacking"],
+    "production_settings_changed_for_diagnosis": false,
+    "user_approved_policy": "Allow absolute v2 confidence drift <=1e-6 across this runtime migration; retain exact labels/text/spans/order and unchanged other stage gates; never round or bias results.",
+    "confirmation_tool_error": "ask_user_question failed: Cannot read properties of undefined (reading 'cancelled')",
+    "approval_received": true,
+    "approval_evidence": "User replied Approved to the explicit <=0.000001 confidence exception request."
+
+  },
+  "final_regression_gate": {
+    "validator": "scripts/parity/validate_v2_tutorials.py",
+    "unit_tests": "scripts/parity/test_validate_v2_tutorials.py",
+    "parent_unit_tests_passed": 15,
+    "fresh_six_tutorial_run_passed": true,
+    "confidence_difference_count": 1,
+    "maximum_absolute_f32_confidence_error": 0.0000005364418029785156,
+    "absolute_confidence_tolerance": 0.000001,
+    "non_confidence_bytes_exact": true,
+    "reference_sha256_checked": true,
+    "reference_bytes_including_manifest": 100006,
+    "typed_confidence_slots": 34,
+    "ci_model_free_tests_added": true,
+    "command": "python3 scripts/parity/validate_v2_tutorials.py --run --model /Users/chrisraethke/projects/gliners2/onnx/gliner2-base-v1 --actual-dir /tmp/gliner25-work/ort-migration/gated-run --actual-prefix current",
+    "report": "/tmp/gliner25-work/ort-migration/parent-v2-approved-fresh-run.json"
+  },
+  "isolated_migration_commit_scope": {
+    "excludes_uncommitted_m5_preparations": true,
+    "strict_model_tests_passed": 91,
+    "strict_model_skips": 0,
+    "no_model_tests_passed": 91,
+    "no_model_explicit_skip_messages": 25,
+    "fmt_passed": true,
+    "clippy_all_targets_all_features_passed": true,
+    "source_directory": "/tmp/gliner25-work/ort-migration/commit-scope",
+    "target_directory": "/tmp/gliner25-work/ort-migration/commit-scope-target",
+    "logs": ["parent-commit-scope-models.log", "parent-commit-scope-no-models.log", "parent-commit-scope-clippy.log"],
+    "artifact_setup_note": "The first strict run failed on a missing ignored full-fixture link in the isolated source directory; after linking it, the complete strict run passed with zero skips. That initial failure is not counted as a pass."
+  },
+  "additional_parent_checks": {
+    "release_head_pipeline_and_helper_tests_passed": 52,
+    "release_model_skips": 0,
+    "release_log": "/tmp/gliner25-work/ort-migration/parent-release-models.log",
+    "smoke_example_passed": true,
+    "smoke_log": "/tmp/gliner25-work/ort-migration/parent-smoke.log"
+  },
+  "scope_note": "The baseline workspace includes uncommitted M5 preparations. Runtime migration does not complete records, relations, bundles, public explicit scoring, or release publication. Historical Python and M0-M4 evidence retains its original runtime version."
+}

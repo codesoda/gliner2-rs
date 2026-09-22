@@ -65,11 +65,7 @@ impl RegexValidator {
             RegexMode::Partial => self.compiled.is_match(text),
         };
 
-        if self.exclude {
-            !matched
-        } else {
-            matched
-        }
+        if self.exclude { !matched } else { matched }
     }
 }
 

@@ -1,13 +1,7 @@
-use std::path::PathBuf;
-
 use gliner2_rs::{Result, pipeline::Gliner2Pipeline};
 
-fn model_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .unwrap()
-        .to_path_buf()
-}
+mod common;
+use common::{artifacts_available, model_root};
 
 #[test]
 fn end_to_end_raw_runs() -> Result<()> {
@@ -16,8 +10,7 @@ fn end_to_end_raw_runs() -> Result<()> {
     let encoder_onnx = root.join("onnx/gliner2-base-v1/encoder.onnx");
     let extractor_onnx = root.join("onnx/gliner2-base-v1/extractor_padded.onnx");
 
-    if !encoder_onnx.exists() || !extractor_onnx.exists() {
-        eprintln!("SKIP: missing onnx artifacts");
+    if !artifacts_available(&[&model_dir, &encoder_onnx, &extractor_onnx])? {
         return Ok(());
     }
 

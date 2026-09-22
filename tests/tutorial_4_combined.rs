@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use gliner2_rs::{
     Result,
     classification::FormattedClassification,
@@ -8,12 +6,8 @@ use gliner2_rs::{
     schema_spec::{FieldDtype, SchemaBuilder, StructureFieldSpec},
 };
 
-fn model_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .unwrap()
-        .to_path_buf()
-}
+mod common;
+use common::{artifacts_available, model_root};
 
 #[test]
 fn tutorial_4_combined_schema_runs() -> Result<()> {
@@ -23,8 +17,7 @@ fn tutorial_4_combined_schema_runs() -> Result<()> {
     let extractor_onnx = root.join("onnx/gliner2-base-v1/extractor_padded.onnx");
     let classifier_onnx = root.join("onnx/gliner2-base-v1/classifier.onnx");
 
-    if !model_dir.exists() || !encoder_onnx.exists() || !extractor_onnx.exists() || !classifier_onnx.exists() {
-        eprintln!("SKIP: missing model/onnx artifacts");
+    if !artifacts_available(&[&model_dir, &encoder_onnx, &extractor_onnx, &classifier_onnx])? {
         return Ok(());
     }
 

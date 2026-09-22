@@ -2,17 +2,35 @@ name: CI
 
 on:
   push:
-    branches: [main]
-    tags: ["v*"]
+    branches:
+      - main
+      - quick-mantis
+    tags:
+      - "v*"
   pull_request:
-    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build-and-test:
+  rust:
+    name: Rust (${{ matrix.name }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: MSRV 1.91
+            toolchain: "1.91.0"
+            cache-key: msrv-1.91.0
+          - name: stable
+            toolchain: stable
+            cache-key: stable
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,21 +38,72 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
+          toolchain: ${{ matrix.toolchain }}
           components: clippy, rustfmt
 
-      - name: Cache cargo registry and build artifacts
+      - name: Cache Cargo registry and build artifacts
         uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ci-${{ matrix.cache-key }}
 
-      - name: Build (lib, tests, examples)
-        run: cargo build --all-targets --verbose
+      - name: Check formatting
+        run: cargo fmt --all -- --check
 
-      # ONNX model weights aren't committed to this repo (see README) and
-      # every model-dependent test/example skips itself cleanly when it
-      # can't find `onnx/`/`models/` locally, so this runs the full test
-      # suite without needing to download any model files.
-      - name: Test
-        run: cargo test --all-targets --verbose
+      - name: Build all targets from the lockfile
+        run: cargo build --locked --all-targets
 
-      - name: Clippy (non-blocking)
-        run: cargo clippy --all-targets
-        continue-on-error: true
+      - name: Clippy (warnings denied)
+        run: cargo clippy --locked --all-targets -- -D warnings
+
+      # Model weights and full parity fixtures are intentionally not committed.
+      # Model-dependent tests skip in this ordinary, non-strict CI environment;
+      # committed model-free fixtures and all other targets still run.
+      - name: Test all targets from the lockfile (no model downloads)
+        run: |
+          set -o pipefail
+          cargo test --locked --all-targets -- --nocapture 2>&1 | tee no-model-tests.log
+          grep 'SKIP:' no-model-tests.log >> "$GITHUB_STEP_SUMMARY" || true
+          # 47 legacy artifact guards, the per-checkpoint bundle gate, and the
+          # four classification_scores tests (one SKIP each without bundles).
+          # Update only alongside an explicitly reviewed change in test scope.
+          test "$(grep -o 'SKIP:' no-model-tests.log | wc -l)" -eq 52
+
+  python-unit:
+    name: Python model-free unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: V2 confidence comparator tests
+        run: python scripts/parity/test_validate_v2_tutorials.py
+
+      # The downloader is dependency-free. Synthetic ONNX assembly tests need
+      # CPU Torch/ONNX imports, but never download or run pretrained checkpoints.
+      - name: Downloader tests
+        run: python scripts/test_download_models.py
+
+      - name: Consumer readback identity tests
+        run: python scripts/test_consumer_readback.py
+
+      - name: Unsupported-axis probes stay opt-in
+        run: python scripts/export/test_unsupported_axis_probes.py
+
+      - name: Install synthetic exporter test dependencies
+        run: |
+          python -m pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install numpy==2.2.6 onnx==1.17.0 onnxruntime==1.20.1
+
+      - name: Bundle exporter contract tests
+        run: python scripts/export/test_bundle_export.py
+
+      - name: Bundle oracle metadata tests
+        run: python scripts/parity/test_bundle_validation_vectors.py
+
+      - name: Source-ordered fp32 reduction (tiny synthetic graphs)
+        run: python scripts/export/test_boundary_reductions.py

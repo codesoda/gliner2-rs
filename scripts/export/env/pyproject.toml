@@ -1,0 +1,18 @@
+[project]
+name = "gliner2-rs-export-env"
+version = "0.1.0"
+description = "Pinned Python environment for GLiNER2 ONNX export and parity fixtures"
+requires-python = "==3.12.*"
+dependencies = [
+  "gliner2[local] @ git+https://github.com/fastino-ai/GLiNER2.git@d7c727458bf6929bc9ef5ee04e13c3f717a7c455",
+  "numpy==2.2.6",
+  "onnx==1.17.0",
+  "onnxruntime==1.20.1",
+  "peft==0.17.1",
+  "sentencepiece==0.2.1",
+  "torch==2.8.0",
+  "transformers==4.57.6",
+]
+
+[tool.uv]
+package = false

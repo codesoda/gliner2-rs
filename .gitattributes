@@ -1,0 +1,3 @@
+# Frozen tutorial payloads are hashed byte-for-byte, including original trailing spaces.
+/fixtures/v2-tutorials/*.txt text eol=lf -whitespace
+/fixtures/v2-tutorials/manifest.json text eol=lf

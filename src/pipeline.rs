@@ -6,30 +6,36 @@ use ndarray::{Array1, Array2, Axis, s};
 use crate::{
     Result,
     adapters::{AdapterConfig, read_lora_r},
-    json::{JsonExtraction, JsonSchema},
-    classifier::Classifier,
     classification::{
-        ClassAct, ClassificationOutput, FormattedClassification, build_classification_schema_tokens,
-        build_classification_schema_tokens_with_descriptions, decode_classification,
+        ClassAct, ClassificationOutput, FormattedClassification,
+        build_classification_schema_tokens, build_classification_schema_tokens_with_descriptions,
+        decode_classification,
     },
+    classifier::Classifier,
+    config::{Architecture, ModelConfig},
     decode::{find_valid_spans, greedy_non_overlapping},
-    entities::{
-        EntityMatches, EntitySpan, FormattedEntitySpan, FormattedEntityValue,
-        build_entities_schema_tokens,
-        build_entities_schema_tokens_with_descriptions, format_entity_spans,
-    },
     embeddings::extract_embeddings,
     encoder::Encoder,
-    extractor::{Extractor, ExtractorOutput},
-    relations::{FormattedRelationExtraction, FormattedRelationPair, RelationExtraction, build_relation_schema_tokens},
+    entities::{
+        EntityMatches, EntitySpan, FormattedEntitySpan, FormattedEntityValue,
+        build_entities_schema_tokens, build_entities_schema_tokens_with_descriptions,
+        format_entity_spans,
+    },
+    extractor::{Extractor as SpanExtractor, ExtractorOutput},
+    json::{JsonExtraction, JsonSchema},
+    options::{RuntimeOptions, RuntimeReport},
+    preprocessing::PreprocessingPolicy,
+    relations::{
+        FormattedRelationExtraction, FormattedRelationPair, RelationExtraction,
+        build_relation_schema_tokens,
+    },
     schema::format_input_with_mapping,
     schema_spec::{
-        EntityLabels, EntitySpec, ExtractionResult, QuickClassificationTask, RelationSpec, SchemaBuilder, SchemaSpec,
-        StructureSpec,
+        EntityLabels, EntitySpec, ExtractionResult, QuickClassificationTask, RelationSpec,
+        SchemaBuilder, SchemaSpec, StructureSpec,
     },
     spans::build_spans,
     structures::{build_structure_choice_prefix, build_structure_schema_tokens},
-    text::tokenize_with_offsets,
     tokenizer::RuntimeTokenizer,
 };
 
@@ -37,32 +43,62 @@ use crate::{
 /// schema/text formatting -> encoder -> embedding extraction -> span generation -> extractor.
 ///
 /// This is an internal stepping stone toward `extract_entities(text, labels)`.
-pub struct Gliner2Pipeline {
+pub struct SpanPipeline {
     tokenizer: RuntimeTokenizer,
     encoder: Encoder,
     base_encoder: Option<Encoder>,
-    extractor: Extractor,
+    extractor: SpanExtractor,
     classifier: Option<Classifier>,
     adapter_config: Option<AdapterConfig>,
     max_width: usize,
     extractor_max_fields: usize,
+    preprocessing: PreprocessingPolicy,
+    options: RuntimeOptions,
 }
+
+/// Backward-compatible name for the GLiNER2 span implementation.
+pub type Gliner2Pipeline = SpanPipeline;
 
 fn sigmoid(x: f32) -> f32 {
     1.0 / (1.0 + (-x).exp())
 }
 
-impl Gliner2Pipeline {
+impl SpanPipeline {
     pub fn new(
         model_dir: impl AsRef<Path>,
         encoder_onnx: impl AsRef<Path>,
         extractor_onnx: impl AsRef<Path>,
     ) -> Result<Self> {
+        Self::new_with_options(
+            model_dir,
+            encoder_onnx,
+            extractor_onnx,
+            RuntimeOptions::default(),
+        )
+    }
+
+    /// Construct with explicit runtime options that apply to every session
+    /// this instance opens, including classifier and adapter encoders.
+    pub fn new_with_options(
+        model_dir: impl AsRef<Path>,
+        encoder_onnx: impl AsRef<Path>,
+        extractor_onnx: impl AsRef<Path>,
+        options: RuntimeOptions,
+    ) -> Result<Self> {
+        options.validate().context("invalid span runtime options")?;
+        let model_dir = model_dir.as_ref();
+        let config = ModelConfig::from_dir(model_dir)?;
+        if config.architecture != Architecture::Span {
+            return Err(anyhow!(
+                "SpanPipeline cannot load a boundary architecture; use AutoPipeline::from_dir"
+            ));
+        }
+
         Ok(Self {
             tokenizer: RuntimeTokenizer::from_dir(model_dir)?,
-            encoder: Encoder::new(encoder_onnx)?,
+            encoder: Encoder::new_with_options(encoder_onnx, options)?,
             base_encoder: None,
-            extractor: Extractor::new(extractor_onnx)?,
+            extractor: SpanExtractor::new_with_options(extractor_onnx, options)?,
             classifier: None,
             adapter_config: None,
             max_width: 8,
@@ -76,12 +112,44 @@ impl Gliner2Pipeline {
             // 3) update this constant (and any tests/examples that assume 64),
             // 4) rerun `cd gliner2-rs && cargo test`.
             extractor_max_fields: 64,
+            preprocessing: PreprocessingPolicy::new(config.max_len),
+            options,
         })
     }
 
+    /// Load a complete span bundle with tokenizer and all ONNX graphs colocated.
+    pub fn from_dir(bundle: impl AsRef<Path>) -> Result<Self> {
+        Self::from_dir_with_options(bundle, RuntimeOptions::default())
+    }
+
+    pub fn from_dir_with_options(
+        bundle: impl AsRef<Path>,
+        options: RuntimeOptions,
+    ) -> Result<Self> {
+        let bundle = bundle.as_ref();
+        required_file(bundle, "tokenizer.json")?;
+        let encoder = required_file(bundle, "encoder.onnx")?;
+        let extractor = required_file(bundle, "extractor_padded.onnx")?;
+        let classifier = required_file(bundle, "classifier.onnx")?;
+        Self::new_with_options(bundle, encoder, extractor, options)?.with_classifier(classifier)
+    }
+
     pub fn with_classifier(mut self, classifier_onnx: impl AsRef<Path>) -> Result<Self> {
-        self.classifier = Some(Classifier::new(classifier_onnx)?);
+        self.classifier = Some(Classifier::new_with_options(classifier_onnx, self.options)?);
         Ok(self)
+    }
+
+    /// Options every session of this instance was built with.
+    pub fn runtime_report(&self) -> RuntimeReport {
+        let mut sessions = vec!["encoder", "extractor"];
+        if self.classifier.is_some() {
+            sessions.push("classifier");
+        }
+        RuntimeReport::new(self.options, sessions)
+    }
+
+    pub const fn runtime_options(&self) -> RuntimeOptions {
+        self.options
     }
 
     pub fn has_adapter(&self) -> bool {
@@ -106,7 +174,7 @@ impl Gliner2Pipeline {
             ));
         }
 
-        let new_encoder = Encoder::new(&encoder_onnx)?;
+        let new_encoder = Encoder::new_with_options(&encoder_onnx, self.options)?;
         let old_encoder = std::mem::replace(&mut self.encoder, new_encoder);
 
         // First adapter load: stash base encoder so `unload_adapter()` is O(1).
@@ -143,6 +211,18 @@ impl Gliner2Pipeline {
         schema_tokens_list: &[Vec<String>],
         text_tokens: &[String],
     ) -> Result<ExtractorOutput> {
+        let text_tokens = self.preprocessing.truncate_tokens(text_tokens);
+        self.infer_prepared(schema_tokens_list, text_tokens)
+    }
+
+    /// Infer over text tokens already prepared by a high-level path. This is
+    /// separate from `infer_raw` so structural prefixes are never capped as if
+    /// they were original document words.
+    fn infer_prepared(
+        &self,
+        schema_tokens_list: &[Vec<String>],
+        text_tokens: &[String],
+    ) -> Result<ExtractorOutput> {
         let formatted =
             format_input_with_mapping(&self.tokenizer, schema_tokens_list, text_tokens)?;
         let seq_len = formatted.input_ids.len();
@@ -160,7 +240,7 @@ impl Gliner2Pipeline {
         // Use schema 0 for now (milestone scope).
         let schema0 = extracted
             .schema_embs
-            .get(0)
+            .first()
             .context("missing schema embeddings")?;
         if schema0.is_empty() {
             return Err(anyhow!(
@@ -206,11 +286,7 @@ impl Gliner2Pipeline {
         entity_labels: &[String],
         threshold: f32,
     ) -> Result<Vec<EntityMatches>> {
-        let specs: Vec<EntitySpec> = entity_labels
-            .iter()
-            .cloned()
-            .map(EntitySpec::new)
-            .collect();
+        let specs: Vec<EntitySpec> = entity_labels.iter().cloned().map(EntitySpec::new).collect();
         self.extract_entities_with_specs(text, &specs, threshold)
     }
 
@@ -223,7 +299,8 @@ impl Gliner2Pipeline {
         include_spans: bool,
     ) -> Result<BTreeMap<String, FormattedEntityValue>> {
         let schema = SchemaBuilder::new().entities(entities).build();
-        let out = self.extract_internal(text, &schema, threshold, include_confidence, include_spans)?;
+        let out =
+            self.extract_internal(text, &schema, threshold, include_confidence, include_spans)?;
         Ok(out.entities)
     }
 
@@ -237,7 +314,7 @@ impl Gliner2Pipeline {
             return Ok(Vec::new());
         }
 
-        let token_spans = tokenize_with_offsets(text, true);
+        let token_spans = self.preprocessing.tokenize(text, true);
         let text_tokens: Vec<String> = token_spans.iter().map(|t| t.token.clone()).collect();
         let token_starts: Vec<usize> = token_spans.iter().map(|t| t.start).collect();
         let token_ends: Vec<usize> = token_spans.iter().map(|t| t.end).collect();
@@ -255,7 +332,7 @@ impl Gliner2Pipeline {
         };
         let schema_tokens_list = vec![schema_tokens];
 
-        let out = self.infer_raw(&schema_tokens_list, &text_tokens)?;
+        let out = self.infer_prepared(&schema_tokens_list, &text_tokens)?;
 
         let count_row = out.count_logits.index_axis(Axis(0), 0);
         let mut best_idx = 0usize;
@@ -316,7 +393,7 @@ impl Gliner2Pipeline {
             return Ok(BTreeMap::new());
         }
 
-        let token_spans = tokenize_with_offsets(text, true);
+        let token_spans = self.preprocessing.tokenize(text, true);
         let text_tokens: Vec<String> = token_spans.iter().map(|t| t.token.clone()).collect();
         let token_starts: Vec<usize> = token_spans.iter().map(|t| t.start).collect();
         let token_ends: Vec<usize> = token_spans.iter().map(|t| t.end).collect();
@@ -333,14 +410,14 @@ impl Gliner2Pipeline {
             let prefix_tokens = build_structure_choice_prefix(spec);
             let prefix_len = prefix_tokens.len();
 
-            let mut combined_text_tokens = Vec::with_capacity(prefix_len + text_tokens.len());
-            combined_text_tokens.extend(prefix_tokens.iter().cloned());
-            combined_text_tokens.extend(text_tokens.iter().cloned());
+            let combined_text_tokens = self
+                .preprocessing
+                .prepend_prefix(&prefix_tokens, &text_tokens);
 
             let schema_tokens = build_structure_schema_tokens(spec, None);
             let schema_tokens_list = vec![schema_tokens];
 
-            let out = self.infer_raw(&schema_tokens_list, &combined_text_tokens)?;
+            let out = self.infer_prepared(&schema_tokens_list, &combined_text_tokens)?;
 
             let count_row = out.count_logits.index_axis(Axis(0), 0);
             let mut best_idx = 0usize;
@@ -372,10 +449,17 @@ impl Gliner2Pipeline {
                                 crate::schema_spec::FieldDtype::List => {
                                     FormattedEntityValue::List(Vec::new())
                                 }
-                                crate::schema_spec::FieldDtype::Str => FormattedEntityValue::Single(None),
+                                crate::schema_spec::FieldDtype::Str => {
+                                    FormattedEntityValue::Single(None)
+                                }
                             }
                         } else {
-                            let logits = out.span_scores.slice(s![instance_idx, field_idx, ..prefix_len, ..]);
+                            let logits = out.span_scores.slice(s![
+                                instance_idx,
+                                field_idx,
+                                ..prefix_len,
+                                ..
+                            ]);
 
                             match field.dtype {
                                 crate::schema_spec::FieldDtype::List => {
@@ -392,7 +476,9 @@ impl Gliner2Pipeline {
                                         for (idx, tok) in prefix_tokens.iter().enumerate() {
                                             let tok_lower = tok.to_ascii_lowercase();
                                             let choice_lower = choice.to_ascii_lowercase();
-                                            if tok_lower == choice_lower || tok_lower.contains(&choice_lower) {
+                                            if tok_lower == choice_lower
+                                                || tok_lower.contains(&choice_lower)
+                                            {
                                                 let score = sigmoid(logits[[idx, 0]]);
                                                 if score >= threshold {
                                                     ok = true;
@@ -402,7 +488,8 @@ impl Gliner2Pipeline {
                                         }
 
                                         if ok {
-                                            selected.push(FormattedEntitySpan::Text(choice.clone()));
+                                            selected
+                                                .push(FormattedEntitySpan::Text(choice.clone()));
                                         }
                                     }
                                     FormattedEntityValue::List(selected)
@@ -415,7 +502,9 @@ impl Gliner2Pipeline {
                                         for (idx, tok) in prefix_tokens.iter().enumerate() {
                                             let tok_lower = tok.to_ascii_lowercase();
                                             let choice_lower = choice.to_ascii_lowercase();
-                                            if tok_lower == choice_lower || tok_lower.contains(&choice_lower) {
+                                            if tok_lower == choice_lower
+                                                || tok_lower.contains(&choice_lower)
+                                            {
                                                 let score = sigmoid(logits[[idx, 0]]);
                                                 if score > best_score {
                                                     best_score = score;
@@ -426,7 +515,9 @@ impl Gliner2Pipeline {
                                     }
 
                                     let chosen = if let Some(choice) = best_choice {
-                                        if best_score >= threshold || (threshold == 0.0 && best_score.is_finite()) {
+                                        if best_score >= threshold
+                                            || (threshold == 0.0 && best_score.is_finite())
+                                        {
                                             Some(FormattedEntitySpan::Text(choice))
                                         } else {
                                             None
@@ -444,7 +535,9 @@ impl Gliner2Pipeline {
                     }
 
                     // Regular span extraction from the text portion (ignore prefix).
-                    let logits = out.span_scores.slice(s![instance_idx, field_idx, prefix_len.., ..]);
+                    let logits =
+                        out.span_scores
+                            .slice(s![instance_idx, field_idx, prefix_len.., ..]);
                     let mut spans = find_valid_spans(
                         logits,
                         threshold,
@@ -506,7 +599,7 @@ impl Gliner2Pipeline {
             return Ok(BTreeMap::new());
         }
 
-        let token_spans = tokenize_with_offsets(text, true);
+        let token_spans = self.preprocessing.tokenize(text, true);
         let text_tokens: Vec<String> = token_spans.iter().map(|t| t.token.clone()).collect();
         let token_starts: Vec<usize> = token_spans.iter().map(|t| t.start).collect();
         let token_ends: Vec<usize> = token_spans.iter().map(|t| t.end).collect();
@@ -518,7 +611,7 @@ impl Gliner2Pipeline {
                 build_relation_schema_tokens(&spec.name, spec.description.as_deref());
             let schema_tokens_list = vec![schema_tokens];
 
-            let out = self.infer_raw(&schema_tokens_list, &text_tokens)?;
+            let out = self.infer_prepared(&schema_tokens_list, &text_tokens)?;
 
             let count_row = out.count_logits.index_axis(Axis(0), 0);
             let mut best_idx = 0usize;
@@ -571,14 +664,11 @@ impl Gliner2Pipeline {
                     score: s.score,
                 });
 
-                match (head_best, tail_best) {
-                    (Some(head), Some(tail)) => {
-                        pairs.push(FormattedRelationPair {
-                            head: head.format(include_confidence, include_spans),
-                            tail: tail.format(include_confidence, include_spans),
-                        });
-                    }
-                    _ => {}
+                if let (Some(head), Some(tail)) = (head_best, tail_best) {
+                    pairs.push(FormattedRelationPair {
+                        head: head.format(include_confidence, include_spans),
+                        tail: tail.format(include_confidence, include_spans),
+                    });
                 }
             }
 
@@ -723,7 +813,13 @@ impl Gliner2Pipeline {
             .cloned()
             .map(RelationSpec::new)
             .collect();
-        self.extract_relations_with_specs(text, &specs, threshold, include_confidence, include_spans)
+        self.extract_relations_with_specs(
+            text,
+            &specs,
+            threshold,
+            include_confidence,
+            include_spans,
+        )
     }
 
     pub fn batch_extract_relations<T: AsRef<str>>(
@@ -748,7 +844,12 @@ impl Gliner2Pipeline {
         Ok(results)
     }
 
-    pub fn extract(&self, text: &str, schema: &SchemaSpec, threshold: f32) -> Result<ExtractionResult> {
+    pub fn extract(
+        &self,
+        text: &str,
+        schema: &SchemaSpec,
+        threshold: f32,
+    ) -> Result<ExtractionResult> {
         self.extract_internal(text, schema, threshold, false, false)
     }
 
@@ -810,7 +911,8 @@ impl Gliner2Pipeline {
         }
 
         if !schema.entities.is_empty() {
-            let entity_matches = self.extract_entities_with_specs(text, &schema.entities, threshold)?;
+            let entity_matches =
+                self.extract_entities_with_specs(text, &schema.entities, threshold)?;
             let mut entities: BTreeMap<String, _> = BTreeMap::new();
             for (idx, m) in entity_matches.into_iter().enumerate() {
                 let spec = schema
@@ -819,7 +921,12 @@ impl Gliner2Pipeline {
                     .context("entity spec index mismatch")?;
                 entities.insert(
                     m.label,
-                    format_entity_spans(&m.spans, spec.dtype.clone(), include_confidence, include_spans),
+                    format_entity_spans(
+                        &m.spans,
+                        spec.dtype.clone(),
+                        include_confidence,
+                        include_spans,
+                    ),
                 );
             }
             out.entities = entities;
@@ -831,7 +938,7 @@ impl Gliner2Pipeline {
                 .as_ref()
                 .context("classifier not loaded; call Gliner2Pipeline::with_classifier(...)")?;
 
-            let token_spans = tokenize_with_offsets(text, true);
+            let token_spans = self.preprocessing.tokenize(text, true);
             let text_tokens: Vec<String> = token_spans.iter().map(|t| t.token.clone()).collect();
 
             let schema_tokens_list: Vec<Vec<String>> = schema
@@ -923,7 +1030,11 @@ impl Gliner2Pipeline {
                     builder.classification(task_name.clone(), labels.clone())
                 }
                 QuickClassificationTask::Config { labels, options } => builder
-                    .classification_with_options(task_name.clone(), labels.clone(), options.clone()),
+                    .classification_with_options(
+                        task_name.clone(),
+                        labels.clone(),
+                        options.clone(),
+                    ),
             };
         }
 
@@ -995,6 +1106,8 @@ impl Gliner2Pipeline {
         )
     }
 
+    /// The argument list is retained to preserve the existing public API.
+    #[allow(clippy::too_many_arguments)]
     pub fn classify_with_descriptions_and_options(
         &self,
         text: &str,
@@ -1005,8 +1118,12 @@ impl Gliner2Pipeline {
         cls_threshold: f32,
         class_act: ClassAct,
     ) -> Result<ClassificationOutput> {
-        let schema_tokens =
-            build_classification_schema_tokens_with_descriptions(task, labels, None, label_descriptions);
+        let schema_tokens = build_classification_schema_tokens_with_descriptions(
+            task,
+            labels,
+            None,
+            label_descriptions,
+        );
         self.classify_from_schema_tokens(
             text,
             schema_tokens,
@@ -1031,7 +1148,7 @@ impl Gliner2Pipeline {
             .as_ref()
             .context("classifier not loaded; call Gliner2Pipeline::with_classifier(...)")?;
 
-        let token_spans = tokenize_with_offsets(text, true);
+        let token_spans = self.preprocessing.tokenize(text, true);
         let text_tokens: Vec<String> = token_spans.iter().map(|t| t.token.clone()).collect();
 
         let schema_tokens_list = vec![schema_tokens];
@@ -1049,7 +1166,7 @@ impl Gliner2Pipeline {
 
         let schema0 = extracted
             .schema_embs
-            .get(0)
+            .first()
             .context("missing schema embeddings")?;
         if schema0.len() < 2 {
             return Err(anyhow!(
@@ -1081,4 +1198,485 @@ impl Gliner2Pipeline {
             class_act,
         ))
     }
+}
+
+/// High-level GLiNER2.5 boundary implementation.
+pub use crate::boundary::pipeline::BoundaryPipeline;
+
+/// Architecture-aware high-level pipeline. Methods delegate without coercing a
+/// boundary model into the legacy span implementation.
+pub enum AutoPipeline {
+    Span(Box<SpanPipeline>),
+    Boundary(Box<BoundaryPipeline>),
+}
+
+macro_rules! delegate_auto {
+    ($pipeline:expr, $method:ident($($arg:expr),* $(,)?)) => {
+        match $pipeline {
+            AutoPipeline::Span(pipeline) => pipeline.$method($($arg),*),
+            AutoPipeline::Boundary(pipeline) => pipeline.$method($($arg),*),
+        }
+    };
+}
+
+impl AutoPipeline {
+    pub fn from_dir(bundle: impl AsRef<Path>) -> Result<Self> {
+        Self::from_dir_with_options(bundle, RuntimeOptions::default())
+    }
+
+    pub fn from_dir_with_options(
+        bundle: impl AsRef<Path>,
+        options: RuntimeOptions,
+    ) -> Result<Self> {
+        let bundle = bundle.as_ref();
+        match ModelConfig::from_dir(bundle)?.architecture {
+            Architecture::Span => Ok(Self::Span(Box::new(SpanPipeline::from_dir_with_options(
+                bundle, options,
+            )?))),
+            Architecture::Boundary => Ok(Self::Boundary(Box::new(
+                BoundaryPipeline::from_dir_with_options(bundle, options)?,
+            ))),
+        }
+    }
+
+    pub fn runtime_report(&self) -> RuntimeReport {
+        delegate_auto!(self, runtime_report())
+    }
+
+    pub fn runtime_options(&self) -> RuntimeOptions {
+        delegate_auto!(self, runtime_options())
+    }
+
+    pub fn with_classifier(self, classifier_onnx: impl AsRef<Path>) -> Result<Self> {
+        match self {
+            Self::Span(pipeline) => Ok(Self::Span(Box::new(
+                (*pipeline).with_classifier(classifier_onnx)?,
+            ))),
+            Self::Boundary(pipeline) => Ok(Self::Boundary(Box::new(
+                (*pipeline).with_classifier(classifier_onnx)?,
+            ))),
+        }
+    }
+
+    pub fn has_adapter(&self) -> bool {
+        match self {
+            Self::Span(pipeline) => pipeline.has_adapter(),
+            Self::Boundary(pipeline) => pipeline.has_adapter(),
+        }
+    }
+
+    pub fn adapter_config(&self) -> Option<&AdapterConfig> {
+        match self {
+            Self::Span(pipeline) => pipeline.adapter_config(),
+            Self::Boundary(pipeline) => pipeline.adapter_config(),
+        }
+    }
+
+    /// Override boundary overlap handling. Span behavior is intentionally
+    /// unchanged and reports that the option is architecture-specific.
+    pub fn set_boundary_overlap_policy(
+        &mut self,
+        policy: crate::boundary::decode::OverlapPolicy,
+    ) -> Result<()> {
+        match self {
+            Self::Boundary(pipeline) => {
+                pipeline.set_overlap_policy(policy);
+                Ok(())
+            }
+            Self::Span(_) => Err(anyhow!(
+                "boundary overlap policy is only available for boundary models"
+            )),
+        }
+    }
+
+    /// Override boundary preprocessing without changing the legacy v2 splitter.
+    pub fn set_boundary_word_splitter(
+        &mut self,
+        splitter: crate::boundary::preprocessing::WordSplitter,
+    ) -> Result<()> {
+        match self {
+            Self::Boundary(pipeline) => pipeline.set_word_splitter(splitter),
+            Self::Span(_) => Err(anyhow!(
+                "boundary word splitter is only available for boundary models"
+            )),
+        }
+    }
+
+    pub fn load_adapter(&mut self, adapter_dir: impl AsRef<Path>) -> Result<()> {
+        delegate_auto!(self, load_adapter(adapter_dir))
+    }
+
+    pub fn unload_adapter(&mut self) -> Result<()> {
+        delegate_auto!(self, unload_adapter())
+    }
+
+    pub fn infer_raw(
+        &self,
+        schema_tokens_list: &[Vec<String>],
+        text_tokens: &[String],
+    ) -> Result<ExtractorOutput> {
+        match self {
+            Self::Span(pipeline) => pipeline.infer_raw(schema_tokens_list, text_tokens),
+            Self::Boundary(_) => Err(anyhow!(
+                "AutoPipeline::infer_raw returns the legacy span-head output and is unsupported for boundary models; use typed boundary high-level methods"
+            )),
+        }
+    }
+
+    /// Score explicit spans with the boundary sparse scorer. Span models do
+    /// not emulate this separate-head API through the legacy v2 extractor.
+    pub fn score_explicit_spans(
+        &self,
+        text: &str,
+        labels: &[String],
+        spans: &[[usize; 2]],
+    ) -> Result<Vec<crate::boundary::ExplicitSpanScores>> {
+        match self {
+            Self::Boundary(pipeline) => pipeline.score_explicit_spans(text, labels, spans),
+            Self::Span(_) => Err(anyhow!(
+                "explicit-span scoring is unsupported for span models; use a boundary architecture"
+            )),
+        }
+    }
+
+    pub fn extract_entities(
+        &self,
+        text: &str,
+        entity_labels: &[String],
+        threshold: f32,
+    ) -> Result<Vec<EntityMatches>> {
+        delegate_auto!(self, extract_entities(text, entity_labels, threshold))
+    }
+
+    pub fn extract_entities_text(
+        &self,
+        text: &str,
+        entities: impl Into<EntityLabels>,
+        threshold: f32,
+        include_confidence: bool,
+        include_spans: bool,
+    ) -> Result<BTreeMap<String, FormattedEntityValue>> {
+        delegate_auto!(
+            self,
+            extract_entities_text(text, entities, threshold, include_confidence, include_spans)
+        )
+    }
+
+    pub fn extract_json(&self, text: &str, schema: &JsonSchema) -> Result<JsonExtraction> {
+        delegate_auto!(self, extract_json(text, schema))
+    }
+
+    pub fn extract_json_with_confidence(
+        &self,
+        text: &str,
+        schema: &JsonSchema,
+        threshold: f32,
+    ) -> Result<JsonExtraction> {
+        delegate_auto!(self, extract_json_with_confidence(text, schema, threshold))
+    }
+
+    pub fn extract_json_with_spans(
+        &self,
+        text: &str,
+        schema: &JsonSchema,
+        threshold: f32,
+    ) -> Result<JsonExtraction> {
+        delegate_auto!(self, extract_json_with_spans(text, schema, threshold))
+    }
+
+    pub fn extract_json_with_confidence_and_spans(
+        &self,
+        text: &str,
+        schema: &JsonSchema,
+        threshold: f32,
+    ) -> Result<JsonExtraction> {
+        delegate_auto!(
+            self,
+            extract_json_with_confidence_and_spans(text, schema, threshold)
+        )
+    }
+
+    pub fn extract_json_with_options(
+        &self,
+        text: &str,
+        schema: &JsonSchema,
+        threshold: f32,
+        include_confidence: bool,
+        include_spans: bool,
+    ) -> Result<JsonExtraction> {
+        delegate_auto!(
+            self,
+            extract_json_with_options(text, schema, threshold, include_confidence, include_spans)
+        )
+    }
+
+    /// Boundary-only record formation; span models reject metadata explicitly.
+    #[allow(clippy::too_many_arguments)]
+    pub fn extract_json_with_records(
+        &self,
+        text: &str,
+        schema: &JsonSchema,
+        metadata: &crate::boundary::record_schema::RecordMetadata,
+        threshold: f32,
+        include_confidence: bool,
+        include_spans: bool,
+    ) -> Result<JsonExtraction> {
+        match self {
+            Self::Boundary(pipeline) => pipeline.extract_json_with_records(
+                text,
+                schema,
+                metadata,
+                threshold,
+                include_confidence,
+                include_spans,
+            ),
+            Self::Span(_) => Err(anyhow!(
+                "record metadata is unsupported for span models; use a boundary architecture"
+            )),
+        }
+    }
+
+    pub fn extract_relations(
+        &self,
+        text: &str,
+        relation_types: &[String],
+        threshold: f32,
+    ) -> Result<RelationExtraction> {
+        delegate_auto!(self, extract_relations(text, relation_types, threshold))
+    }
+
+    pub fn extract_relations_with_confidence(
+        &self,
+        text: &str,
+        relation_types: &[String],
+        threshold: f32,
+    ) -> Result<FormattedRelationExtraction> {
+        delegate_auto!(
+            self,
+            extract_relations_with_confidence(text, relation_types, threshold)
+        )
+    }
+
+    pub fn extract_relations_with_spans(
+        &self,
+        text: &str,
+        relation_types: &[String],
+        threshold: f32,
+    ) -> Result<FormattedRelationExtraction> {
+        delegate_auto!(
+            self,
+            extract_relations_with_spans(text, relation_types, threshold)
+        )
+    }
+
+    pub fn extract_relations_with_confidence_and_spans(
+        &self,
+        text: &str,
+        relation_types: &[String],
+        threshold: f32,
+    ) -> Result<FormattedRelationExtraction> {
+        delegate_auto!(
+            self,
+            extract_relations_with_confidence_and_spans(text, relation_types, threshold)
+        )
+    }
+
+    pub fn extract_relations_with_options(
+        &self,
+        text: &str,
+        relation_types: &[String],
+        threshold: f32,
+        include_confidence: bool,
+        include_spans: bool,
+    ) -> Result<FormattedRelationExtraction> {
+        delegate_auto!(
+            self,
+            extract_relations_with_options(
+                text,
+                relation_types,
+                threshold,
+                include_confidence,
+                include_spans
+            )
+        )
+    }
+
+    pub fn batch_extract_relations<T: AsRef<str>>(
+        &self,
+        texts: &[T],
+        relation_types: &[String],
+        threshold: f32,
+        batch_size: usize,
+    ) -> Result<Vec<RelationExtraction>> {
+        delegate_auto!(
+            self,
+            batch_extract_relations(texts, relation_types, threshold, batch_size)
+        )
+    }
+
+    pub fn extract(
+        &self,
+        text: &str,
+        schema: &SchemaSpec,
+        threshold: f32,
+    ) -> Result<ExtractionResult> {
+        delegate_auto!(self, extract(text, schema, threshold))
+    }
+
+    pub fn extract_with_confidence(
+        &self,
+        text: &str,
+        schema: &SchemaSpec,
+        threshold: f32,
+    ) -> Result<ExtractionResult> {
+        delegate_auto!(self, extract_with_confidence(text, schema, threshold))
+    }
+
+    pub fn extract_with_spans(
+        &self,
+        text: &str,
+        schema: &SchemaSpec,
+        threshold: f32,
+    ) -> Result<ExtractionResult> {
+        delegate_auto!(self, extract_with_spans(text, schema, threshold))
+    }
+
+    pub fn extract_with_confidence_and_spans(
+        &self,
+        text: &str,
+        schema: &SchemaSpec,
+        threshold: f32,
+    ) -> Result<ExtractionResult> {
+        delegate_auto!(
+            self,
+            extract_with_confidence_and_spans(text, schema, threshold)
+        )
+    }
+
+    /// Boundary-only record formation; span models reject metadata explicitly.
+    #[allow(clippy::too_many_arguments)]
+    pub fn extract_with_records(
+        &self,
+        text: &str,
+        schema: &SchemaSpec,
+        metadata: &crate::boundary::record_schema::RecordMetadata,
+        threshold: f32,
+        include_confidence: bool,
+        include_spans: bool,
+    ) -> Result<ExtractionResult> {
+        match self {
+            Self::Boundary(pipeline) => pipeline.extract_with_records(
+                text,
+                schema,
+                metadata,
+                threshold,
+                include_confidence,
+                include_spans,
+            ),
+            Self::Span(_) => Err(anyhow!(
+                "record metadata is unsupported for span models; use a boundary architecture"
+            )),
+        }
+    }
+
+    pub fn classify_text(
+        &self,
+        text: &str,
+        tasks: &BTreeMap<String, QuickClassificationTask>,
+        threshold: f32,
+        include_confidence: bool,
+    ) -> Result<BTreeMap<String, FormattedClassification>> {
+        delegate_auto!(
+            self,
+            classify_text(text, tasks, threshold, include_confidence)
+        )
+    }
+
+    pub fn classify(
+        &self,
+        text: &str,
+        task: &str,
+        labels: &[String],
+        multi_label: bool,
+        cls_threshold: f32,
+    ) -> Result<ClassificationOutput> {
+        delegate_auto!(
+            self,
+            classify(text, task, labels, multi_label, cls_threshold)
+        )
+    }
+
+    pub fn classify_with_options(
+        &self,
+        text: &str,
+        task: &str,
+        labels: &[String],
+        multi_label: bool,
+        cls_threshold: f32,
+        class_act: ClassAct,
+    ) -> Result<ClassificationOutput> {
+        delegate_auto!(
+            self,
+            classify_with_options(text, task, labels, multi_label, cls_threshold, class_act)
+        )
+    }
+
+    pub fn classify_with_descriptions(
+        &self,
+        text: &str,
+        task: &str,
+        labels: &[String],
+        label_descriptions: &[(String, String)],
+        multi_label: bool,
+        cls_threshold: f32,
+    ) -> Result<ClassificationOutput> {
+        delegate_auto!(
+            self,
+            classify_with_descriptions(
+                text,
+                task,
+                labels,
+                label_descriptions,
+                multi_label,
+                cls_threshold
+            )
+        )
+    }
+
+    /// The argument list is retained for source compatibility with SpanPipeline.
+    #[allow(clippy::too_many_arguments)]
+    pub fn classify_with_descriptions_and_options(
+        &self,
+        text: &str,
+        task: &str,
+        labels: &[String],
+        label_descriptions: &[(String, String)],
+        multi_label: bool,
+        cls_threshold: f32,
+        class_act: ClassAct,
+    ) -> Result<ClassificationOutput> {
+        delegate_auto!(
+            self,
+            classify_with_descriptions_and_options(
+                text,
+                task,
+                labels,
+                label_descriptions,
+                multi_label,
+                cls_threshold,
+                class_act
+            )
+        )
+    }
+}
+
+fn required_file(bundle: &Path, name: &str) -> Result<std::path::PathBuf> {
+    let path = bundle.join(name);
+    if !path.is_file() {
+        return Err(anyhow!(
+            "span bundle missing required `{name}` at {}",
+            path.display()
+        ));
+    }
+    Ok(path)
 }

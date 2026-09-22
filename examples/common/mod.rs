@@ -1,7 +1,15 @@
 use std::{env, path::PathBuf};
 
+use anyhow::anyhow;
+use gliner2_rs::{
+    Result,
+    config::{Architecture, ModelConfig},
+    pipeline::{AutoPipeline, SpanPipeline},
+};
+
 /// Resolve model/ONNX paths, with optional `--model <onnx_dir>` override.
 /// Defaults to the base ONNX bundle (`onnx/gliner2-base-v1`).
+#[allow(dead_code)] // Shared by examples that use different subsets of these paths.
 pub struct ModelPaths {
     pub model_dir: PathBuf,
     pub onnx_dir: PathBuf,
@@ -10,10 +18,49 @@ pub struct ModelPaths {
     pub classifier: Option<PathBuf>,
 }
 
+/// Load either a boundary bundle or a span model.
+///
+/// A span bundle uses its colocated config and tokenizer when both are present.
+/// The separate `models/<name>` metadata directory remains a fallback for old
+/// ONNX-only downloads. A boundary config is always loaded as a bundle so that
+/// incomplete boundary metadata fails rather than being mistaken for v2.
+#[allow(dead_code)] // Shared by examples that do not load an inference pipeline.
+pub fn load_auto_pipeline(paths: &ModelPaths, with_classifier: bool) -> Result<AutoPipeline> {
+    let has_bundle_config = paths.onnx_dir.join("config.json").is_file();
+    let config_dir = if has_bundle_config {
+        &paths.onnx_dir
+    } else {
+        &paths.model_dir
+    };
+
+    match ModelConfig::from_dir(config_dir)?.architecture {
+        Architecture::Boundary => AutoPipeline::from_dir(&paths.onnx_dir),
+        Architecture::Span => {
+            let metadata_dir =
+                if has_bundle_config && paths.onnx_dir.join("tokenizer.json").is_file() {
+                    &paths.onnx_dir
+                } else {
+                    &paths.model_dir
+                };
+            let pipeline = SpanPipeline::new(metadata_dir, &paths.encoder, &paths.extractor)?;
+            let pipeline = if with_classifier {
+                let classifier = paths.classifier.as_ref().ok_or_else(|| {
+                    anyhow!("missing classifier.onnx in {}", paths.onnx_dir.display())
+                })?;
+                pipeline.with_classifier(classifier)?
+            } else {
+                pipeline
+            };
+            Ok(AutoPipeline::Span(Box::new(pipeline)))
+        }
+    }
+}
+
 pub fn repo_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
 }
 
+#[allow(dead_code)] // `download_models` includes this shared module but needs only `repo_root`.
 pub fn model_paths_from_args(default_onnx_rel: &str) -> ModelPaths {
     let root = repo_root();
     let default_onnx = root.join(default_onnx_rel);

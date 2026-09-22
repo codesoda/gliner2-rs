@@ -2,17 +2,16 @@ use std::time::Instant;
 
 use gliner2_rs::{
     Result,
-    pipeline::Gliner2Pipeline,
     schema_spec::{EntityOptions, EntitySpec, FieldDtype, SchemaBuilder},
 };
 mod common;
-use common::model_paths_from_args;
+use common::{load_auto_pipeline, model_paths_from_args};
 
 fn main() -> Result<()> {
     let paths = model_paths_from_args("onnx/gliner2-base-v1");
 
     let load_start = Instant::now();
-    let pipeline = Gliner2Pipeline::new(&paths.model_dir, &paths.encoder, &paths.extractor)?;
+    let pipeline = load_auto_pipeline(&paths, false)?;
     println!(
         "model load took: {:.2?} (onnx={})",
         load_start.elapsed(),
@@ -146,7 +145,11 @@ She reported fatigue and occasional dizziness. Liver function tests ordered.
     let start = Instant::now();
     let out = pipeline.extract_entities_text(
         text,
-        vec!["company".to_string(), "person".to_string(), "product".to_string()],
+        vec![
+            "company".to_string(),
+            "person".to_string(),
+            "product".to_string(),
+        ],
         0.5,
         true,
         false,
@@ -210,7 +213,11 @@ She reported fatigue and occasional dizziness. Liver function tests ordered.
     // --- Advanced Configuration ---
     // Mixed configuration.
     let schema = SchemaBuilder::new()
-        .entities(vec!["date".to_string(), "time".to_string(), "currency".to_string()])
+        .entities(vec![
+            "date".to_string(),
+            "time".to_string(),
+            "currency".to_string(),
+        ])
         .entities(vec![
             (
                 "technical_term".to_string(),
@@ -233,7 +240,8 @@ She reported fatigue and occasional dizziness. Liver function tests ordered.
         ])
         .build();
 
-    let text = "In Q3 2024, Acme reported revenue of $3.2M and beat BetaCorp on key performance metrics.";
+    let text =
+        "In Q3 2024, Acme reported revenue of $3.2M and beat BetaCorp on key performance metrics.";
     let start = Instant::now();
     let out = pipeline.extract(text, &schema, 0.5)?;
     println!("text: {text}");
@@ -248,9 +256,11 @@ She reported fatigue and occasional dizziness. Liver function tests ordered.
             "company".to_string(),
             "Company or organization names".to_string(),
         )])
-        .entities(vec![EntitySpec::new("financial_term")
-            .description("Financial instruments, metrics, or terminology")
-            .threshold(0.75)])
+        .entities(vec![
+            EntitySpec::new("financial_term")
+                .description("Financial instruments, metrics, or terminology")
+                .threshold(0.75),
+        ])
         .build();
 
     let text = "Alice moved from Paris to London to join Acme and discuss P/E ratios.";
@@ -268,14 +278,26 @@ She reported fatigue and occasional dizziness. Liver function tests ordered.
                 "party".to_string(),
                 "Parties involved in legal proceedings (plaintiff, defendant, etc.)".to_string(),
             ),
-            ("law_firm".to_string(), "Law firm or legal practice names".to_string()),
-            ("court".to_string(), "Court names or judicial bodies".to_string()),
+            (
+                "law_firm".to_string(),
+                "Law firm or legal practice names".to_string(),
+            ),
+            (
+                "court".to_string(),
+                "Court names or judicial bodies".to_string(),
+            ),
             (
                 "statute".to_string(),
                 "Legal statutes, laws, or regulations cited".to_string(),
             ),
-            ("case".to_string(), "Legal case names or citations".to_string()),
-            ("judge".to_string(), "Names of judges or magistrates".to_string()),
+            (
+                "case".to_string(),
+                "Legal case names or citations".to_string(),
+            ),
+            (
+                "judge".to_string(),
+                "Names of judges or magistrates".to_string(),
+            ),
             (
                 "legal_term".to_string(),
                 "Legal terminology or concepts".to_string(),
@@ -297,7 +319,10 @@ The plaintiff was represented by Miller & Associates.
 
     let finance_schema = SchemaBuilder::new()
         .entities(vec![
-            ("ticker".to_string(), "Stock ticker symbols (e.g., AAPL, GOOGL)".to_string()),
+            (
+                "ticker".to_string(),
+                "Stock ticker symbols (e.g., AAPL, GOOGL)".to_string(),
+            ),
             (
                 "financial_metric".to_string(),
                 "Financial metrics like P/E ratio, market cap".to_string(),
@@ -306,12 +331,18 @@ The plaintiff was represented by Miller & Associates.
                 "currency_amount".to_string(),
                 "Monetary values with currency symbols".to_string(),
             ),
-            ("percentage".to_string(), "Percentage values (e.g., 5.2%, -3%)".to_string()),
+            (
+                "percentage".to_string(),
+                "Percentage values (e.g., 5.2%, -3%)".to_string(),
+            ),
             (
                 "financial_org".to_string(),
                 "Banks, investment firms, financial institutions".to_string(),
             ),
-            ("market_index".to_string(), "Stock market indices (S&P 500, NASDAQ, etc.)".to_string()),
+            (
+                "market_index".to_string(),
+                "Stock market indices (S&P 500, NASDAQ, etc.)".to_string(),
+            ),
         ])
         .build();
 
@@ -329,10 +360,19 @@ The NASDAQ composite gained 1.2% for the day.
 
     let science_schema = SchemaBuilder::new()
         .entities(vec![
-            ("chemical".to_string(), "Chemical compounds or elements".to_string()),
-            ("organism".to_string(), "Biological organisms, species names".to_string()),
+            (
+                "chemical".to_string(),
+                "Chemical compounds or elements".to_string(),
+            ),
+            (
+                "organism".to_string(),
+                "Biological organisms, species names".to_string(),
+            ),
             ("gene".to_string(), "Gene names or identifiers".to_string()),
-            ("measurement".to_string(), "Scientific measurements with units".to_string()),
+            (
+                "measurement".to_string(),
+                "Scientific measurements with units".to_string(),
+            ),
             (
                 "research_method".to_string(),
                 "Research techniques or methodologies".to_string(),

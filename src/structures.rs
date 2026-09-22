@@ -67,4 +67,3 @@ pub fn build_structure_choice_prefix(spec: &StructureSpec) -> Vec<String> {
     prefix.push(")".to_string());
     prefix
 }
-

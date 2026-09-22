@@ -1,0 +1,203 @@
+{
+  "format_version": 1,
+  "description": "Deterministic GLiNER2.5 M1 public-API oracle corpus. Long texts are expanded from repeat_word/repeat_count/tail without randomness.",
+  "cases": [
+    {
+      "id": "ner_simple",
+      "category": "ner",
+      "text": "Ada Lovelace worked with Charles Babbage in London.",
+      "schema": {"entities": ["person", "location"]}
+    },
+    {
+      "id": "ner_duplicate_mentions",
+      "category": "ner",
+      "text": "Amazon opened an office near Amazon headquarters in Seattle.",
+      "schema": {"entities": ["company", "location"]}
+    },
+    {
+      "id": "ner_nested_overlap",
+      "category": "ner",
+      "text": "The University of California Berkeley campus welcomed researchers.",
+      "schema": {"entities": ["organization", "university", "location"]},
+      "overlap_policy": "allow_nested"
+    },
+    {
+      "id": "ner_crossing_candidates",
+      "category": "ner",
+      "text": "New York University professor Sam Lee visited York University.",
+      "schema": {"entities": ["organization", "person", "location"]},
+      "overlap_policy": "allow"
+    },
+    {
+      "id": "ner_long_span",
+      "category": "ner",
+      "text": "The agreement covers all software services delivered during the twelve month renewal period and was signed today.",
+      "schema": {"entities": ["full legal clause", "date"]}
+    },
+    {
+      "id": "ner_scalar_and_list",
+      "category": "ner",
+      "text": "The invoice from Acme Corp lists Berlin and Paris as delivery locations.",
+      "schema": {"entities_config": {"company": {"dtype": "str"}, "location": {"dtype": "list"}}}
+    },
+    {
+      "id": "ner_email_product",
+      "category": "ner",
+      "text": "Contact mira@example.org about the Aurora-7 sensor before Friday.",
+      "schema": {"entities": ["email", "product", "date"]}
+    },
+    {
+      "id": "ner_repeated_person",
+      "category": "ner",
+      "text": "Jordan met Jordan Lee after Jordan left the station.",
+      "schema": {"entities": ["person", "location"]}
+    },
+
+    {
+      "id": "classification_sentiment_positive",
+      "category": "classification",
+      "text": "The update is fast, polished, and genuinely useful.",
+      "schema": {"classifications": [{"task": "sentiment", "labels": ["positive", "negative", "neutral"]}]}
+    },
+    {
+      "id": "classification_sentiment_negative",
+      "category": "classification",
+      "text": "The application crashes repeatedly and support never responds.",
+      "schema": {"classifications": [{"task": "sentiment", "labels": ["positive", "negative", "neutral"]}]}
+    },
+    {
+      "id": "classification_intent",
+      "category": "classification",
+      "text": "Please cancel my subscription at the end of this billing period.",
+      "schema": {"classifications": [{"task": "intent", "labels": ["cancel", "upgrade", "refund", "other"]}]}
+    },
+    {
+      "id": "classification_multilabel",
+      "category": "classification",
+      "text": "A severe storm closed roads and interrupted power across the county.",
+      "schema": {"classifications": [{"task": "topics", "labels": ["weather", "transport", "energy", "sports"], "multi_label": true}]}
+    },
+    {
+      "id": "classification_multi_task",
+      "category": "classification",
+      "text": "Urgent: the customer cannot log in after the security update.",
+      "schema": {"classifications": [{"task": "priority", "labels": ["urgent", "normal"]}, {"task": "department", "labels": ["support", "sales", "billing"]}]}
+    },
+
+    {
+      "id": "json_natural_people",
+      "category": "json",
+      "text": "Ada Lovelace was a mathematician in London. Grace Hopper was an admiral in New York.",
+      "schema": {"structures": [{"name": "person", "mode": "natural", "anchor": "name", "fields": [{"name": "name", "dtype": "str", "cardinality": "required_one", "exclusive": true}, {"name": "occupation", "dtype": "str", "cardinality": "optional_one", "exclusive": true}, {"name": "location", "dtype": "str", "cardinality": "optional_one", "exclusive": true}]}]}
+    },
+    {
+      "id": "json_natural_choice",
+      "category": "json",
+      "text": "Amazon sells books and Acme sells hardware.",
+      "schema": {"structures": [{"name": "vendor", "mode": "natural", "anchor": "company", "fields": [{"name": "company", "dtype": "str", "cardinality": "required_one", "exclusive": true}, {"name": "category", "dtype": "str", "choices": ["books", "hardware", "software"], "cardinality": "optional_one", "exclusive": true}]}]}
+    },
+    {
+      "id": "json_legacy_event",
+      "category": "json",
+      "text": "The conference begins Monday in Tokyo and ends Wednesday.",
+      "schema": {"structures": [{"name": "event", "fields": [{"name": "name", "dtype": "str"}, {"name": "date", "dtype": "list"}, {"name": "location", "dtype": "str"}]}]}
+    },
+    {
+      "id": "json_latent_products",
+      "category": "json",
+      "text": "The red Nova phone costs $499; the blue Orbit tablet costs $699.",
+      "schema": {"structures": [{"name": "product", "mode": "latent", "fields": [{"name": "name", "dtype": "str", "cardinality": "required_one", "exclusive": true}, {"name": "color", "dtype": "str", "cardinality": "optional_one", "exclusive": true}, {"name": "price", "dtype": "str", "cardinality": "optional_one", "exclusive": true}]}]}
+    },
+    {
+      "id": "json_anchorless_list",
+      "category": "json",
+      "text": "Agenda: review revenue, discuss hiring, and approve the launch date.",
+      "schema": {"structures": [{"name": "meeting", "mode": "anchorless", "fields": [{"name": "topic", "dtype": "list", "cardinality": "one_or_more"}, {"name": "decision", "dtype": "list", "cardinality": "zero_or_more"}]}]}
+    },
+
+    {
+      "id": "relation_employment",
+      "category": "relation",
+      "text": "Alice works for Acme Corp while Bob works for Northwind.",
+      "schema": {"relations": ["works for"]}
+    },
+    {
+      "id": "relation_founded",
+      "category": "relation",
+      "text": "Steve Jobs and Steve Wozniak founded Apple in California.",
+      "schema": {"relations": ["founded"]}
+    },
+    {
+      "id": "relation_location",
+      "category": "relation",
+      "text": "The Eiffel Tower is located in Paris, and the Colosseum is located in Rome.",
+      "schema": {"relations": ["located in"]}
+    },
+    {
+      "id": "relation_multiple_types",
+      "category": "relation",
+      "text": "Maya joined Contoso in 2020 and later managed the Atlas project.",
+      "schema": {"relations": [{"name": "joined", "description": "person joined organization"}, {"name": "managed", "description": "person managed project"}]}
+    },
+
+    {
+      "id": "unicode_combining_emoji",
+      "category": "unicode",
+      "text": "Café owner Zoë met José in São Paulo ☕.",
+      "schema": {"entities": ["person", "location", "organization"]}
+    },
+    {
+      "id": "unicode_cjk",
+      "category": "unicode",
+      "text": "李雷在北京加入了星河科技公司。",
+      "schema": {"entities": ["person", "location", "company"]}
+    },
+    {
+      "id": "unicode_japanese_arabic",
+      "category": "unicode",
+      "text": "山田太郎は東京でشركة النورの代表ليلىと会った。",
+      "schema": {"entities": ["person", "location", "company"]}
+    },
+
+    {
+      "id": "long_1000_words",
+      "category": "long",
+      "repeat_word": "context",
+      "repeat_count": 994,
+      "tail": " Ada Lovelace visited London today safely",
+      "expected_word_count": 1000,
+      "schema": {"entities": ["person", "location"]}
+    },
+    {
+      "id": "long_2000_words",
+      "category": "long",
+      "repeat_word": "report",
+      "repeat_count": 1994,
+      "tail": " Grace Hopper joined Acme Corp yesterday",
+      "expected_word_count": 2000,
+      "schema": {"entities": ["person", "company"]}
+    },
+    {
+      "id": "long_3000_words",
+      "category": "long",
+      "repeat_word": "record",
+      "repeat_count": 2994,
+      "tail": " Alan Turing worked near Manchester today",
+      "expected_word_count": 3000,
+      "schema": {"entities": ["person", "location"]}
+    },
+
+    {
+      "id": "edge_punctuation_empty_schema",
+      "category": "edge",
+      "text": "... !!! ???",
+      "schema": {}
+    },
+    {
+      "id": "edge_empty_text",
+      "category": "edge",
+      "text": "",
+      "schema": {"entities": ["person"]}
+    }
+  ]
+}

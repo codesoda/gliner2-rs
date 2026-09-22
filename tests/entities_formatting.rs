@@ -49,14 +49,11 @@ fn entity_formatting_respects_dtype_flags_and_deduping() {
     let out = format_entity_spans(&spans, FieldDtype::Str, true, true);
     assert_eq!(
         out,
-        FormattedEntityValue::Single(Some(
-            FormattedEntitySpan::TextWithConfidenceAndSpans {
-                text: "Alice".to_string(),
-                confidence: 0.9,
-                start: 0,
-                end: 5,
-            }
-        ))
+        FormattedEntityValue::Single(Some(FormattedEntitySpan::TextWithConfidenceAndSpans {
+            text: "Alice".to_string(),
+            confidence: 0.9,
+            start: 0,
+            end: 5,
+        }))
     );
 }
-

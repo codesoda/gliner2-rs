@@ -1,24 +1,16 @@
 use std::{collections::BTreeMap, time::Instant};
 
-use anyhow::anyhow;
 use gliner2_rs::{
     Result,
-    pipeline::Gliner2Pipeline,
     schema_spec::{FieldDtype, RelationSpec, SchemaBuilder, StructureFieldSpec},
 };
 mod common;
-use common::model_paths_from_args;
+use common::{load_auto_pipeline, model_paths_from_args};
 
 fn main() -> Result<()> {
     let paths = model_paths_from_args("onnx/gliner2-base-v1");
-    let classifier_onnx = paths
-        .classifier
-        .as_ref()
-        .ok_or_else(|| anyhow!("missing classifier.onnx in {}", paths.onnx_dir.display()))?;
-
     let load_start = Instant::now();
-    let pipeline =
-        Gliner2Pipeline::new(&paths.model_dir, &paths.encoder, &paths.extractor)?.with_classifier(classifier_onnx)?;
+    let pipeline = load_auto_pipeline(&paths, true)?;
     println!(
         "model load took: {:.2?} (onnx={})",
         load_start.elapsed(),
@@ -39,7 +31,9 @@ fn main() -> Result<()> {
     println!("-----------------");
 
     // --- Using Schema Builder ---
-    let schema = SchemaBuilder::new().relations(relation_types.clone()).build();
+    let schema = SchemaBuilder::new()
+        .relations(relation_types.clone())
+        .build();
     let start = Instant::now();
     let out = pipeline.extract(text, &schema, 0.5)?;
     println!("schema.relations + extract(): {:#?}", out.relations);
@@ -222,7 +216,11 @@ Tesla acquired SolarCity in 2016. Many engineers work for SpaceX.
     let schema = SchemaBuilder::new()
         .classification(
             "document_type",
-            vec!["news".to_string(), "report".to_string(), "announcement".to_string()],
+            vec![
+                "news".to_string(),
+                "report".to_string(),
+                "announcement".to_string(),
+            ],
         )
         .entities(vec!["person".to_string(), "company".to_string()])
         .relations(vec!["works_for".to_string(), "acquired".to_string()])
@@ -260,10 +258,7 @@ The acquisition was finalized on October 26, 2018.
                 "works_for".to_string(),
                 "Employment relationship".to_string(),
             ),
-            (
-                "founded".to_string(),
-                "Founding relationship".to_string(),
-            ),
+            ("founded".to_string(), "Founding relationship".to_string()),
             (
                 "acquired".to_string(),
                 "Company acquisition relationship".to_string(),
@@ -330,10 +325,7 @@ High blood sugar causes frequent urination. The pancreas is located in the abdom
                 "merged_with".to_string(),
                 "Merger relationship between companies".to_string(),
             ),
-            (
-                "owns".to_string(),
-                "Ownership relationship".to_string(),
-            ),
+            ("owns".to_string(), "Ownership relationship".to_string()),
         ]))
         .build();
 
@@ -384,10 +376,19 @@ The Seine flows through Paris. Paris is located in France.
     // Family Relationships
     let family_schema = SchemaBuilder::new()
         .relations(BTreeMap::from([
-            ("married_to".to_string(), "Marriage relationship".to_string()),
-            ("parent_of".to_string(), "Parent-child relationship".to_string()),
+            (
+                "married_to".to_string(),
+                "Marriage relationship".to_string(),
+            ),
+            (
+                "parent_of".to_string(),
+                "Parent-child relationship".to_string(),
+            ),
             ("sibling_of".to_string(), "Sibling relationship".to_string()),
-            ("related_to".to_string(), "General family relationship".to_string()),
+            (
+                "related_to".to_string(),
+                "General family relationship".to_string(),
+            ),
         ]))
         .build();
 

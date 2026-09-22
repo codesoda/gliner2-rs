@@ -1,0 +1,48 @@
+{
+  "milestone": "M1 Python reference, goldens, encoder and classifier exports",
+  "reviewer": "GPT Astra 6, actual source review and independent oracle/export validation reruns",
+  "gliner2_commit": "d7c727458bf6929bc9ef5ee04e13c3f717a7c455",
+  "hf_revision": "78cea040597df251eedefa9d7ee2a756af39fe64",
+  "corpus_sha256": "8a202a0434e90f1daa9ddc9cbe09df6a7f05904d4ca18f4beb53b9b850686faf",
+  "oracle": {
+    "case_count": 30,
+    "errors": 0,
+    "categories": {"ner": 8, "classification": 5, "json": 5, "relation": 4, "unicode": 3, "long": 3, "edge": 2},
+    "long_word_counts": [1000, 2000, 3000],
+    "long_subword_counts": [1014, 2012, 3014],
+    "independent_reproduction": "All 30 NPZ SHA256 values byte-identical after a separate full upstream inference run; all 30 formatted Python-offset and UTF8-offset outputs equal. Provenance-only JSON repairs did not alter tensor files or final results.",
+    "subset_bytes_including_manifest": 1786618,
+    "source_identity": "All four pinned checkpoint source-file SHA256 values and installed GLiNER2 direct_url.json VCS commit verified."
+  },
+  "encoder": {
+    "sha256": "04f601e1a63fd829880274e4b61d6ba1d1170c4342cdc956e27aaf50e8b01957",
+    "cases": 34,
+    "coverage": "All 30 corpus inputs, plus generated lengths 8/31/73/257 with variable batch and padding masks",
+    "atol": 0.0001,
+    "rtol": 0.001,
+    "maximum_absolute_error": 0.00006444007158279419,
+    "maximum_relative_error": 11.496603012084961,
+    "relative_error_note": "Maximum relative errors occur near zero; original combined absolute/relative tolerance passes without relaxation.",
+    "finite_float_tensors_audited": 334,
+    "finite_mask_rewrites": 12
+  },
+  "classifier": {
+    "sha256": "045e94e66de4d8d4d9d267b18bc864328b7661879b7ec149b3e353a94ee1b3ca",
+    "comparisons": 20,
+    "coverage": "Raw and temperature-adjusted logits on four generated row counts and six real classification calls",
+    "atol": 0.0001,
+    "rtol": 0.001,
+    "maximum_absolute_error": 0.00000286102294921875,
+    "maximum_relative_error": 0.000016721914560853015,
+    "finite_float_tensors_audited": 4
+  },
+  "graph_checks": "Both graphs pass onnx.checker; opset17; fp32 floating initializers; recursive finite constant/attribute audit passes.",
+  "tooling_tests": "8 model-free unittest cases pass, including duplicate/missing case coverage, tampered metadata/routing/stages/provenance, non-default seed, and unverified custom checkpoint handling.",
+  "environment": "uv lock --check passes; Git-pinned upstream and exact dependency versions; venv ignored",
+  "rust_gates": "Parent reran cargo fmt check, strict all-target Clippy, no-model tests and strict v2 model tests during M1 review before unrelated M2/M3 Rust changes. M1 commit changes no Rust source or Cargo inputs.",
+  "limitations": [
+    "Golden structural validation is not equivalent to repeated inference; independent reproduction was performed separately as stated above.",
+    "Encoder and classifier alone are not a usable boundary extractor. Remaining graphs, Rust parity, API coverage, three-model bundles and publication remain open.",
+    "No tolerance relaxation approved in this milestone."
+  ]
+}

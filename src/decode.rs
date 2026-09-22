@@ -42,11 +42,7 @@ pub fn find_valid_spans(
             let (start, end, span_text) = if has_offsets {
                 let start = token_starts[token_start];
                 let end = token_ends[token_end - 1];
-                let span_text = text
-                    .get(start..end)
-                    .unwrap_or_default()
-                    .trim()
-                    .to_string();
+                let span_text = text.get(start..end).unwrap_or_default().trim().to_string();
                 (start, end, span_text)
             } else {
                 let span_text = text_tokens[token_start..token_end].join(" ");

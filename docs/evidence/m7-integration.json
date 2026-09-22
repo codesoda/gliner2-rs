@@ -1,0 +1,138 @@
+{
+  "milestone": "M7",
+  "status": "in-progress-not-release-ready",
+  "base_commit": "34321d166e41e85635ca31d065d5625a4c4b999e",
+  "runtime": {
+    "ort": "2.0.0-rc.13",
+    "native_onnx_runtime": "1.28.0",
+    "python_reference_onnxruntime": "1.20.1"
+  },
+  "local_integration": {
+    "rust_all_targets_all_features": {
+      "strict_toolchains": ["1.95", "1.91"],
+      "strict_artifact_tests_per_toolchain": 245,
+      "strict_artifact_skip_messages": 0,
+      "no_model_tests": 245,
+      "no_model_skip_messages": 48,
+      "clippy_warnings_denied": "passed",
+      "format_check": "passed",
+      "logs": [
+        "/tmp/gliner25-work/m7-final-rust-1.95.log",
+        "/tmp/gliner25-work/m7-final-rust-1.91.log",
+        "/tmp/gliner25-work/m7-final-v2.log",
+        "/tmp/gliner25-work/m7-parent-no-model.log",
+        "/tmp/gliner25-work/m7-parent-clippy.log"
+      ]
+    },
+    "python_downloader_unit_tests": 20,
+    "benchmark_unit_tests": 11,
+    "consumer_template_local_path_compile": "passed; superseded by actual pushed-source proof in m7-consumer.json",
+    "consumer_policy_unit_tests": 10,
+    "ci_yaml_actionlint": "passed",
+    "fresh_v2_tutorials": {
+      "passed": 6,
+      "confidence_differences": 1,
+      "maximum_confidence_abs": 5.364418029785156e-7,
+      "other_normalized_output": "exact"
+    }
+  },
+  "bundle_validation": {
+    "small": {
+      "status": "validated-published-readback-passed",
+      "manifest_sha256": "5c691ff523278268f9046a42e8107c91fc084514f7f3f91cf88fc2fb9eb3e905",
+      "python_onnx_stages": 7,
+      "corpus_cases": 30,
+      "additional_cases": 2,
+      "native_tests": 3,
+      "non_confidence_outputs": "exact",
+      "maximum_confidence_abs": 0.000003159046173095703,
+      "maximum_explicit_logit_abs": 0.000013113021850585938,
+      "report": "/tmp/gliner25-work/m7-small-corrected-validation.json",
+      "report_sha256": "d4b5af6c931f05032bb98feee6ed141dd3ceddc8c42970f533573518f18dc9df"
+    },
+    "base": {
+      "status": "validated-published-readback-passed",
+      "manifest_sha256": "b986177cfc3a14e388d03d79b18b040e5873c47ad713e2b68396d3abfbc4ec5c",
+      "python_onnx_stages": 7,
+      "corpus_cases": 30,
+      "additional_cases": 2,
+      "native_tests": 3,
+      "non_confidence_outputs": "exact",
+      "maximum_confidence_abs": 0.000003680586814880371,
+      "maximum_explicit_logit_abs": 0.000007152557373046875,
+      "report": "/tmp/gliner25-work/m7-base-corrected-validation.json",
+      "report_sha256": "aa74f5cd2eb7a906e23a8f6ad400a4978b26d55d78f8546c4b3e89ac18babb28"
+    },
+    "multi": {
+      "status": "validated-published-readback-passed",
+      "manifest_sha256": "ff51c54d0df6b870d204ee569dd6379d6607b43652dc142d1b4433dd277f3179",
+      "python_onnx_stages": 7,
+      "corpus_cases": 30,
+      "additional_cases": 2,
+      "native_tests": 3,
+      "non_confidence_outputs": "exact",
+      "maximum_confidence_abs": 0.00001430511474609375,
+      "maximum_explicit_logit_abs": 0.000036716461181640625,
+      "report": "/tmp/gliner25-work/m7-multi-corrected-validation.json",
+      "report_sha256": "65b0a21d19c5d09ab3e3dc78844c3bb75c5bf9158ee403252e5bc0961d24e6fe"
+    }
+  },
+  "prefix_correction": {
+    "initial_failed_comparison": "multi/long_3000_words/onnx-golden/inside_prefix",
+    "initial_coordinate": [0, 0, 3001],
+    "initial_absolute_error": 0.0071811676025390625,
+    "unchanged_active_tolerance_at_coordinate": 0.00340269073,
+    "change": "explicit pinned PyTorch AArch64 fp32 sum order for masked inside logits; division, centering and scan unchanged",
+    "tiny_graph_test_count": 7,
+    "bit_exact_saved_query_sums_and_means": 210,
+    "synthetic_positive_cases": 68,
+    "dynamic_length_max_tested": 65537,
+    "corrected_full_marginal_gate_failures": {"small": 0, "base": 0, "multi": 0},
+    "other_six_graph_hashes": "unchanged for each checkpoint",
+    "tolerance_changes": []
+  },
+  "unsupported_axis_diagnostics": {
+    "historical_runs": "isolated ORT1.20 marginals L=0 and shared scorer C=0 probes returned SIGSEGV -11",
+    "default_policy": "now opt-in via --probe-unsupported-axes; not-run must remain explicit",
+    "supported_inputs_and_rust_rejection_guards": "unchanged"
+  },
+  "publication": {
+    "repository": "codesoda/gliner2-onnx",
+    "revision": "27310cd26099a387b9936a1e13b03d6a0700baf2",
+    "previous_revision": "e8cbde3ddfd3d3681a2134f8af2cbb041ead7530",
+    "reviewed_source_commit": "39ab95485c7beb2e319ec33497fa8c7642d69b81",
+    "added_files": 52,
+    "legacy_v2_graph_changes": 0,
+    "rust_validate_bundle": "passed on all three promoted bundles, 16 authenticated files each"
+  },
+  "downloader_readback": {
+    "status": "passed",
+    "selectors": ["base", "large", "2.5-small", "2.5-base", "2.5-multi"],
+    "cli_exit_codes": {"python": 0, "rust": 0},
+    "fresh_destinations_and_isolated_caches": true,
+    "files_per_destination": 64,
+    "bytes_per_destination": 5150060191,
+    "identical_paths_sizes_sha256": true,
+    "parent_independently_rehashed_destination_files": 128,
+    "regular_nonsymlink_files_only": true,
+    "v2_original_pins_verified": true,
+    "report_sha256": "b37b8b6f682085f0efa2a1e20943ab4124b962c616353665ce41d27d80f26a15",
+    "python_report_sha256": "72fb25e9d013c5695bb3cf4e75756e143c09a068152e05598a32ab0001def90a"
+  },
+  "remote_ci": {
+    "commit": "9332af6f10607a161ebfb8eb2a75051732e0495c",
+    "url": "https://github.com/codesoda/gliner2-rs/actions/runs/35563422282",
+    "conclusion": "success",
+    "jobs": ["Python model-free unit tests", "Rust (MSRV 1.91)", "Rust (stable)"]
+  },
+  "external_consumer": {
+    "status": "passed",
+    "source_revision": "9332af6f10607a161ebfb8eb2a75051732e0495c",
+    "evidence": "m7-consumer.json",
+    "python_execution": "Denied for Python-named executable paths; not proof of interpreter absence"
+  },
+  "remaining": [
+    "quiet-machine benchmark and reviewed results (headless Chrome CPU contention currently blocks timing)",
+    "final source/docs commit, green CI and matching version/tag release"
+  ]
+}

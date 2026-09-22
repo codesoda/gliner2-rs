@@ -23,14 +23,7 @@ fn greedy_non_overlapping_prefers_highest_score() {
     // span C: tokens[2..3] = "at" (disjoint with A)
     logits[[2, 0]] = 8.0;
 
-    let spans = find_valid_spans(
-        logits.view(),
-        0.9,
-        text,
-        &starts,
-        &ends,
-        &tokens,
-    );
+    let spans = find_valid_spans(logits.view(), 0.9, text, &starts, &ends, &tokens);
     let spans = greedy_non_overlapping(spans);
 
     assert_eq!(spans.len(), 2);

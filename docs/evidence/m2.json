@@ -1,0 +1,54 @@
+{
+  "milestone": "M2",
+  "status": "accepted_after_parent_review",
+  "upstream_commit": "d7c727458bf6929bc9ef5ee04e13c3f717a7c455",
+  "model_revision": "78cea040597df251eedefa9d7ee2a756af39fe64",
+  "graph_sha256": "758818a484c0fbb7d3c221c8470394da1cfd27075c2a8387d140625d868f836f",
+  "runtime": {"rust_ort": "2.0.0-rc.9", "python_onnxruntime": "1.20.1", "provider": "CPUExecutionProvider"},
+  "graph_audit": {"opset": 17, "checker": "passed", "fp32_finite_initializers": 44, "fp32_finite_constants": 12},
+  "coverage": {"golden_head_cases": 24, "classification_bypass_cases": 5, "empty_schema_bypass_cases": 1, "long_head_cases": 3, "synthetic_dynamic_cases": 5, "synthetic_batch_cases": 1, "synthetic_q0_cases": 1},
+  "tolerance": {
+    "original_atol": 0.0001,
+    "original_rtol": 0.001,
+    "onnx_inside_prefix_only": "atol(i)=1e-4+1.1e-6*i, rtol=1e-3; i is boundary coordinate",
+    "adjudication": "Astra reviewed source and independently reproduced accumulated per-token/mean/cumsum drift and downstream sensitivity. See PLAN-gliner2.5.md. All other gates unchanged.",
+    "raw_original_prefix_failures": 199,
+    "accepted_gate_failures": 0
+  },
+  "max_absolute_onnx_golden_error": {
+    "boundary_states": 0.000003814697265625,
+    "start_logits": 0.000003814697265625,
+    "end_logits": 0.0000057220458984375,
+    "inside_logits": 0.00000476837158203125,
+    "inside_prefix": 0.003136873245239258,
+    "inside_prefix_mean": 0.000001430511474609375,
+    "start_all": 0.0000025033950805664062,
+    "end_all": 0.0000021457672119140625
+  },
+  "sensitivity": {
+    "fixtures": 24,
+    "valid_candidate_query_pairs": 5116,
+    "baseline_scorer_golden": "bit-exact",
+    "max_normalized_inside_error": 0.00006103515625,
+    "max_pair_logit_error": 0.00006103515625,
+    "max_confidence_error": 0.0000008642673492431641,
+    "top1_changes": 0,
+    "confidence_0_5_crossings": 0
+  },
+  "input_limits": {
+    "L0": "raw graph SIGSEGV in isolated ORT probe; Rust rejects before native inference",
+    "Q0": "Python graph probes pass; Rust requires classification bypass",
+    "max_length": "no graph-level4096 cap; original-word cap belongs before choice prefix"
+  },
+  "parent_gates": {
+    "python_validation_units": "6 passed",
+    "full_rust_marginal_corpus": "24 head and 6 bypass cases passed",
+    "fmt": "passed",
+    "strict_clippy": "passed",
+    "review_workspace_no_models": "77 passed, 20 explicit skips; includes pending M3/M4 preparation tests",
+    "review_workspace_strict_all_models": "77 passed, zero skips; includes pending M3/M4 preparation tests"
+  },
+  "local_evidence_prefix": "/tmp/gliner25-work/m2-parent-",
+  "reports": ["accepted-marginals.json", "accepted-sensitivity.json", "python-units.log", "full-rust.log", "final-clippy.log", "final-no-models.log", "final-all-models.log"],
+  "scope_limit": "Low-level marginal milestone only. No high-level GLiNER2.5 pipeline, later milestone acceptance, publication or release claim."
+}

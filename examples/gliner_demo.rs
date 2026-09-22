@@ -9,7 +9,10 @@ use gliner2_rs::{
     classification::FormattedClassification,
     entities::{FormattedEntitySpan, FormattedEntityValue},
     pipeline::Gliner2Pipeline,
-    schema_spec::{ClassificationOptions, EntityOptions, FieldDtype, RelationSpec, SchemaBuilder, StructureFieldSpec},
+    schema_spec::{
+        ClassificationOptions, EntityOptions, FieldDtype, RelationSpec, SchemaBuilder,
+        StructureFieldSpec,
+    },
 };
 mod common;
 use common::model_paths_from_args;
@@ -32,8 +35,8 @@ fn main() -> Result<()> {
         .ok_or_else(|| anyhow!("missing classifier.onnx in {}", paths.onnx_dir.display()))?;
 
     let load_start = Instant::now();
-    let pipeline =
-        Gliner2Pipeline::new(&paths.model_dir, &paths.encoder, &paths.extractor)?.with_classifier(classifier_onnx)?;
+    let pipeline = Gliner2Pipeline::new(&paths.model_dir, &paths.encoder, &paths.extractor)?
+        .with_classifier(classifier_onnx)?;
     println!(
         "model load took: {:.2?} (onnx={})",
         load_start.elapsed(),
@@ -182,7 +185,9 @@ the impact of a stricter Basel-oriented liquidity floor set by the maritime auth
 
     fn value_texts(value: &FormattedEntityValue) -> Vec<String> {
         match value {
-            FormattedEntityValue::List(values) => values.iter().map(|v| span_text(v).to_string()).collect(),
+            FormattedEntityValue::List(values) => {
+                values.iter().map(|v| span_text(v).to_string()).collect()
+            }
             FormattedEntityValue::Single(value) => value
                 .as_ref()
                 .map(|v| vec![span_text(v).to_string()])
@@ -211,9 +216,15 @@ the impact of a stricter Basel-oriented liquidity floor set by the maritime auth
 
     let expected_entities: BTreeMap<&str, Vec<&str>> = BTreeMap::from([
         ("asset_manager", vec!["HarborView Capital"]),
-        ("portfolio_company", vec!["Anchor Freight", "Seaside Renewables"]),
+        (
+            "portfolio_company",
+            vec!["Anchor Freight", "Seaside Renewables"],
+        ),
         ("policy_signal", vec!["steady distributions"]),
-        ("regulatory_body", vec!["maritime authority", "BlueCurrent Bank"]),
+        (
+            "regulatory_body",
+            vec!["maritime authority", "BlueCurrent Bank"],
+        ),
         ("liquidity_cushion", vec!["$1.6B"]),
     ]);
 
@@ -265,7 +276,9 @@ the impact of a stricter Basel-oriented liquidity floor set by the maritime auth
 
     let got_signal_axes: Vec<(String, f32)> = match out.classifications.get("signal_axes") {
         Some(FormattedClassification::MultiWithConfidence(values)) => values.clone(),
-        Some(FormattedClassification::Multi(labels)) => labels.iter().cloned().map(|l| (l, f32::NAN)).collect(),
+        Some(FormattedClassification::Multi(labels)) => {
+            labels.iter().cloned().map(|l| (l, f32::NAN)).collect()
+        }
         _ => Vec::new(),
     };
 
@@ -278,7 +291,12 @@ the impact of a stricter Basel-oriented liquidity floor set by the maritime auth
     for (rel, pairs) in &out.relations {
         let set: BTreeSet<(String, String)> = pairs
             .iter()
-            .map(|p| (span_text(&p.head).to_string(), span_text(&p.tail).to_string()))
+            .map(|p| {
+                (
+                    span_text(&p.head).to_string(),
+                    span_text(&p.tail).to_string(),
+                )
+            })
             .collect();
         got_relations.insert(rel.clone(), set);
     }
@@ -320,13 +338,17 @@ the impact of a stricter Basel-oriented liquidity floor set by the maritime auth
 
     println!("Expected (Python) signal_axes (label, confidence): {expected_signal_axes:#?}");
     println!("Got (Rust) signal_axes (label, confidence): {got_signal_axes:#?}");
-    let got_signal_map: BTreeMap<&str, f32> =
-        got_signal_axes.iter().map(|(l, c)| (l.as_str(), *c)).collect();
+    let got_signal_map: BTreeMap<&str, f32> = got_signal_axes
+        .iter()
+        .map(|(l, c)| (l.as_str(), *c))
+        .collect();
     for (label, expected_conf) in &expected_signal_axes {
         match got_signal_map.get(label) {
             Some(got_conf) => {
                 let diff = (got_conf - expected_conf).abs();
-                println!("signal_axes[{label}]: expected≈{expected_conf:.2}, got={got_conf:.4} (|Δ|={diff:.4})");
+                println!(
+                    "signal_axes[{label}]: expected≈{expected_conf:.2}, got={got_conf:.4} (|Δ|={diff:.4})"
+                );
             }
             None => println!("signal_axes[{label}]: MISSING (expected≈{expected_conf:.2})"),
         }
@@ -357,8 +379,10 @@ the impact of a stricter Basel-oriented liquidity floor set by the maritime auth
     }
     println!("Got (Rust) relation_extraction: {got_relations_as_vec:#?}");
     for (rel, expected_pairs) in &expected_relations {
-        let expected: BTreeSet<(String, String)> =
-            expected_pairs.iter().map(|(h, t)| ((*h).to_string(), (*t).to_string())).collect();
+        let expected: BTreeSet<(String, String)> = expected_pairs
+            .iter()
+            .map(|(h, t)| ((*h).to_string(), (*t).to_string()))
+            .collect();
         let got = got_relations.get(*rel).cloned().unwrap_or_default();
         let missing: Vec<_> = expected.difference(&got).cloned().collect();
         let extra: Vec<_> = got.difference(&expected).cloned().collect();
@@ -370,13 +394,23 @@ the impact of a stricter Basel-oriented liquidity floor set by the maritime auth
         .iter()
         .map(|inst| {
             inst.iter()
-                .map(|(k, v)| ((*k).to_string(), v.iter().map(|s| (*s).to_string()).collect()))
+                .map(|(k, v)| {
+                    (
+                        (*k).to_string(),
+                        v.iter().map(|s| (*s).to_string()).collect(),
+                    )
+                })
                 .collect::<BTreeMap<String, Vec<String>>>()
         })
         .collect::<Vec<_>>();
-    let expected_dividend_set: BTreeSet<String> =
-        expected_dividend_keys.iter().map(canonical_instance).collect();
-    let got_dividend_set: BTreeSet<String> = got_dividend_outlook.iter().map(canonical_instance).collect();
+    let expected_dividend_set: BTreeSet<String> = expected_dividend_keys
+        .iter()
+        .map(canonical_instance)
+        .collect();
+    let got_dividend_set: BTreeSet<String> = got_dividend_outlook
+        .iter()
+        .map(canonical_instance)
+        .collect();
     println!("Expected (Python) dividend_outlook: {expected_dividend_keys:#?}");
     println!("Got (Rust) dividend_outlook: {got_dividend_outlook:#?}");
     println!(
@@ -392,12 +426,21 @@ the impact of a stricter Basel-oriented liquidity floor set by the maritime auth
         .iter()
         .map(|inst| {
             inst.iter()
-                .map(|(k, v)| ((*k).to_string(), v.iter().map(|s| (*s).to_string()).collect()))
+                .map(|(k, v)| {
+                    (
+                        (*k).to_string(),
+                        v.iter().map(|s| (*s).to_string()).collect(),
+                    )
+                })
                 .collect::<BTreeMap<String, Vec<String>>>()
         })
         .collect::<Vec<_>>();
-    let expected_watch_set: BTreeSet<String> = expected_watch_keys.iter().map(canonical_instance).collect();
-    let got_watch_set: BTreeSet<String> = got_forward_watchlist.iter().map(canonical_instance).collect();
+    let expected_watch_set: BTreeSet<String> =
+        expected_watch_keys.iter().map(canonical_instance).collect();
+    let got_watch_set: BTreeSet<String> = got_forward_watchlist
+        .iter()
+        .map(canonical_instance)
+        .collect();
     println!("Expected (Python) forward_watchlist: {expected_watch_keys:#?}");
     println!("Got (Rust) forward_watchlist: {got_forward_watchlist:#?}");
     println!(

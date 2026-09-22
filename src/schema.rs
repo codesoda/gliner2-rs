@@ -77,17 +77,17 @@ pub fn format_input_with_mapping(
             })
             .collect::<Result<_>>()?;
 
-        mapped.extend(
-            std::iter::repeat(Mapping {
+        mapped.extend(std::iter::repeat_n(
+            Mapping {
                 segment: segment.clone(),
                 orig_idx,
                 schema_idx,
-            })
-            .take(pieces.len()),
-        );
+            },
+            pieces.len(),
+        ));
         subwords.extend(pieces.iter().cloned());
         input_ids.extend(ids);
-        attention_mask.extend(std::iter::repeat(1i64).take(pieces.len()));
+        attention_mask.extend(std::iter::repeat_n(1i64, pieces.len()));
     }
 
     Ok(FormattedInput {

@@ -1,0 +1,46 @@
+{
+  "status": "verified_project_msrv_correction",
+  "source_commit": "a3ecbfa3e9f540bb5cd4d44ae3ab6536ea81cccf",
+  "scope": "Isolated accepted direct-ORT migration source, excluding all uncommitted M5 preparations. Only package MSRV declaration/documentation changes; no dependency downgrades or runtime settings changes.",
+  "declared_project_msrv_before": "1.88",
+  "verified_project_msrv": "1.91",
+  "ort_dependency_msrv": "1.88",
+  "failed_toolchains": {
+    "1.88.0": "Cargo rejects konst 0.4.3, konst_proc_macros 0.4.1 and redb 3.1.3, which declare Rust 1.89.",
+    "1.89.0": "Compilation fails in xet-core-structures 1.6.0/src/merklehash/error.rs:59: str::floor_char_boundary is unstable on this compiler. It stabilized in Rust 1.91."
+  },
+  "dependency_path": "gliner2-rs -> hf-hub 1.0.0 -> hf-xet 1.6.0 -> Xet transitive crates",
+  "api_stabilization_source": "https://doc.rust-lang.org/std/primitive.str.html#method.floor_char_boundary",
+  "successful_toolchain": "rustc 1.91.0 (f8297e351 2025-10-28), aarch64-apple-darwin",
+  "strict_model_suite": {
+    "passed": 91,
+    "skip_messages": 0,
+    "command": "CARGO_TARGET_DIR=/tmp/gliner25-work/ort-msrv-1.91-target GLINER2_TEST_ROOT=/tmp/gliner25-work/combined-model-root GLINER2_REQUIRE_MODELS=1 GLINER2_REQUIRE_BOUNDARY_MODELS=1 GLINER2_BOUNDARY_FULL_FIXTURES=1 GLINER2_POOL_FULL_FIXTURES=1 cargo +1.91.0 test --manifest-path <isolated-source>/Cargo.toml --locked --all-features -- --nocapture"
+  },
+  "no_model_suite": {
+    "passed": 91,
+    "explicit_skip_messages": 25,
+    "command": "CARGO_TARGET_DIR=/tmp/gliner25-work/ort-msrv-1.91-target GLINER2_TEST_ROOT=/tmp/gliner25-work/empty-model-root cargo +1.91.0 test --manifest-path <isolated-source>/Cargo.toml --locked --all-features -- --nocapture"
+  },
+  "corrected_manifest_all_test_build": "pass on Rust 1.91.0",
+  "isolated_formatting": "pass",
+  "isolated_clippy": "pass on Rust 1.91.0, all-targets/all-features with warnings denied",
+  "six_tutorial_gate": {
+    "status": "pass",
+    "toolchain": "1.91.0",
+    "confidence_difference_count": 1,
+    "max_absolute_confidence_error": 5.364418029785156e-7,
+    "all_other_normalized_output_exact": true,
+    "setup_note": "Initial runner attempt correctly failed preflight because the isolated source lacked models/gliner2-base-v1 config/tokenizer. Added the pinned tokenizer/config symlink and reran all six examples successfully."
+  },
+  "logs": [
+    "/tmp/gliner25-work/ort-migration/parent-msrv-1.88-build.log",
+    "/tmp/gliner25-work/ort-migration/parent-msrv-1.89-models.log",
+    "/tmp/gliner25-work/ort-migration/parent-msrv-1.91-models.log",
+    "/tmp/gliner25-work/ort-migration/parent-msrv-1.91-no-models.log",
+    "/tmp/gliner25-work/ort-migration/parent-msrv-1.91-v2.log",
+    "/tmp/gliner25-work/ort-migration/parent-msrv-1.91-corrected-manifest.log",
+    "/tmp/gliner25-work/ort-migration/parent-msrv-1.91-clippy.log"
+  ],
+  "limitations": "This validates the accepted migration source on the local macOS arm64 target, not cross-platform compilation or unfinished M5-M7. Release remains incomplete."
+}

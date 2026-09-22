@@ -11,4 +11,3 @@ fn tokenize_with_offsets_matches_slices_lowercased() {
         assert_eq!(t.token, slice.to_lowercase());
     }
 }
-

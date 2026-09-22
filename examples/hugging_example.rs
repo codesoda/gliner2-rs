@@ -147,7 +147,8 @@ on March 15, 2024. Commission: $1,250. Status: Completed.
             "date::str::Transaction date".to_string(),
             "commission::str::Fees or commission charged".to_string(),
             "status::str::Transaction status".to_string(),
-            "type::[equity|bond|option|future|forex]::str::Type of financial instrument".to_string(),
+            "type::[equity|bond|option|future|forex]::str::Type of financial instrument"
+                .to_string(),
         ],
     );
 

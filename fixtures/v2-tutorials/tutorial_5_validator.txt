@@ -1,0 +1,140 @@
+-----------------
+text: Contact: john@company.com, not-an-email, jane@domain.org
+contact: Some(
+    [
+        {
+            "email": Single(
+                Some(
+                    Text(
+                        "john@company.com",
+                    ),
+                ),
+            ),
+        },
+        {
+            "email": Single(
+                Some(
+                    Text(
+                        "jane@domain.org",
+                    ),
+                ),
+            ),
+        },
+    ],
+)
+-----------------
+email_validation: Some(
+    [
+        {
+            "email": List(
+                [
+                    Text(
+                        "john@company.com",
+                    ),
+                ],
+            ),
+        },
+        {
+            "email": List(
+                [
+                    Text(
+                        "jane@domain.org",
+                    ),
+                ],
+            ),
+        },
+    ],
+)
+-----------------
+text: Call (555) 123-4567 or 5551234567
+phone_validation: Some(
+    [
+        {
+            "phone": List(
+                [
+                    Text(
+                        "(555) 123-4567",
+                    ),
+                ],
+            ),
+        },
+    ],
+)
+-----------------
+text: Visit https://example.com or www.site.com
+url_validation: Some(
+    [
+        {
+            "url": List(
+                [
+                    Text(
+                        "https://example.com",
+                    ),
+                ],
+            ),
+        },
+    ],
+)
+-----------------
+text: Products: iPhone, Test Phone, Samsung Galaxy
+exclude_test_data: Some(
+    [
+        {
+            "name": List(
+                [
+                    Text(
+                        "iPhone",
+                    ),
+                ],
+            ),
+        },
+        {
+            "name": List(
+                [
+                    Text(
+                        "Samsung Galaxy",
+                    ),
+                ],
+            ),
+        },
+    ],
+)
+-----------------
+text: Names: Jo, Alexander, A Very Long Name That Exceeds Fifty Characters
+length_constraints: Some(
+    [
+        {
+            "name": List(
+                [
+                    Text(
+                        "Alexander",
+                    ),
+                ],
+            ),
+        },
+    ],
+)
+-----------------
+text: Users: ab, john_doe, user@domain, admin, valid_user123
+multiple_validators: Some(
+    [
+        {
+            "username": List(
+                [
+                    Text(
+                        "john_doe",
+                    ),
+                ],
+            ),
+        },
+        {
+            "username": List(
+                [
+                    Text(
+                        "valid_user123",
+                    ),
+                ],
+            ),
+        },
+    ],
+)

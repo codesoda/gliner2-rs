@@ -1,0 +1,472 @@
+-----------------
+text: This product exceeded my expectations! Absolutely love it.
+sentiment: {
+    "sentiment": Single(
+        "positive",
+    ),
+}
+-----------------
+text: The service was okay, nothing special but not bad either.
+sentiment (confidence): {
+    "sentiment": SingleWithConfidence {
+        label: "neutral",
+        confidence: 1.0,
+    },
+}
+-----------------
+text: Apple announced new health monitoring features in their latest smartwatch, boosting their stock price.
+topics: {
+    "topics": Multi(
+        [
+            "business",
+            "health",
+            "technology",
+        ],
+    ),
+}
+-----------------
+topics (confidence): {
+    "topics": MultiWithConfidence(
+        [
+            (
+                "business",
+                0.9996412,
+            ),
+            (
+                "health",
+                0.9973194,
+            ),
+            (
+                "technology",
+                0.86740035,
+            ),
+        ],
+    ),
+}
+-----------------
+text: Please find attached the itemized bill for consulting services rendered in Q3 2024. Payment is due within 30 days.
+document_type: {
+    "document_type": Single(
+        "invoice",
+    ),
+}
+-----------------
+text: Thank you for your payment of $500. This confirms your transaction was completed on March 1st, 2024.
+document_type: {
+    "document_type": Single(
+        "receipt",
+    ),
+}
+-----------------
+text: The new AI model shows remarkable performance improvements.
+quick_api: {
+    "sentiment": Single(
+        "positive",
+    ),
+}
+-----------------
+text: The software keeps crashing and customer support is unresponsive.
+quick_api: {
+    "sentiment": Single(
+        "negative",
+    ),
+}
+-----------------
+text: Breaking: Tech giant announces major layoffs amid market downturn
+quick_api_multi: {
+    "category": Single(
+        "tech",
+    ),
+    "sentiment": Single(
+        "negative",
+    ),
+    "urgency": Single(
+        "high",
+    ),
+}
+-----------------
+text: The smartphone features an amazing camera but disappointing battery life and overheats frequently.
+quick_api_multi_label: {
+    "product_aspects": Multi(
+        [
+            "camera",
+            "battery",
+            "heating",
+            "performance",
+        ],
+    ),
+}
+-----------------
+text: Beautiful design with vibrant display, though the camera could be better.
+quick_api_multi_label: {
+    "product_aspects": Multi(
+        [
+            "design",
+            "display",
+            "camera",
+        ],
+    ),
+}
+-----------------
+text: Could you please help me with my order? The service has been disappointing.
+multi_classification: {
+    "formality": Single(
+        "informal",
+    ),
+    "intent": Single(
+        "request",
+    ),
+    "language": Single(
+        "english",
+    ),
+    "sentiment": Single(
+        "negative",
+    ),
+}
+-----------------
+text: Hey! Just wanted to say your product rocks! 🎉
+multi_classification: {
+    "formality": Single(
+        "informal",
+    ),
+    "intent": Single(
+        "statement",
+    ),
+    "language": Single(
+        "english",
+    ),
+    "sentiment": Single(
+        "positive",
+    ),
+}
+-----------------
+text: URGENT: I'm thrilled to announce our new product! But concerned about competitor reactions. Please keep confidential.
+mixed_single_multi: {
+    "content_flags": Multi(
+        [
+            "promotional",
+            "personal_info",
+        ],
+    ),
+    "emotions": Multi(
+        [
+            "happy",
+        ],
+    ),
+    "primary_topic": Single(
+        "business",
+    ),
+    "urgency": Single(
+        "immediate",
+    ),
+}
+-----------------
+text: Just saw the game - absolutely devastated by the loss. Can't believe the referee's terrible decision!
+mixed_single_multi: {
+    "content_flags": Multi(
+        [
+            "inappropriate",
+            "personal_info",
+        ],
+    ),
+    "emotions": Multi(
+        [
+            "sad",
+            "fearful",
+        ],
+    ),
+    "primary_topic": Single(
+        "sports",
+    ),
+    "urgency": Single(
+        "immediate",
+    ),
+}
+-----------------
+ticket_text: 
+Subject: Cannot login - Urgent!
+
+I've been trying to login for the past hour but keep getting error messages. 
+This is critical as I need to process payments for my customers today. 
+The page just keeps spinning and then times out. I'm extremely frustrated 
+as this is costing me business. Please fix this immediately!
+
+support_schema: {
+    "customer_sentiment": Single(
+        "frustrated",
+    ),
+    "priority": Single(
+        "critical",
+    ),
+    "product_area": Multi(
+        [
+            "payment",
+            "authentication",
+        ],
+    ),
+    "requires_action": Multi(
+        [
+            "immediate_response",
+        ],
+    ),
+    "ticket_type": Single(
+        "technical_issue",
+    ),
+}
+-----------------
+ticket_text2: 
+Hi team,
+
+Thanks for the great product! I was wondering if you could add a dark mode feature? 
+It would really help with eye strain during late night work sessions.
+
+Best regards,
+Happy Customer
+
+support_schema: {
+    "customer_sentiment": Single(
+        "very_satisfied",
+    ),
+    "priority": Single(
+        "medium",
+    ),
+    "product_area": Multi(
+        [
+            "ui",
+        ],
+    ),
+    "requires_action": Multi(
+        [
+            "resolved",
+        ],
+    ),
+    "ticket_type": Single(
+        "feature_request",
+    ),
+}
+-----------------
+email: 
+Hi Sales Team,
+
+I'm interested in your enterprise solution. We're currently evaluating vendors 
+for our upcoming project. Could we schedule a demo next week? We need to make 
+a decision by month end.
+
+Best regards,
+John from TechCorp
+
+email_schema: {
+    "email_category": Single(
+        "sales",
+    ),
+    "required_action": Multi(
+        [
+            "schedule_meeting",
+        ],
+    ),
+    "response_timeframe": Single(
+        "within_week",
+    ),
+    "sales_stage": Single(
+        "proposal",
+    ),
+    "support_type": Single(
+        "pre_sales",
+    ),
+}
+-----------------
+email2: 
+Dear HR Department,
+
+I need to update my tax withholding information. Could someone please send me 
+the necessary forms? This is somewhat urgent as I need this changed before the 
+next payroll cycle.
+
+Thank you,
+Sarah
+
+email_schema: {
+    "email_category": Single(
+        "hr",
+    ),
+    "required_action": Multi(
+        [
+            "reply_needed",
+        ],
+    ),
+    "response_timeframe": Single(
+        "within_24_hours",
+    ),
+    "sales_stage": Single(
+        "qualified",
+    ),
+    "support_type": Single(
+        "account",
+    ),
+}
+-----------------
+content_text: 
+Just discovered this amazing productivity hack that doubled my output! 
+Here's what I do: I wake up at 5 AM, meditate for 20 minutes, then work 
+in 90-minute focused blocks. The results have been incredible. My email 
+is john.doe@example.com if you want more tips!
+
+content_schema: {
+    "audience_fit": Multi(
+        [
+            "professional",
+            "general",
+        ],
+    ),
+    "content_type": Single(
+        "review",
+    ),
+    "engagement_potential": Single(
+        "high",
+    ),
+    "originality": Single(
+        "original",
+    ),
+    "primary_language": Single(
+        "english",
+    ),
+    "quality_score": Single(
+        "excellent",
+    ),
+    "safety_flags": Multi(
+        [
+            "personal_info",
+        ],
+    ),
+}
+-----------------
+review_text: 
+Worst product ever!!! Total scam! Don't buy this garbage. The company should 
+be shut down for selling this junk. I'm going to report them to authorities.
+
+content_schema: {
+    "audience_fit": Multi(
+        [
+            "general",
+        ],
+    ),
+    "content_type": Single(
+        "message",
+    ),
+    "engagement_potential": Single(
+        "viral",
+    ),
+    "originality": Single(
+        "derivative",
+    ),
+    "primary_language": Single(
+        "english",
+    ),
+    "quality_score": Single(
+        "spam",
+    ),
+    "safety_flags": Multi(
+        [
+            "violence",
+            "hate_speech",
+            "misinformation",
+        ],
+    ),
+}
+-----------------
+text: Congratulations! You've won $1,000,000! Click here to claim your prize now!
+is_spam: {
+    "is_spam": Single(
+        "not_spam",
+    ),
+}
+-----------------
+text: URGENT: Customer threatening to cancel $50k contract due to billing error
+priority/department: {
+    "department": Single(
+        "billing",
+    ),
+    "priority": Single(
+        "urgent",
+    ),
+}
+-----------------
+text: This clearly belongs to category B based on the criteria.
+category (class_act=softmax): {
+    "category": Single(
+        "B",
+    ),
+}
+-----------------
+email_text: 
+Hi team,
+
+Quick update on Project Alpha: We're ahead of schedule! 
+
+However, I need your input on the design mockups by EOD tomorrow. 
+Can we schedule a 30-min call this week to discuss?
+
+This is quite urgent as the client is waiting.
+
+Best,
+Sarah
+
+email_tags: {
+    "email_tags": Multi(
+        [
+            "project_update",
+            "urgent",
+            "meeting_request",
+            "action_required",
+        ],
+    ),
+}
+-----------------
+email_text2: 
+Team,
+
+Just wanted to let everyone know that I'll be out of office next Monday for a 
+doctor's appointment. I'll be back Tuesday morning.
+
+Thanks,
+Mark
+
+email_tags: {
+    "email_tags": Multi(
+        [
+            "fyi",
+        ],
+    ),
+}
+-----------------
+text: Hi there — I want to return my order. What's the process?
+intent (with desc): {
+    "intent": Single(
+        "return",
+    ),
+}
+-----------------
+intent (no desc): {
+    "intent": Single(
+        "return",
+    ),
+}
+-----------------
+text: Looking for a portable waterproof speaker that's wireless and rechargeable.
+product_features: {
+    "product_features": Multi(
+        [
+            "wireless",
+            "rechargeable",
+            "portable",
+            "waterproof",
+        ],
+    ),
+}
+-----------------
+text: A medium would fit me best.
+size: {
+    "size": Single(
+        "medium",
+    ),
+}

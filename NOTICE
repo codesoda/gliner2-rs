@@ -1,0 +1,9 @@
+gliner2-rs
+Copyright 2025-2026 codesoda contributors
+
+Rust inference for GLiNER2 and GLiNER2.5 through ONNX Runtime.
+
+This product includes software developed by Fastino AI as GLiNER2
+(https://github.com/fastino-ai/GLiNER2), licensed under the Apache License,
+Version 2.0. See THIRD-PARTY-NOTICES.md for the adapted components and other
+third-party notices.

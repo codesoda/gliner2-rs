@@ -1,0 +1,182 @@
+{
+  "format_version": 1,
+  "description": "Complete-distribution classification cases. Each case is one text with one or more classification tasks; the generator records every label's raw logit from the public extract() path.",
+  "cases": [
+    {
+      "id": "sentiment_plain",
+      "text": "The update is fast, polished, and genuinely useful.",
+      "tasks": [
+        {"task": "sentiment", "labels": ["positive", "negative", "neutral"]}
+      ]
+    },
+    {
+      "id": "intent_with_instruction",
+      "text": "Hi, I was charged twice for my subscription this month and would like the duplicate charge reversed.",
+      "tasks": [
+        {
+          "task": "intent",
+          "labels": ["billing", "technical support", "sales", "cancellation"],
+          "prompt": "Pick the department that should handle this customer message."
+        }
+      ]
+    },
+    {
+      "id": "labels_with_descriptions",
+      "text": "The API returns a 500 whenever I send a request larger than 2 MB.",
+      "tasks": [
+        {
+          "task": "category",
+          "labels": {
+            "bug": "the software behaves incorrectly",
+            "feature request": "the user asks for new behaviour",
+            "question": "the user asks how something works"
+          }
+        }
+      ]
+    },
+    {
+      "id": "instruction_and_descriptions",
+      "text": "Could you add dark mode to the settings page? It would help at night.",
+      "tasks": [
+        {
+          "task": "category",
+          "labels": {
+            "bug": "the software behaves incorrectly",
+            "feature request": "the user asks for new behaviour",
+            "question": "the user asks how something works"
+          },
+          "prompt": "Classify the support ticket."
+        }
+      ]
+    },
+    {
+      "id": "boolean_false_true",
+      "text": "Our office will be closed on Monday for the public holiday.",
+      "tasks": [
+        {
+          "task": "answer",
+          "labels": ["false", "true"],
+          "prompt": "Is the office open on Monday?"
+        }
+      ]
+    },
+    {
+      "id": "boolean_no_yes",
+      "text": "Our office will be closed on Monday for the public holiday.",
+      "tasks": [
+        {
+          "task": "answer",
+          "labels": ["no", "yes"],
+          "prompt": "Is the office open on Monday?"
+        }
+      ]
+    },
+    {
+      "id": "rubric_five_point",
+      "text": "The essay states a clear thesis, supports it with two sources, but the conclusion repeats the introduction word for word.",
+      "tasks": [
+        {
+          "task": "score",
+          "labels": ["1", "2", "3", "4", "5"],
+          "prompt": "Rate the essay from 1 (poor) to 5 (excellent)."
+        }
+      ]
+    },
+    {
+      "id": "unicode_multilingual",
+      "text": "今日のミーティングは最高でした！🎉 Tout le monde était très content, même après la pluie ☔️. Ñandú y café.",
+      "tasks": [
+        {
+          "task": "感情",
+          "labels": ["ポジティブ", "ネガティブ", "neutre"],
+          "prompt": "Classe le ton du message."
+        }
+      ]
+    },
+    {
+      "id": "many_labels",
+      "text": "Preheat the oven to 200°C, toss the potatoes in olive oil and rosemary, and roast for forty minutes.",
+      "tasks": [
+        {
+          "task": "topic",
+          "labels": [
+            "cooking", "sports", "politics", "finance", "travel", "health", "music",
+            "film", "science", "technology", "education", "fashion", "gardening",
+            "law", "religion", "history", "art", "weather", "automotive", "gaming"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "multilabel_sigmoid",
+      "text": "The hotel room was spotless and the staff were kind, but the wifi barely worked and breakfast was overpriced.",
+      "tasks": [
+        {
+          "task": "aspects",
+          "labels": ["cleanliness", "staff", "wifi", "food", "location", "price"],
+          "multi_label": true,
+          "cls_threshold": 0.5
+        }
+      ]
+    },
+    {
+      "id": "explicit_softmax_on_multilabel",
+      "text": "The hotel room was spotless and the staff were kind, but the wifi barely worked and breakfast was overpriced.",
+      "tasks": [
+        {
+          "task": "aspects",
+          "labels": ["cleanliness", "staff", "wifi", "food", "location", "price"],
+          "multi_label": true,
+          "cls_threshold": 0.5,
+          "class_act": "softmax"
+        }
+      ]
+    },
+    {
+      "id": "explicit_sigmoid_on_single",
+      "text": "The update is fast, polished, and genuinely useful.",
+      "tasks": [
+        {
+          "task": "sentiment",
+          "labels": ["positive", "negative", "neutral"],
+          "class_act": "sigmoid"
+        }
+      ]
+    },
+    {
+      "id": "empty_text",
+      "text": "",
+      "tasks": [
+        {"task": "sentiment", "labels": ["positive", "negative", "neutral"]}
+      ]
+    },
+    {
+      "id": "unrelated_text_near_tie",
+      "text": "qzx vlm ptk.",
+      "tasks": [
+        {"task": "colour", "labels": ["red", "green", "blue"]}
+      ]
+    },
+    {
+      "id": "two_tasks_one_pass",
+      "text": "I love this phone, but please tell me how to turn off the flashlight.",
+      "tasks": [
+        {"task": "sentiment", "labels": ["positive", "negative", "neutral"]},
+        {
+          "task": "intent",
+          "labels": ["praise", "complaint", "how-to question"],
+          "prompt": "What does the user want?"
+        }
+      ]
+    },
+    {
+      "id": "truncated_long_text",
+      "repeat_word": "word",
+      "repeat_count": 4300,
+      "tail": " Finally, the reviewer said the product was excellent.",
+      "tasks": [
+        {"task": "sentiment", "labels": ["positive", "negative", "neutral"]}
+      ]
+    }
+  ]
+}

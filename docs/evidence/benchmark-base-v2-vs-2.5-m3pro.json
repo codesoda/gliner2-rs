@@ -1,0 +1,639 @@
+{
+  "schema_version": 2,
+  "benchmark": "cpu-end-to-end-entity-extraction-isolated",
+  "invocation": [
+    "/Users/chrisraethke/projects/gliners2/scripts/benchmark_gliner2.sh",
+    "--model",
+    "both",
+    "--v2-model-dir",
+    "onnx/gliner2-base-v1",
+    "--v2-onnx-dir",
+    "onnx/gliner2-base-v1",
+    "--v25-bundle-dir",
+    "onnx/gliner2.5-base-v1",
+    "--warmups",
+    "3",
+    "--repetitions",
+    "10",
+    "--threshold",
+    "0.5",
+    "--output",
+    "/tmp/gliner2-base-vs-2.5-base.json"
+  ],
+  "binary": "/Users/chrisraethke/projects/gliners2/target/release/examples/benchmark_gliner2",
+  "binary_sha256": "e8f3904a0c7e37bbfacf4c0efdbf73e594a1f47d2789c8dfd35cbf794ba2265d",
+  "process_isolation": "one fresh Rust process per model, sequential; runtime first initialization isolated; filesystem caches NOT flushed; NOT disk-cold",
+  "runs": [
+    {
+      "schema_version": 2,
+      "benchmark": "cpu-end-to-end-entity-extraction",
+      "generated_at_unix_seconds": 1790114024,
+      "configuration": {
+        "word_counts": [
+          50,
+          500,
+          3000
+        ],
+        "labels": [
+          "person",
+          "organization",
+          "location",
+          "date"
+        ],
+        "threshold": 0.5,
+        "warmups": 3,
+        "repetitions": 10,
+        "session_intra_op_threads": 4,
+        "graph_optimization": "Level3",
+        "timing_clock": "std::time::Instant",
+        "timing_scope": "one public extract_entities call; output checks and graph hashing excluded",
+        "execution_order": [
+          "gliner2-base-v1"
+        ],
+        "process_isolation": "one selected model in this process",
+        "execution_provider": "CPUExecutionProvider (library default; no accelerator provider registered)",
+        "session_inter_op_threads": null,
+        "session_inter_op_policy": "not explicitly configured; ONNX Runtime default (not measured)",
+        "load_timing_scope": "constructor including runtime/session initialization; warm filesystem/non-disk-cold; no cache eviction",
+        "resource_measurement": "peak_process_rss is null in direct runs; authoritative shell wrapper measures whole-process high-water RSS with /usr/bin/time, including load, inference, checks and hashing"
+      },
+      "texts": [
+        {
+          "word_count": 50,
+          "utf8_bytes": 269,
+          "sha256": "a5c3e18a405795b904ca28dfe399c433a87b2acbb7ba246f33196a292fe3b06d"
+        },
+        {
+          "word_count": 500,
+          "utf8_bytes": 2726,
+          "sha256": "61c2a8360b161df6063a404dbdd35e0944d5051f7d9b8899164d2692c6a829a3"
+        },
+        {
+          "word_count": 3000,
+          "utf8_bytes": 16369,
+          "sha256": "7eec3b0ae5749461dd0d19f141268dc3449ac156c8a2db2dce0b52268cf29a84"
+        }
+      ],
+      "provenance": {
+        "crate_version": "0.2.0",
+        "git_commit": "dd78efc62709759b179b7cb5ec317ec686cafd55",
+        "git_worktree_dirty": false,
+        "rustc_verbose_version": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: aarch64-apple-darwin\nrelease: 1.95.0\nLLVM version: 22.1.2",
+        "cargo_profile": "release",
+        "target_os": "macos",
+        "target_arch": "aarch64",
+        "cpu_model": "Apple M3 Pro",
+        "logical_cpus": 11,
+        "physical_cores": 11,
+        "power_mode": "AC, battery 100% charged; Low Power Mode off (pmset lowpowermode 0); observed before run; background: ctx daemon ~90% of one core, Chrome idle",
+        "power_mode_source": "operator-declared BENCHMARK_POWER_MODE; null means not recorded, not inferred",
+        "memory_bytes": 19327352832,
+        "ort_crate_version": "2.0.0-rc.13",
+        "native_onnx_runtime": "ORT Build Info: git-branch=rel-1.28.0, git-commit-id=da9b5e3, fp8-kv-cache=1, build type=Release",
+        "environment": {}
+      },
+      "models": [
+        {
+          "name": "gliner2-base-v1",
+          "architecture": "span",
+          "metadata_dir": "/Users/chrisraethke/projects/gliners2/onnx/gliner2-base-v1",
+          "graph_dir": "/Users/chrisraethke/projects/gliners2/onnx/gliner2-base-v1",
+          "graphs": [
+            {
+              "name": "encoder.onnx",
+              "path": "/Users/chrisraethke/projects/gliners2/onnx/gliner2-base-v1/encoder.onnx",
+              "bytes": 735961670,
+              "sha256": "655edabb5e79827a90e271207f21232f949a5a711eac1228e38207b7d29c4c16"
+            },
+            {
+              "name": "extractor_padded.onnx",
+              "path": "/Users/chrisraethke/projects/gliners2/onnx/gliner2-base-v1/extractor_padded.onnx",
+              "bytes": 94188468,
+              "sha256": "e0f8761de03a639ae1bab56420da4997b4b7a75abad5be5f490447833f778247"
+            },
+            {
+              "name": "classifier.onnx",
+              "path": "/Users/chrisraethke/projects/gliners2/onnx/gliner2-base-v1/classifier.onnx",
+              "bytes": 4731793,
+              "sha256": "89a84c48bd81bfb174063a40834b7b55e54caf99c2f6052602438c46591fbac2"
+            }
+          ],
+          "source": {
+            "hf_model": "fastino/gliner2-base-v1",
+            "hf_revision": "79c3a777abc572b4767922f3916cf63fb5754df2",
+            "hosted_onnx": {
+              "repository": "codesoda/gliner2-onnx",
+              "verified_revision": "e8cbde3ddfd3d3681a2134f8af2cbb041ead7530"
+            },
+            "metadata_files": [
+              {
+                "bytes": 236,
+                "name": "config.json",
+                "path": "/Users/chrisraethke/projects/gliners2/onnx/gliner2-base-v1/config.json",
+                "sha256": "33d8aa009deed4b5435d162e08b5a720b252a0084e59d30d366b37da8c0193c5"
+              },
+              {
+                "bytes": 8650701,
+                "name": "tokenizer.json",
+                "path": "/Users/chrisraethke/projects/gliners2/onnx/gliner2-base-v1/tokenizer.json",
+                "sha256": "1b7fbabfb4c690bed84c6793bfecae9b8dfe205751b04f9ffd1e76a1e7df9c16"
+              },
+              {
+                "bytes": 3240,
+                "name": "tokenizer_config.json",
+                "path": "/Users/chrisraethke/projects/gliners2/onnx/gliner2-base-v1/tokenizer_config.json",
+                "sha256": "4e6c6a8d26478b670692916266438485403b0c54af31fd1a12bab8a465d062e9"
+              }
+            ],
+            "pin_document_sha256": "36d3a1cb82a4e0ef8c6826bef268d6bc7e5a163a853b6e095ab18a8398a610d2",
+            "verification": "metadata and loaded graphs match compiled repository base pins"
+          },
+          "peak_process_rss": {
+            "raw_value": 6496993280,
+            "raw_unit": "bytes",
+            "bytes": 6496993280,
+            "scope": "whole fresh Rust command high-water RSS under OS time accounting, including any accounted provenance helper children; across load, all sizes, verification and hashing; not per-case or model-only allocation",
+            "method": "/usr/bin/time -l"
+          },
+          "load_time_ns": 788137583,
+          "cases": [
+            {
+              "word_count": 50,
+              "warmup_iterations": 3,
+              "per_run_ns": [
+                102799542,
+                102682458,
+                102727667,
+                102719375,
+                102618084,
+                102666917,
+                102649459,
+                102705041,
+                102693625,
+                102677584
+              ],
+              "median_ns": 102688041,
+              "p90_ns": 102727667,
+              "p95_ns": 102799542,
+              "min_ns": 102618084,
+              "max_ns": 102799542,
+              "submitted_words_per_second_at_median": 486.9116161248027,
+              "tokenization": {
+                "tokenizer_sha256": "1b7fbabfb4c690bed84c6793bfecae9b8dfe205751b04f9ffd1e76a1e7df9c16",
+                "retained_text_words": 50,
+                "text_only_subwords": 61,
+                "schema_plus_text_subwords": 76,
+                "max_original_words": null,
+                "scope": "pipeline preprocessing + per-word RuntimeTokenizer.tokenize_token(add_special_tokens=false); text_only excludes schema/separators; schema_plus_text includes all formatted encoder IDs; computed outside timings, not raw whole-string tokenization"
+              },
+              "label_group_count": 4,
+              "entity_count": 25,
+              "output_sha256": "0d0e4307b78a4ac74b479431bb79209e97ae9972f77d785229b812c17eca3248"
+            },
+            {
+              "word_count": 500,
+              "warmup_iterations": 3,
+              "per_run_ns": [
+                647026458,
+                646748667,
+                646951541,
+                647431875,
+                646955833,
+                647029208,
+                646478791,
+                647362250,
+                647071584,
+                646845958
+              ],
+              "median_ns": 646991145,
+              "p90_ns": 647362250,
+              "p95_ns": 647431875,
+              "min_ns": 646478791,
+              "max_ns": 647431875,
+              "submitted_words_per_second_at_median": 772.8081038883461,
+              "tokenization": {
+                "tokenizer_sha256": "1b7fbabfb4c690bed84c6793bfecae9b8dfe205751b04f9ffd1e76a1e7df9c16",
+                "retained_text_words": 500,
+                "text_only_subwords": 602,
+                "schema_plus_text_subwords": 617,
+                "max_original_words": null,
+                "scope": "pipeline preprocessing + per-word RuntimeTokenizer.tokenize_token(add_special_tokens=false); text_only excludes schema/separators; schema_plus_text includes all formatted encoder IDs; computed outside timings, not raw whole-string tokenization"
+              },
+              "label_group_count": 4,
+              "entity_count": 249,
+              "output_sha256": "0f2c179fd034b290066b8597b6bbaf99e7a3f091e489df9a8c324628049d11b0"
+            },
+            {
+              "word_count": 3000,
+              "warmup_iterations": 3,
+              "per_run_ns": [
+                7175951917,
+                7124631833,
+                7088853750,
+                7083863750,
+                7193881750,
+                7099208459,
+                7064716083,
+                7084987500,
+                7103550625,
+                7089220292
+              ],
+              "median_ns": 7094214375,
+              "p90_ns": 7175951917,
+              "p95_ns": 7193881750,
+              "min_ns": 7064716083,
+              "max_ns": 7193881750,
+              "submitted_words_per_second_at_median": 422.8798061941848,
+              "tokenization": {
+                "tokenizer_sha256": "1b7fbabfb4c690bed84c6793bfecae9b8dfe205751b04f9ffd1e76a1e7df9c16",
+                "retained_text_words": 3000,
+                "text_only_subwords": 3625,
+                "schema_plus_text_subwords": 3640,
+                "max_original_words": null,
+                "scope": "pipeline preprocessing + per-word RuntimeTokenizer.tokenize_token(add_special_tokens=false); text_only excludes schema/separators; schema_plus_text includes all formatted encoder IDs; computed outside timings, not raw whole-string tokenization"
+              },
+              "label_group_count": 4,
+              "entity_count": 1499,
+              "output_sha256": "028c68821a28312d7761586b823da22bd179e39925efb221db628846fae11170"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "schema_version": 2,
+      "benchmark": "cpu-end-to-end-entity-extraction",
+      "generated_at_unix_seconds": 1790114108,
+      "configuration": {
+        "word_counts": [
+          50,
+          500,
+          3000
+        ],
+        "labels": [
+          "person",
+          "organization",
+          "location",
+          "date"
+        ],
+        "threshold": 0.5,
+        "warmups": 3,
+        "repetitions": 10,
+        "session_intra_op_threads": 4,
+        "graph_optimization": "Level3",
+        "timing_clock": "std::time::Instant",
+        "timing_scope": "one public extract_entities call; output checks and graph hashing excluded",
+        "execution_order": [
+          "gliner2.5-base-v1"
+        ],
+        "process_isolation": "one selected model in this process",
+        "execution_provider": "CPUExecutionProvider (library default; no accelerator provider registered)",
+        "session_inter_op_threads": null,
+        "session_inter_op_policy": "not explicitly configured; ONNX Runtime default (not measured)",
+        "load_timing_scope": "constructor including runtime/session initialization; warm filesystem/non-disk-cold; no cache eviction",
+        "resource_measurement": "peak_process_rss is null in direct runs; authoritative shell wrapper measures whole-process high-water RSS with /usr/bin/time, including load, inference, checks and hashing"
+      },
+      "texts": [
+        {
+          "word_count": 50,
+          "utf8_bytes": 269,
+          "sha256": "a5c3e18a405795b904ca28dfe399c433a87b2acbb7ba246f33196a292fe3b06d"
+        },
+        {
+          "word_count": 500,
+          "utf8_bytes": 2726,
+          "sha256": "61c2a8360b161df6063a404dbdd35e0944d5051f7d9b8899164d2692c6a829a3"
+        },
+        {
+          "word_count": 3000,
+          "utf8_bytes": 16369,
+          "sha256": "7eec3b0ae5749461dd0d19f141268dc3449ac156c8a2db2dce0b52268cf29a84"
+        }
+      ],
+      "provenance": {
+        "crate_version": "0.2.0",
+        "git_commit": "dd78efc62709759b179b7cb5ec317ec686cafd55",
+        "git_worktree_dirty": false,
+        "rustc_verbose_version": "rustc 1.95.0 (59807616e 2026-04-14)\nbinary: rustc\ncommit-hash: 59807616e1fa2540724bfbac14d7976d7e4a3860\ncommit-date: 2026-04-14\nhost: aarch64-apple-darwin\nrelease: 1.95.0\nLLVM version: 22.1.2",
+        "cargo_profile": "release",
+        "target_os": "macos",
+        "target_arch": "aarch64",
+        "cpu_model": "Apple M3 Pro",
+        "logical_cpus": 11,
+        "physical_cores": 11,
+        "power_mode": "AC, battery 100% charged; Low Power Mode off (pmset lowpowermode 0); observed before run; background: ctx daemon ~90% of one core, Chrome idle",
+        "power_mode_source": "operator-declared BENCHMARK_POWER_MODE; null means not recorded, not inferred",
+        "memory_bytes": 19327352832,
+        "ort_crate_version": "2.0.0-rc.13",
+        "native_onnx_runtime": "ORT Build Info: git-branch=rel-1.28.0, git-commit-id=da9b5e3, fp8-kv-cache=1, build type=Release",
+        "environment": {}
+      },
+      "models": [
+        {
+          "name": "gliner2.5-base-v1",
+          "architecture": "boundary",
+          "metadata_dir": "/Users/chrisraethke/projects/gliners2/onnx/gliner2.5-base-v1",
+          "graph_dir": "/Users/chrisraethke/projects/gliners2/onnx/gliner2.5-base-v1",
+          "graphs": [
+            {
+              "name": "encoder.onnx",
+              "path": "/Users/chrisraethke/projects/gliners2/onnx/gliner2.5-base-v1/encoder.onnx",
+              "bytes": 735961685,
+              "sha256": "04f601e1a63fd829880274e4b61d6ba1d1170c4342cdc956e27aaf50e8b01957"
+            },
+            {
+              "name": "classifier.onnx",
+              "path": "/Users/chrisraethke/projects/gliners2/onnx/gliner2.5-base-v1/classifier.onnx",
+              "bytes": 4731781,
+              "sha256": "045e94e66de4d8d4d9d267b18bc864328b7661879b7ec149b3e353a94ee1b3ca"
+            },
+            {
+              "name": "boundary_marginals.onnx",
+              "path": "/Users/chrisraethke/projects/gliners2/onnx/gliner2.5-base-v1/boundary_marginals.onnx",
+              "bytes": 3791675,
+              "sha256": "c141810df1cc66391cfbb78e16220e88568daee33b0d4602bbccbe80365bd030"
+            },
+            {
+              "name": "boundary_scorer.onnx",
+              "path": "/Users/chrisraethke/projects/gliners2/onnx/gliner2.5-base-v1/boundary_scorer.onnx",
+              "bytes": 1775350,
+              "sha256": "fd8cf66d5f73de152f15d5ef3d0b8bc5d759eab18e1a5db811d61c6ab6322a2f"
+            },
+            {
+              "name": "boundary_explicit_scorer.onnx",
+              "path": "/Users/chrisraethke/projects/gliners2/onnx/gliner2.5-base-v1/boundary_explicit_scorer.onnx",
+              "bytes": 1154275,
+              "sha256": "3589a13f67655601f96ab52c24b43535c62d568fe6664deb88b4077a605f7a0f"
+            },
+            {
+              "name": "boundary_records.onnx",
+              "path": "/Users/chrisraethke/projects/gliners2/onnx/gliner2.5-base-v1/boundary_records.onnx",
+              "bytes": 4442512,
+              "sha256": "6bd790da3bfb4492d952f44cb8dd6b988b168e836df0ddf871521f28e2382537"
+            },
+            {
+              "name": "boundary_relations.onnx",
+              "path": "/Users/chrisraethke/projects/gliners2/onnx/gliner2.5-base-v1/boundary_relations.onnx",
+              "bytes": 23649750,
+              "sha256": "cf6d94f492c74fe3e3ffcfc613beffd3f02cd9b0099594d3e4601b74d20bc40f"
+            }
+          ],
+          "source": {
+            "authenticated_files": {
+              "LICENSE": {
+                "bytes": 11357,
+                "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+              },
+              "NOTICE": {
+                "bytes": 659,
+                "sha256": "230d9a8f908b99056d6b965efe5e600a535243f4ff7cc471d539169e8e471b7a"
+              },
+              "SOURCE_MODEL_CARD.md": {
+                "bytes": 21608,
+                "sha256": "8389c442cade57a25cb8f5f642e73a84651e4ec481ea505a132de259380f9d99"
+              },
+              "boundary_explicit_scorer.onnx": {
+                "bytes": 1154275,
+                "sha256": "3589a13f67655601f96ab52c24b43535c62d568fe6664deb88b4077a605f7a0f"
+              },
+              "boundary_marginals.onnx": {
+                "bytes": 3791675,
+                "sha256": "c141810df1cc66391cfbb78e16220e88568daee33b0d4602bbccbe80365bd030"
+              },
+              "boundary_records.onnx": {
+                "bytes": 4442512,
+                "sha256": "6bd790da3bfb4492d952f44cb8dd6b988b168e836df0ddf871521f28e2382537"
+              },
+              "boundary_relations.onnx": {
+                "bytes": 23649750,
+                "sha256": "cf6d94f492c74fe3e3ffcfc613beffd3f02cd9b0099594d3e4601b74d20bc40f"
+              },
+              "boundary_scorer.onnx": {
+                "bytes": 1775350,
+                "sha256": "fd8cf66d5f73de152f15d5ef3d0b8bc5d759eab18e1a5db811d61c6ab6322a2f"
+              },
+              "classifier.onnx": {
+                "bytes": 4731781,
+                "sha256": "045e94e66de4d8d4d9d267b18bc864328b7661879b7ec149b3e353a94ee1b3ca"
+              },
+              "config.json": {
+                "bytes": 3150,
+                "sha256": "0eb92d00584d613aab32b2178f84a85176b62c87ae3689ce9084e83f6eba64d1"
+              },
+              "encoder.onnx": {
+                "bytes": 735961685,
+                "sha256": "04f601e1a63fd829880274e4b61d6ba1d1170c4342cdc956e27aaf50e8b01957"
+              },
+              "encoder_config/config.json": {
+                "bytes": 857,
+                "sha256": "d36a845b9f25dcaf1ec45a1c4bdf65ea4ac20596537e14530ec9f660a63aeca4"
+              },
+              "export_manifest.unvalidated.json": {
+                "bytes": 14551,
+                "sha256": "db2a4d0e883cce80f7dcd853e8369a696742d562248589c0c1ae5866790dbe5a"
+              },
+              "tokenizer.json": {
+                "bytes": 8341713,
+                "sha256": "cbc8ae6037812709c9c26f2a160f8dc48b0440bcb79c8141804259ae2d6adac3"
+              },
+              "tokenizer_config.json": {
+                "bytes": 645,
+                "sha256": "0bf3ea0873234bd9bfdd3853c440395009ac6365a925b91654daed5396d655e1"
+              },
+              "validation_report.json": {
+                "bytes": 94124,
+                "sha256": "e38175967b44f30a10d26e08ec14aae4518907061084fd9db5ea39860f889ce6"
+              }
+            },
+            "gliner2_commit": "d7c727458bf6929bc9ef5ee04e13c3f717a7c455",
+            "hf_model": "fastino/gliner2.5-base-v1",
+            "hf_revision": "78cea040597df251eedefa9d7ee2a756af39fe64",
+            "manifest_sha256": "b986177cfc3a14e388d03d79b18b040e5873c47ad713e2b68396d3abfbc4ec5c",
+            "release_ready": true,
+            "source_file_sha256": {
+              "README.md": "8389c442cade57a25cb8f5f642e73a84651e4ec481ea505a132de259380f9d99",
+              "config.json": "0eb92d00584d613aab32b2178f84a85176b62c87ae3689ce9084e83f6eba64d1",
+              "encoder_config/config.json": "d36a845b9f25dcaf1ec45a1c4bdf65ea4ac20596537e14530ec9f660a63aeca4",
+              "model.safetensors": "7274094de2e0c2a37a386f55fc4e23061a954da5bd7a335e7dfe56f2743c277a",
+              "tokenizer.json": "cbc8ae6037812709c9c26f2a160f8dc48b0440bcb79c8141804259ae2d6adac3",
+              "tokenizer_config.json": "0bf3ea0873234bd9bfdd3853c440395009ac6365a925b91654daed5396d655e1"
+            },
+            "status": "validated",
+            "verification": "validate_bundle passed after timings"
+          },
+          "peak_process_rss": {
+            "raw_value": 6568919040,
+            "raw_unit": "bytes",
+            "bytes": 6568919040,
+            "scope": "whole fresh Rust command high-water RSS under OS time accounting, including any accounted provenance helper children; across load, all sizes, verification and hashing; not per-case or model-only allocation",
+            "method": "/usr/bin/time -l"
+          },
+          "load_time_ns": 797191708,
+          "cases": [
+            {
+              "word_count": 50,
+              "warmup_iterations": 3,
+              "per_run_ns": [
+                46520750,
+                46433959,
+                46433917,
+                46413375,
+                46364334,
+                46377959,
+                46468666,
+                46412709,
+                46383625,
+                46376917
+              ],
+              "median_ns": 46413042,
+              "p90_ns": 46468666,
+              "p95_ns": 46520750,
+              "min_ns": 46364334,
+              "max_ns": 46520750,
+              "submitted_words_per_second_at_median": 1077.2834066769421,
+              "tokenization": {
+                "tokenizer_sha256": "cbc8ae6037812709c9c26f2a160f8dc48b0440bcb79c8141804259ae2d6adac3",
+                "retained_text_words": 50,
+                "text_only_subwords": 61,
+                "schema_plus_text_subwords": 76,
+                "max_original_words": 4096,
+                "scope": "pipeline preprocessing + per-word RuntimeTokenizer.tokenize_token(add_special_tokens=false); text_only excludes schema/separators; schema_plus_text includes all formatted encoder IDs; computed outside timings, not raw whole-string tokenization"
+              },
+              "label_group_count": 4,
+              "entity_count": 25,
+              "output_sha256": "415a031ae8857b63138640aa5a59f038077ca841f245eb168190cabc15ea98c3"
+            },
+            {
+              "word_count": 500,
+              "warmup_iterations": 3,
+              "per_run_ns": [
+                422227459,
+                421973209,
+                421953291,
+                421986125,
+                422062000,
+                422131625,
+                422123042,
+                422128500,
+                422102084,
+                422033833
+              ],
+              "median_ns": 422082042,
+              "p90_ns": 422131625,
+              "p95_ns": 422227459,
+              "min_ns": 421953291,
+              "max_ns": 422227459,
+              "submitted_words_per_second_at_median": 1184.6038216428076,
+              "tokenization": {
+                "tokenizer_sha256": "cbc8ae6037812709c9c26f2a160f8dc48b0440bcb79c8141804259ae2d6adac3",
+                "retained_text_words": 500,
+                "text_only_subwords": 602,
+                "schema_plus_text_subwords": 617,
+                "max_original_words": 4096,
+                "scope": "pipeline preprocessing + per-word RuntimeTokenizer.tokenize_token(add_special_tokens=false); text_only excludes schema/separators; schema_plus_text includes all formatted encoder IDs; computed outside timings, not raw whole-string tokenization"
+              },
+              "label_group_count": 4,
+              "entity_count": 29,
+              "output_sha256": "3cf0f871d1d03bdd8aa0f38742dfebdad9c522d7a48fdd3855542a36e3597e33"
+            },
+            {
+              "word_count": 3000,
+              "warmup_iterations": 3,
+              "per_run_ns": [
+                6054878750,
+                5816056042,
+                5795780083,
+                5828428917,
+                5861380459,
+                5814235625,
+                5842170917,
+                5834002292,
+                5835555875,
+                5822885417
+              ],
+              "median_ns": 5831215604,
+              "p90_ns": 5861380459,
+              "p95_ns": 6054878750,
+              "min_ns": 5795780083,
+              "max_ns": 6054878750,
+              "submitted_words_per_second_at_median": 514.4724880249858,
+              "tokenization": {
+                "tokenizer_sha256": "cbc8ae6037812709c9c26f2a160f8dc48b0440bcb79c8141804259ae2d6adac3",
+                "retained_text_words": 3000,
+                "text_only_subwords": 3625,
+                "schema_plus_text_subwords": 3640,
+                "max_original_words": 4096,
+                "scope": "pipeline preprocessing + per-word RuntimeTokenizer.tokenize_token(add_special_tokens=false); text_only excludes schema/separators; schema_plus_text includes all formatted encoder IDs; computed outside timings, not raw whole-string tokenization"
+              },
+              "label_group_count": 4,
+              "entity_count": 18,
+              "output_sha256": "3c7b1a3f55aca760d0286e88a35a5da24625b891a1a869f68b03557cf9e690aa"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "raw_evidence": [
+    {
+      "model": "v2",
+      "command": [
+        "/usr/bin/time",
+        "-l",
+        "/Users/chrisraethke/projects/gliners2/target/release/examples/benchmark_gliner2",
+        "--v2-model-dir",
+        "onnx/gliner2-base-v1",
+        "--v2-onnx-dir",
+        "onnx/gliner2-base-v1",
+        "--v25-bundle-dir",
+        "onnx/gliner2.5-base-v1",
+        "--warmups",
+        "3",
+        "--repetitions",
+        "10",
+        "--threshold",
+        "0.5",
+        "--model",
+        "v2",
+        "--output",
+        "/tmp/gliner2-base-vs-2.5-base.json.evidence-0qv04xuk/v2.json"
+      ],
+      "raw_report": "/tmp/gliner2-base-vs-2.5-base.json.evidence-0qv04xuk/v2.json",
+      "raw_report_sha256": "6507737c6bdd6604f00fb96130e1dbe334091bf96a55f51e87b5df2ad09d209a",
+      "resource_log": "/tmp/gliner2-base-vs-2.5-base.json.evidence-0qv04xuk/v2.resources.log",
+      "resource_log_sha256": "78ec44b312089ab1f638c39c9b65667395acb7d8e67dbed07a23829f45b52682",
+      "stdout_log": "/tmp/gliner2-base-vs-2.5-base.json.evidence-0qv04xuk/v2.stdout.log",
+      "stdout_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "model": "v25",
+      "command": [
+        "/usr/bin/time",
+        "-l",
+        "/Users/chrisraethke/projects/gliners2/target/release/examples/benchmark_gliner2",
+        "--v2-model-dir",
+        "onnx/gliner2-base-v1",
+        "--v2-onnx-dir",
+        "onnx/gliner2-base-v1",
+        "--v25-bundle-dir",
+        "onnx/gliner2.5-base-v1",
+        "--warmups",
+        "3",
+        "--repetitions",
+        "10",
+        "--threshold",
+        "0.5",
+        "--model",
+        "v25",
+        "--output",
+        "/tmp/gliner2-base-vs-2.5-base.json.evidence-0qv04xuk/v25.json"
+      ],
+      "raw_report": "/tmp/gliner2-base-vs-2.5-base.json.evidence-0qv04xuk/v25.json",
+      "raw_report_sha256": "091b12b9e17394d71239397d40b7cada011d0e9fe0eef881e8034efa5ef8b1e3",
+      "resource_log": "/tmp/gliner2-base-vs-2.5-base.json.evidence-0qv04xuk/v25.resources.log",
+      "resource_log_sha256": "b5f8492739b2346fd09199a462d34b33150cd5e56b86026d56ee3cf7117c2836",
+      "stdout_log": "/tmp/gliner2-base-vs-2.5-base.json.evidence-0qv04xuk/v25.stdout.log",
+      "stdout_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

@@ -1,0 +1,778 @@
+{
+ "format_version": 1,
+ "profile": "multi",
+ "bundle_name": "gliner2.5-multi-v1",
+ "hf_model": "fastino/gliner2.5-multi-v1",
+ "hf_revision": "235cf92d6d4318da9bfca0d08975c8fa7250d13b",
+ "gliner2_commit": "d7c727458bf6929bc9ef5ee04e13c3f717a7c455",
+ "source_sha256": {
+  "config.json": "8b59a0f426a65859c89cd1ea850c3529c09aa3be3a6fafd8eddfdd17b1bf0146",
+  "encoder_config/config.json": "fa4f9ef2903b5369ab172333aae4574e6a476511d7465845cf59f8360ee18716",
+  "model.safetensors": "c1ff4ec0bc00031c15530b8f3c33d3677f27949e6a0cb52e1247a6224b6c5395",
+  "tokenizer.json": "c62446df87ae18ec98b133f8f84fc449a07cc89bbf8ef192a4cb5f9c53777a7a",
+  "tokenizer_config.json": "0bf3ea0873234bd9bfdd3853c440395009ac6365a925b91654daed5396d655e1",
+  "README.md": "bc37e83e99dd980241d05b693b07ed82c5f871710159c0c40d1bb3f4b14bc1bd"
+ },
+ "corpus_sha256": "84fb73a0cef16db4db2790fea4472686b0c80ff54eec32c40cc15f081e17d9dc",
+ "classification_temperature": 1.0,
+ "max_len": 4096,
+ "seed": 1729,
+ "dependencies": {
+  "gliner2": "2.0.0",
+  "torch": "2.8.0",
+  "transformers": "4.57.6",
+  "onnx": "1.17.0",
+  "onnxruntime": "1.20.1",
+  "numpy": "2.2.6",
+  "peft": "0.17.1",
+  "sentencepiece": "0.2.1"
+ },
+ "cases": [
+  {
+   "id": "sentiment_plain",
+   "text": "The update is fast, polished, and genuinely useful.",
+   "word_count": 8,
+   "input_tokens": 34,
+   "split_tokens": 11,
+   "truncated_words": 0,
+   "tasks": [
+    {
+     "task": "sentiment",
+     "labels": [
+      "positive",
+      "negative",
+      "neutral"
+     ],
+     "instruction": null,
+     "label_descriptions": [],
+     "multi_label": false,
+     "cls_threshold": 0.5,
+     "class_act": "auto",
+     "activation": "softmax",
+     "raw_logits": [
+      5.424092769622803,
+      -6.259521007537842,
+      -4.899627685546875
+     ],
+     "probabilities": [
+      0.9999586343765259,
+      8.430494744970929e-06,
+      3.284331614850089e-05
+     ],
+     "public_result": {
+      "label": "positive",
+      "confidence": 0.9999586343765259
+     }
+    }
+   ]
+  },
+  {
+   "id": "intent_with_instruction",
+   "text": "Hi, I was charged twice for my subscription this month and would like the duplicate charge reversed.",
+   "word_count": 17,
+   "input_tokens": 61,
+   "split_tokens": 19,
+   "truncated_words": 0,
+   "tasks": [
+    {
+     "task": "intent",
+     "labels": [
+      "billing",
+      "technical support",
+      "sales",
+      "cancellation"
+     ],
+     "instruction": "Pick the department that should handle this customer message.",
+     "label_descriptions": [],
+     "multi_label": false,
+     "cls_threshold": 0.5,
+     "class_act": "auto",
+     "activation": "softmax",
+     "raw_logits": [
+      -1.253076434135437,
+      -4.235841751098633,
+      -2.8824005126953125,
+      0.938468337059021
+     ],
+     "probabilities": [
+      0.09808015823364258,
+      0.004968011751770973,
+      0.019229795783758163,
+      0.8777219653129578
+     ],
+     "public_result": {
+      "label": "cancellation",
+      "confidence": 0.8777219653129578
+     }
+    }
+   ]
+  },
+  {
+   "id": "labels_with_descriptions",
+   "text": "The API returns a 500 whenever I send a request larger than 2 MB.",
+   "word_count": 14,
+   "input_tokens": 72,
+   "split_tokens": 15,
+   "truncated_words": 0,
+   "tasks": [
+    {
+     "task": "category",
+     "labels": [
+      "bug",
+      "feature request",
+      "question"
+     ],
+     "instruction": null,
+     "label_descriptions": [
+      [
+       "bug",
+       "the software behaves incorrectly"
+      ],
+      [
+       "feature request",
+       "the user asks for new behaviour"
+      ],
+      [
+       "question",
+       "the user asks how something works"
+      ]
+     ],
+     "multi_label": false,
+     "cls_threshold": 0.5,
+     "class_act": "auto",
+     "activation": "softmax",
+     "raw_logits": [
+      -0.1596815288066864,
+      -0.5061748027801514,
+      -3.6367321014404297
+     ],
+     "probabilities": [
+      0.5753534436225891,
+      0.40686899423599243,
+      0.01777750626206398
+     ],
+     "public_result": {
+      "label": "bug",
+      "confidence": 0.5753534436225891
+     }
+    }
+   ]
+  },
+  {
+   "id": "instruction_and_descriptions",
+   "text": "Could you add dark mode to the settings page? It would help at night.",
+   "word_count": 14,
+   "input_tokens": 75,
+   "split_tokens": 16,
+   "truncated_words": 0,
+   "tasks": [
+    {
+     "task": "category",
+     "labels": [
+      "bug",
+      "feature request",
+      "question"
+     ],
+     "instruction": "Classify the support ticket.",
+     "label_descriptions": [
+      [
+       "bug",
+       "the software behaves incorrectly"
+      ],
+      [
+       "feature request",
+       "the user asks for new behaviour"
+      ],
+      [
+       "question",
+       "the user asks how something works"
+      ]
+     ],
+     "multi_label": false,
+     "cls_threshold": 0.5,
+     "class_act": "auto",
+     "activation": "softmax",
+     "raw_logits": [
+      -3.542788505554199,
+      1.309685230255127,
+      -2.140524387359619
+     ],
+     "probabilities": [
+      0.007511952891945839,
+      0.9619565010070801,
+      0.030531520023941994
+     ],
+     "public_result": {
+      "label": "feature request",
+      "confidence": 0.9619565010070801
+     }
+    }
+   ]
+  },
+  {
+   "id": "boolean_false_true",
+   "text": "Our office will be closed on Monday for the public holiday.",
+   "word_count": 11,
+   "input_tokens": 37,
+   "split_tokens": 12,
+   "truncated_words": 0,
+   "tasks": [
+    {
+     "task": "answer",
+     "labels": [
+      "false",
+      "true"
+     ],
+     "instruction": "Is the office open on Monday?",
+     "label_descriptions": [],
+     "multi_label": false,
+     "cls_threshold": 0.5,
+     "class_act": "auto",
+     "activation": "softmax",
+     "raw_logits": [
+      -1.897500991821289,
+      0.7467812299728394
+     ],
+     "probabilities": [
+      0.06634228676557541,
+      0.933657705783844
+     ],
+     "public_result": {
+      "label": "true",
+      "confidence": 0.933657705783844
+     }
+    }
+   ]
+  },
+  {
+   "id": "boolean_no_yes",
+   "text": "Our office will be closed on Monday for the public holiday.",
+   "word_count": 11,
+   "input_tokens": 36,
+   "split_tokens": 12,
+   "truncated_words": 0,
+   "tasks": [
+    {
+     "task": "answer",
+     "labels": [
+      "no",
+      "yes"
+     ],
+     "instruction": "Is the office open on Monday?",
+     "label_descriptions": [],
+     "multi_label": false,
+     "cls_threshold": 0.5,
+     "class_act": "auto",
+     "activation": "softmax",
+     "raw_logits": [
+      -1.2408987283706665,
+      -0.07187914848327637
+     ],
+     "probabilities": [
+      0.23703224956989288,
+      0.7629677653312683
+     ],
+     "public_result": {
+      "label": "yes",
+      "confidence": 0.7629677653312683
+     }
+    }
+   ]
+  },
+  {
+   "id": "rubric_five_point",
+   "text": "The essay states a clear thesis, supports it with two sources, but the conclusion repeats the introduction word for word.",
+   "word_count": 20,
+   "input_tokens": 68,
+   "split_tokens": 23,
+   "truncated_words": 0,
+   "tasks": [
+    {
+     "task": "score",
+     "labels": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5"
+     ],
+     "instruction": "Rate the essay from 1 (poor) to 5 (excellent).",
+     "label_descriptions": [],
+     "multi_label": false,
+     "cls_threshold": 0.5,
+     "class_act": "auto",
+     "activation": "softmax",
+     "raw_logits": [
+      -1.0175464153289795,
+      -0.9526991248130798,
+      -0.9844418168067932,
+      -1.117908239364624,
+      -1.1546745300292969
+     ],
+     "probabilities": [
+      0.20504309237003326,
+      0.21878017485141754,
+      0.2119445651769638,
+      0.185463547706604,
+      0.1787685602903366
+     ],
+     "public_result": {
+      "label": "2",
+      "confidence": 0.21878017485141754
+     }
+    }
+   ]
+  },
+  {
+   "id": "unicode_multilingual",
+   "text": "今日のミーティングは最高でした！🎉 Tout le monde était très content, même après la pluie ☔️. Ñandú y café.",
+   "word_count": 15,
+   "input_tokens": 76,
+   "split_tokens": 21,
+   "truncated_words": 0,
+   "tasks": [
+    {
+     "task": "感情",
+     "labels": [
+      "ポジティブ",
+      "ネガティブ",
+      "neutre"
+     ],
+     "instruction": "Classe le ton du message.",
+     "label_descriptions": [],
+     "multi_label": false,
+     "cls_threshold": 0.5,
+     "class_act": "auto",
+     "activation": "softmax",
+     "raw_logits": [
+      3.986794948577881,
+      -5.127429962158203,
+      -3.543639898300171
+     ],
+     "probabilities": [
+      0.99935382604599,
+      0.00011001742677763104,
+      0.000536158331669867
+     ],
+     "public_result": {
+      "label": "ポジティブ",
+      "confidence": 0.99935382604599
+     }
+    }
+   ]
+  },
+  {
+   "id": "many_labels",
+   "text": "Preheat the oven to 200°C, toss the potatoes in olive oil and rosemary, and roast for forty minutes.",
+   "word_count": 18,
+   "input_tokens": 87,
+   "split_tokens": 23,
+   "truncated_words": 0,
+   "tasks": [
+    {
+     "task": "topic",
+     "labels": [
+      "cooking",
+      "sports",
+      "politics",
+      "finance",
+      "travel",
+      "health",
+      "music",
+      "film",
+      "science",
+      "technology",
+      "education",
+      "fashion",
+      "gardening",
+      "law",
+      "religion",
+      "history",
+      "art",
+      "weather",
+      "automotive",
+      "gaming"
+     ],
+     "instruction": null,
+     "label_descriptions": [],
+     "multi_label": false,
+     "cls_threshold": 0.5,
+     "class_act": "auto",
+     "activation": "softmax",
+     "raw_logits": [
+      4.4889326095581055,
+      -7.60994815826416,
+      -7.636745452880859,
+      -6.609105587005615,
+      -4.427538871765137,
+      -2.6401026248931885,
+      -5.634059906005859,
+      -6.038620471954346,
+      -1.8402159214019775,
+      -3.135550022125244,
+      -6.622857570648193,
+      -5.370102882385254,
+      -5.361086845397949,
+      -5.484622955322266,
+      -6.942141532897949,
+      -5.2523345947265625,
+      -4.560975074768066,
+      -5.290594100952148,
+      -7.018353462219238,
+      -6.862051963806152
+     ],
+     "probabilities": [
+      0.9962812066078186,
+      5.545041403820505e-06,
+      5.3984222176950425e-06,
+      1.5085697668837383e-05,
+      0.0001336618879577145,
+      0.0007985119009390473,
+      3.999651380581781e-05,
+      2.668845991138369e-05,
+      0.0017769195837900043,
+      0.0004865317605435848,
+      1.487965892010834e-05,
+      5.2078350563533604e-05,
+      5.2550014515873045e-05,
+      4.6443165047094226e-05,
+      1.0812584150698967e-05,
+      5.858728400198743e-05,
+      0.00011696528235916048,
+      5.638809670927003e-05,
+      1.0019154615292791e-05,
+      1.1714182619471103e-05
+     ],
+     "public_result": {
+      "label": "cooking",
+      "confidence": 0.9962812066078186
+     }
+    }
+   ]
+  },
+  {
+   "id": "multilabel_sigmoid",
+   "text": "The hotel room was spotless and the staff were kind, but the wifi barely worked and breakfast was overpriced.",
+   "word_count": 19,
+   "input_tokens": 51,
+   "split_tokens": 21,
+   "truncated_words": 0,
+   "tasks": [
+    {
+     "task": "aspects",
+     "labels": [
+      "cleanliness",
+      "staff",
+      "wifi",
+      "food",
+      "location",
+      "price"
+     ],
+     "instruction": null,
+     "label_descriptions": [],
+     "multi_label": true,
+     "cls_threshold": 0.5,
+     "class_act": "auto",
+     "activation": "sigmoid",
+     "raw_logits": [
+      0.46713271737098694,
+      -0.5535731911659241,
+      1.8535797595977783,
+      -0.8596906065940857,
+      -1.3482290506362915,
+      1.302743911743164
+     ],
+     "probabilities": [
+      0.6147048473358154,
+      0.3650358021259308,
+      0.8645468354225159,
+      0.2974039912223816,
+      0.2061600536108017,
+      0.7862964272499084
+     ],
+     "public_result": [
+      {
+       "label": "cleanliness",
+       "confidence": 0.6147048473358154
+      },
+      {
+       "label": "wifi",
+       "confidence": 0.8645468354225159
+      },
+      {
+       "label": "price",
+       "confidence": 0.7862964272499084
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "explicit_softmax_on_multilabel",
+   "text": "The hotel room was spotless and the staff were kind, but the wifi barely worked and breakfast was overpriced.",
+   "word_count": 19,
+   "input_tokens": 51,
+   "split_tokens": 21,
+   "truncated_words": 0,
+   "tasks": [
+    {
+     "task": "aspects",
+     "labels": [
+      "cleanliness",
+      "staff",
+      "wifi",
+      "food",
+      "location",
+      "price"
+     ],
+     "instruction": null,
+     "label_descriptions": [],
+     "multi_label": true,
+     "cls_threshold": 0.5,
+     "class_act": "softmax",
+     "activation": "softmax",
+     "raw_logits": [
+      0.46713271737098694,
+      -0.5535731911659241,
+      1.8535797595977783,
+      -0.8596906065940857,
+      -1.3482290506362915,
+      1.302743911743164
+     ],
+     "probabilities": [
+      0.12352889031171799,
+      0.04451246187090874,
+      0.4941910207271576,
+      0.03277453035116196,
+      0.02010791003704071,
+      0.2848851978778839
+     ],
+     "public_result": [
+      {
+       "label": "wifi",
+       "confidence": 0.4941910207271576
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "explicit_sigmoid_on_single",
+   "text": "The update is fast, polished, and genuinely useful.",
+   "word_count": 8,
+   "input_tokens": 34,
+   "split_tokens": 11,
+   "truncated_words": 0,
+   "tasks": [
+    {
+     "task": "sentiment",
+     "labels": [
+      "positive",
+      "negative",
+      "neutral"
+     ],
+     "instruction": null,
+     "label_descriptions": [],
+     "multi_label": false,
+     "cls_threshold": 0.5,
+     "class_act": "sigmoid",
+     "activation": "sigmoid",
+     "raw_logits": [
+      5.424092769622803,
+      -6.259521007537842,
+      -4.899627685546875
+     ],
+     "probabilities": [
+      0.9956102967262268,
+      0.0019085120875388384,
+      0.007394273299723864
+     ],
+     "public_result": {
+      "label": "positive",
+      "confidence": 0.9956102967262268
+     }
+    }
+   ]
+  },
+  {
+   "id": "empty_text",
+   "text": "",
+   "word_count": 0,
+   "input_tokens": 18,
+   "split_tokens": 0,
+   "truncated_words": 0,
+   "tasks": [
+    {
+     "task": "sentiment",
+     "labels": [
+      "positive",
+      "negative",
+      "neutral"
+     ],
+     "instruction": null,
+     "label_descriptions": [],
+     "multi_label": false,
+     "cls_threshold": 0.5,
+     "class_act": "auto",
+     "activation": "softmax",
+     "raw_logits": [
+      -1.9770294427871704,
+      -3.230041027069092,
+      0.6514877080917358
+     ],
+     "probabilities": [
+      0.06605518609285355,
+      0.0188682172447443,
+      0.9150766134262085
+     ],
+     "public_result": {
+      "label": "neutral",
+      "confidence": 0.9150766134262085
+     }
+    }
+   ]
+  },
+  {
+   "id": "unrelated_text_near_tie",
+   "text": "qzx vlm ptk.",
+   "word_count": 3,
+   "input_tokens": 26,
+   "split_tokens": 4,
+   "truncated_words": 0,
+   "tasks": [
+    {
+     "task": "colour",
+     "labels": [
+      "red",
+      "green",
+      "blue"
+     ],
+     "instruction": null,
+     "label_descriptions": [],
+     "multi_label": false,
+     "cls_threshold": 0.5,
+     "class_act": "auto",
+     "activation": "softmax",
+     "raw_logits": [
+      -0.39507803320884705,
+      -1.0312803983688354,
+      -1.1329607963562012
+     ],
+     "probabilities": [
+      0.49815088510513306,
+      0.2636706233024597,
+      0.23817846179008484
+     ],
+     "public_result": {
+      "label": "red",
+      "confidence": 0.49815088510513306
+     }
+    }
+   ]
+  },
+  {
+   "id": "two_tasks_one_pass",
+   "text": "I love this phone, but please tell me how to turn off the flashlight.",
+   "word_count": 14,
+   "input_tokens": 64,
+   "split_tokens": 16,
+   "truncated_words": 0,
+   "tasks": [
+    {
+     "task": "sentiment",
+     "labels": [
+      "positive",
+      "negative",
+      "neutral"
+     ],
+     "instruction": null,
+     "label_descriptions": [],
+     "multi_label": false,
+     "cls_threshold": 0.5,
+     "class_act": "auto",
+     "activation": "softmax",
+     "raw_logits": [
+      -0.6140058040618896,
+      -1.075995683670044,
+      -1.4528756141662598
+     ],
+     "probabilities": [
+      0.48491254448890686,
+      0.3055088222026825,
+      0.20957857370376587
+     ],
+     "public_result": {
+      "label": "positive",
+      "confidence": 0.48491254448890686
+     }
+    },
+    {
+     "task": "intent",
+     "labels": [
+      "praise",
+      "complaint",
+      "how-to question"
+     ],
+     "instruction": "What does the user want?",
+     "label_descriptions": [],
+     "multi_label": false,
+     "cls_threshold": 0.5,
+     "class_act": "auto",
+     "activation": "softmax",
+     "raw_logits": [
+      -0.5308194160461426,
+      -2.2398223876953125,
+      0.6845201849937439
+     ],
+     "probabilities": [
+      0.21966023743152618,
+      0.039768654853105545,
+      0.7405710816383362
+     ],
+     "public_result": {
+      "label": "how-to question",
+      "confidence": 0.7405710816383362
+     }
+    }
+   ]
+  },
+  {
+   "id": "truncated_long_text",
+   "text": "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word Finally, the reviewer said the product was excellent.",
+   "word_count": 4308,
+   "input_tokens": 4112,
+   "split_tokens": 4310,
+   "truncated_words": 214,
+   "tasks": [
+    {
+     "task": "sentiment",
+     "labels": [
+      "positive",
+      "negative",
+      "neutral"
+     ],
+     "instruction": null,
+     "label_descriptions": [],
+     "multi_label": false,
+     "cls_threshold": 0.5,
+     "class_act": "auto",
+     "activation": "softmax",
+     "raw_logits": [
+      -2.184020519256592,
+      -2.4165616035461426,
+      -1.6427454948425293
+     ],
+     "probabilities": [
+      0.2848424017429352,
+      0.22574248909950256,
+      0.48941510915756226
+     ],
+     "public_result": {
+      "label": "neutral",
+      "confidence": 0.48941510915756226
+     }
+    }
+   ]
+  }
+ ]
+}

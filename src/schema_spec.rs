@@ -137,23 +137,12 @@ impl RelationSpec {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct SchemaSpec {
     pub entities: Vec<EntitySpec>,
     pub classifications: Vec<ClassificationSpec>,
     pub structures: Vec<StructureSpec>,
     pub relations: Vec<RelationSpec>,
-}
-
-impl Default for SchemaSpec {
-    fn default() -> Self {
-        Self {
-            entities: Vec::new(),
-            classifications: Vec::new(),
-            structures: Vec::new(),
-            relations: Vec::new(),
-        }
-    }
 }
 
 pub struct SchemaBuilder {
@@ -368,6 +357,12 @@ impl From<BTreeMap<String, String>> for RelationLabels {
 impl From<Vec<RelationSpec>> for RelationLabels {
     fn from(value: Vec<RelationSpec>) -> Self {
         Self::Specs(value)
+    }
+}
+
+impl Default for SchemaBuilder {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

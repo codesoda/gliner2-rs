@@ -1,0 +1,52 @@
+{
+  "status": "accepted_public_explicit_span_gate_not_overall_release",
+  "base_commit": "7508f037bcd809a9919c20bb33c4d7d50fbe3aba",
+  "scope": "Public BoundaryPipeline/AutoPipeline API, typed UTF-8 results, mapping preflight, independent source fixture and multiline Rust example. Uncommitted M6 changes were excluded from the acceptance snapshot.",
+  "source": {
+    "gliner2_commit": "d7c727458bf6929bc9ef5ee04e13c3f717a7c455",
+    "model_id": "fastino/gliner2.5-base-v1",
+    "hf_revision": "78cea040597df251eedefa9d7ee2a756af39fe64",
+    "oracle": "Untouched upstream preprocessing, encoder and BoundaryHead.score_explicit_spans; ONNX was not the reference",
+    "fixture": "fixtures/public-explicit-vectors.json",
+    "fixture_bytes": 3593,
+    "fixture_sha256": "1462e45ad80346ef73a4c4569cd166ef7d6d9c8c950a4b23dd994835c8904f74",
+    "parent_independent_regeneration_identical": true,
+    "case_count": 3,
+    "case_coverage": ["English multiline", "Unicode multiline whitespace splitter", "Unicode compact character splitter"],
+    "indexed_fixture_total_bytes": 1984505
+  },
+  "contract": {
+    "coordinates": "Half-open original UTF-8 bytes, exact retained word-token boundaries",
+    "order": "Preserve labels and spans, including duplicates; repeated labels remain separate encoder queries",
+    "scoring": "One joint encoder/marginal pass and the separate learned sparse explicit scorer; pair-temperature sigmoid",
+    "excluded_steps": ["candidate pooling", "threshold", "abstention", "overlap", "deduplication"],
+    "preflight": "Reject invalid UTF-8, empty/reversed/out-of-range, partial-word and truncated spans before encoder work, even with no labels",
+    "empty_axes": "No labels returns no groups; no spans returns empty groups without native inference",
+    "span_architecture": "Explicit unsupported error, not v2 emulation"
+  },
+  "gates": {
+    "parent_targeted": {"library_tests": 65, "public_pipeline_tests": 3, "example_unit_tests": 1, "artifact_skips": 0},
+    "isolated_full_model_tests": {"passed": 178, "failed": 0, "ignored": 0, "artifact_skips": 0},
+    "isolated_no_model_tests": {"passed": 178, "failed": 0, "artifact_skip_messages": 38},
+    "fmt_check": "pass",
+    "all_target_all_feature_clippy_warnings_denied": "pass",
+    "release_example": {"status": "pass", "labels": 3, "spans_per_label": 3},
+    "rust_1_91": {"all_target_check": "pass", "selected_explicit_tests": 20, "artifact_skips": 0},
+    "v2_tutorials": {"passed": 6, "confidence_slots": 34, "changed_confidences": 1, "max_absolute_delta": 5.364418029785156e-7, "approved_confidence_tolerance": 1e-6, "non_confidence_outputs": "exact"},
+    "explicit_logit_tolerance": {"atol": 1e-4, "rtol": 1e-3},
+    "explicit_confidence_absolute_tolerance": 1e-3,
+    "tolerances_changed": false
+  },
+  "verification": {
+    "default_rustc": "1.95.0",
+    "msrv": "1.91.0",
+    "ort_crate": "2.0.0-rc.13",
+    "native_ort": "1.28",
+    "python_oracle_environment": "Pinned scripts/export/env environment, unchanged",
+    "isolation": "git archive of base commit plus eight exact staged code/test/fixture overlays, unique snapshot-local Cargo targets; actual model/full-fixture symlinks",
+    "parent_audit": "Verified all eight staged overlay hashes and bytes against the acceptance snapshot; independently counted strict/no-model/MSRV log results and inspected Clippy, MSRV, release-example and v2-comparator success",
+    "local_evidence_file": "public-explicit-acceptance-20260920T184316-43510-evidence.json",
+    "local_evidence_sha256": "0eb64be346bd84eba0eabc7b4796d925fc1ff1eb0e6e48271a6e069071851a87"
+  },
+  "remaining": ["M6 relation acceptance", "M7 three complete validated published bundles", "HF readback and clean external consumer", "benchmarks/docs/CI", "GitHub tagged release"]
+}

@@ -1,14 +1,9 @@
-use std::path::PathBuf;
+use std::{sync::Arc, thread};
 
 use gliner2_rs::{Result, encoder::Encoder, tokenizer::RuntimeTokenizer};
 
-fn model_root() -> PathBuf {
-    // models and onnx dirs live one level above the crate.
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .unwrap()
-        .to_path_buf()
-}
+mod common;
+use common::{artifacts_available, model_root};
 
 #[test]
 fn encoder_runs_on_real_tokens() -> Result<()> {
@@ -16,8 +11,7 @@ fn encoder_runs_on_real_tokens() -> Result<()> {
     let model_dir = root.join("models/gliner2-base-v1");
     let onnx_path = root.join("onnx/gliner2-base-v1/encoder.onnx");
 
-    if !onnx_path.exists() {
-        eprintln!("SKIP: missing {}", onnx_path.display());
+    if !artifacts_available(&[&model_dir, &onnx_path])? {
         return Ok(());
     }
 
@@ -34,12 +28,41 @@ fn encoder_runs_on_real_tokens() -> Result<()> {
 }
 
 #[test]
+fn shared_encoder_serializes_concurrent_inference() -> Result<()> {
+    let root = model_root();
+    let model_dir = root.join("models/gliner2-base-v1");
+    let onnx_path = root.join("onnx/gliner2-base-v1/encoder.onnx");
+
+    if !artifacts_available(&[&model_dir, &onnx_path])? {
+        return Ok(());
+    }
+
+    let tokenizer = RuntimeTokenizer::from_dir(&model_dir)?;
+    let (input_ids, attention_mask) = tokenizer.encode_text("Concurrent inference")?;
+    let encoder = Arc::new(Encoder::new(&onnx_path)?);
+    let handles: Vec<_> = (0..2)
+        .map(|_| {
+            let encoder = Arc::clone(&encoder);
+            let input_ids = input_ids.clone();
+            let attention_mask = attention_mask.clone();
+            thread::spawn(move || encoder.infer(input_ids, attention_mask))
+        })
+        .collect();
+    let outputs: Vec<_> = handles
+        .into_iter()
+        .map(|handle| handle.join().expect("encoder inference thread panicked"))
+        .collect::<Result<_>>()?;
+
+    assert_eq!(outputs[0], outputs[1]);
+    Ok(())
+}
+
+#[test]
 fn convert_known_subwords() -> Result<()> {
     let root = model_root();
     let model_dir = root.join("models/gliner2-base-v1");
 
-    if !model_dir.exists() {
-        eprintln!("SKIP: missing {}", model_dir.display());
+    if !artifacts_available(&[&model_dir])? {
         return Ok(());
     }
 
@@ -56,8 +79,7 @@ fn special_token_ids_match_expected() -> Result<()> {
     let root = model_root();
     let model_dir = root.join("models/gliner2-base-v1");
 
-    if !model_dir.exists() {
-        eprintln!("SKIP: missing {}", model_dir.display());
+    if !artifacts_available(&[&model_dir])? {
         return Ok(());
     }
 

@@ -1,6 +1,9 @@
 use std::collections::BTreeMap;
 
-use gliner2_rs::{Result, training::{InputExample, Trainer, TrainingConfig}};
+use gliner2_rs::{
+    Result,
+    training::{InputExample, Trainer, TrainingConfig},
+};
 
 fn main() -> Result<()> {
     // Mirrors tutorial/9-training.md "Minimal Example".
@@ -34,4 +37,3 @@ fn main() -> Result<()> {
     Trainer::train(examples, config)?;
     Ok(())
 }
-

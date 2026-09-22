@@ -1,22 +1,17 @@
 use std::time::Instant;
 
-use anyhow::anyhow;
 use gliner2_rs::{
-    Result, json::JsonSchema, pipeline::Gliner2Pipeline, schema_spec::{FieldDtype, SchemaBuilder, StructureFieldSpec}
+    Result,
+    json::JsonSchema,
+    schema_spec::{FieldDtype, SchemaBuilder, StructureFieldSpec},
 };
 mod common;
-use common::model_paths_from_args;
+use common::{load_auto_pipeline, model_paths_from_args};
 
 fn main() -> Result<()> {
     let paths = model_paths_from_args("onnx/gliner2-base-v1");
-    let classifier_onnx = paths
-        .classifier
-        .as_ref()
-        .ok_or_else(|| anyhow!("missing classifier.onnx in {}", paths.onnx_dir.display()))?;
-
     let load_start = Instant::now();
-    let pipeline = Gliner2Pipeline::new(&paths.model_dir, &paths.encoder, &paths.extractor)?
-        .with_classifier(classifier_onnx)?;
+    let pipeline = load_auto_pipeline(&paths, true)?;
     println!(
         "model load took: {:.2?} (onnx={})",
         load_start.elapsed(),
@@ -31,7 +26,11 @@ fn main() -> Result<()> {
     let text = "The MacBook Pro costs $1999 and features M3 chip, 16GB RAM, and 512GB storage.";
     let schema = JsonSchema::new().structure(
         "product",
-        vec!["name::str".to_string(), "price".to_string(), "features".to_string()],
+        vec![
+            "name::str".to_string(),
+            "price".to_string(),
+            "features".to_string(),
+        ],
     );
     let start = Instant::now();
     let out = pipeline.extract_json(text, &schema)?;
@@ -203,11 +202,26 @@ Amenities include breakfast, wifi, gym, and spa access.
 
     // Advanced Configuration
     let schema = SchemaBuilder::new()
-        .classification("urgency", vec!["low".to_string(), "medium".to_string(), "high".to_string()])
+        .classification(
+            "urgency",
+            vec!["low".to_string(), "medium".to_string(), "high".to_string()],
+        )
         .structure("support_ticket")
-        .field(StructureFieldSpec::new("ticket_id").dtype(FieldDtype::Str).threshold(0.9))
-        .field(StructureFieldSpec::new("customer").dtype(FieldDtype::Str).description("Customer name"))
-        .field(StructureFieldSpec::new("issue").dtype(FieldDtype::Str).description("Problem description"))
+        .field(
+            StructureFieldSpec::new("ticket_id")
+                .dtype(FieldDtype::Str)
+                .threshold(0.9),
+        )
+        .field(
+            StructureFieldSpec::new("customer")
+                .dtype(FieldDtype::Str)
+                .description("Customer name"),
+        )
+        .field(
+            StructureFieldSpec::new("issue")
+                .dtype(FieldDtype::Str)
+                .description("Problem description"),
+        )
         .field(
             StructureFieldSpec::new("priority")
                 .dtype(FieldDtype::Str)
@@ -326,7 +340,11 @@ Status: Processing
     let text = "The MacBook Pro costs $1999 and features M3 chip, 16GB RAM, and 512GB storage.";
     let schema = JsonSchema::new().structure(
         "product",
-        vec!["name::str".to_string(), "price".to_string(), "features".to_string()],
+        vec![
+            "name::str".to_string(),
+            "price".to_string(),
+            "features".to_string(),
+        ],
     );
 
     // With confidence
