@@ -102,17 +102,24 @@ fn load_golden(bundle: &str) -> Result<Golden> {
     Ok(golden)
 }
 
-/// Bundles present locally. Absent bundles skip loudly unless strict mode.
+/// Bundles present locally. Prints exactly one `SKIP:` line per call when
+/// any bundle is absent (CI counts these), and fails in strict mode.
 fn available_bundles() -> Result<Vec<(String, PathBuf)>> {
     let root = common::model_root();
     let mut found = Vec::new();
+    let mut missing = Vec::new();
     for bundle in BUNDLES {
         let dir = root.join("onnx").join(bundle);
-        let paths = ClassificationPipeline::required_paths(&dir);
-        let refs: Vec<&Path> = paths.iter().map(PathBuf::as_path).collect();
-        if common::artifacts_available(&refs)? {
+        if ClassificationPipeline::missing_files(&dir).is_empty() {
             found.push(((*bundle).to_owned(), dir));
+        } else {
+            missing.push(dir);
         }
+    }
+    if !missing.is_empty() {
+        let refs: Vec<&Path> = missing.iter().map(PathBuf::as_path).collect();
+        // Always false here; used for its strict-mode error and SKIP line.
+        common::artifacts_available(&refs)?;
     }
     Ok(found)
 }
