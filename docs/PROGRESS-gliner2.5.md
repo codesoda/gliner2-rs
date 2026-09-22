@@ -689,3 +689,16 @@ prompt-to-evidence checklist. Model-free test success is not model parity.
   17 task outputs per checkpoint; token counts and truncation exact.
 - Not measured: classifier-only load time and RSS versus the full pipeline;
   any provider other than CPU. Not claimed: classification quality.
+
+## M7 — benchmark measured, release prepared
+
+- CPU latency benchmark run once at `dd78efc` on Apple M3 Pro with the
+  documented harness (3 warm-ups, 10 repetitions, base v2 vs base 2.5).
+  Table and caveats in `RESULTS-gliner2.5.md`; raw report in
+  `docs/evidence/benchmark-base-v2-vs-2.5-m3pro.json`. A background daemon
+  used about one core; spread stayed under 2 %. The workload's repeated
+  sentence makes entity counts and 500/3000-word throughput not like-for-like
+  between the architectures; this is stated, not smoothed over.
+- Crate licensed Apache-2.0 to match upstream GLiNER2 (LICENSE, NOTICE,
+  Cargo.toml `license`).
+- Next: merge `quick-mantis` to `main`, tag `v0.2.0`.

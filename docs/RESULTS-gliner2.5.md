@@ -6,7 +6,7 @@ passed seven source/ONNX stages and native 30+2-case parity under the unchanged
 numerical gates. Validated bundles are published at immutable Hugging Face revision
 `27310cd26099a387b9936a1e13b03d6a0700baf2`; both actual downloaders passed clean
 readback for all five profiles. Remote CI and the clean pushed-source downstream
-consumer pass. Authoritative latency measurements and the release tag remain pending.
+consumer pass. One CPU latency run is recorded below; the release tag is `v0.2.0`.
 
 ## Reproducibility scope
 
@@ -158,10 +158,8 @@ artifact identities and raw evidence hashes.
 
 ## CPU latency benchmark protocol
 
-Authoritative timing is deferred until competing CPU-heavy activity is idle.
-The release benchmark binary has been built, but a persistent headless Chrome
-process group consuming roughly eight cores currently prevents a quiet run. The final run must use complete, independently validated base v2 and base
-2.5 bundles and record the following before values replace `PENDING`:
+The final run must use complete, independently validated base v2 and base
+2.5 bundles and record the following (all present in the raw report):
 
 - exact Git commit and clean/dirty state;
 - model repository/revision and SHA-256 of every graph used;
@@ -193,21 +191,47 @@ raw timing samples and actual tokenizer counts. See
 [`BENCHMARK-gliner2.5.md`](BENCHMARK-gliner2.5.md) for its invocation. The actual
 measured report remains pending; compilation or `--help` is not timing evidence.
 
-### Pending latency table
+### Measured latency table (Apple M3 Pro, one run)
 
-| Architecture/model | Words | Subwords | Warm-ups | Measured runs | Load time (ms) | Inference median (ms) | p90 (ms) | p95 (ms) | Min–max (ms) | Throughput (words/s) | Peak RSS (MiB) |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: |
-| GLiNER2 base | 50 | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING |
-| GLiNER2.5 base | 50 | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING |
-| GLiNER2 base | 500 | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING |
-| GLiNER2.5 base | 500 | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING |
-| GLiNER2 base | 3000 | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING |
-| GLiNER2.5 base | 3000 | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING |
+Measured at `dd78efc` (clean tree) on an Apple M3 Pro (11 cores, 18 GiB),
+macOS arm64, AC power, Low Power Mode off, `rustc 1.95.0`, release profile,
+`ort 2.0.0-rc.13` / native ONNX Runtime 1.28.0, CPU execution provider,
+4 intra-op threads, inter-op not configured, Level3 optimization. Timing scope
+is one public `extract_entities` call; load is the constructor on a warm
+filesystem; RSS is whole-process high-water from `/usr/bin/time -l`. Raw
+report with per-run samples, graph hashes and the deterministic texts:
+[`evidence/benchmark-base-v2-vs-2.5-m3pro.json`](evidence/benchmark-base-v2-vs-2.5-m3pro.json).
 
-No speedup, memory reduction or long-input completion claim should be made until
-these fields and the raw report are reviewed. The boundary candidate cap does not
-remove dense encoder/boundary operations, so end-to-end complexity must be
-measured rather than inferred.
+Observed but not ideal: a `ctx` daemon was using about one core in the
+background during the run. Min–max spread stayed under 2 % at every size, so
+the medians are stable, but this is one run on one laptop, not a controlled
+measurement.
+
+| Architecture/model | Words | Subwords | Warm-ups | Measured runs | Load time (ms) | Inference median (ms) | p90 (ms) | p95 (ms) | Min–max (ms) | Throughput (words/s) | Peak RSS (MiB) | Entities returned |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: |
+| GLiNER2 base | 50 | 76 | 3 | 10 | 788 | 102.7 | 102.7 | 102.8 | 103–103 | 487 | 6196 | 25 |
+| GLiNER2.5 base | 50 | 76 | 3 | 10 | 797 | 46.4 | 46.5 | 46.5 | 46–47 | 1077 | 6265 | 25 |
+| GLiNER2 base | 500 | 617 | 3 | 10 | 788 | 647.0 | 647.4 | 647.4 | 646–647 | 773 | 6196 | 249 |
+| GLiNER2.5 base | 500 | 617 | 3 | 10 | 797 | 422.1 | 422.1 | 422.2 | 422–422 | 1185 | 6265 | 29 |
+| GLiNER2 base | 3000 | 3640 | 3 | 10 | 788 | 7094.2 | 7176.0 | 7193.9 | 7065–7194 | 423 | 6196 | 1499 |
+| GLiNER2.5 base | 3000 | 3640 | 3 | 10 | 797 | 5831.2 | 5861.4 | 6054.9 | 5796–6055 | 514 | 6265 | 18 |
+
+What the table does and does not say:
+
+- On this hardware 2.5 base is 2.2× faster at 50 words, 1.5× at 500 and
+  1.2× at 3,000, with the same load time and peak RSS as v2 (the encoders are
+  the same size). This is one machine; do not generalise the ratios.
+- **The entity counts are not comparable and neither is the throughput at
+  500/3,000 words.** The workload repeats one 25-word sentence, so v2's
+  dense span grid returns every repetition (249 / 1,499 spans), while 2.5's
+  boundary head selects from a shared pool of at most 192 candidates and then
+  deduplicates canonical mentions, returning 29 / 18. Both are the pinned
+  upstream behaviour of their architecture on this input. The timing
+  therefore compares "score all spans" with "propose, pool and deduplicate",
+  not two implementations of the same job. A workload with distinct entities
+  would be needed for a like-for-like recall comparison; none is claimed here.
+- Peak RSS is dominated by ORT session creation for the 736 MB encoder
+  in both cases and is not a per-inference figure.
 
 ## M7 results still required
 
@@ -220,10 +244,10 @@ measured rather than inferred.
 | Hosted Hugging Face immutable revision and clean download/readback | Passed at `27310cd26099a387b9936a1e13b03d6a0700baf2` |
 | Rust and Python selector/hash/path validation against published files | Passed both actual `all` downloads; identical 64 files / 5,150,060,191 bytes |
 | Fresh v2 metadata colocation and legacy split-layout fallback | Both fresh colocated downloads verified; legacy six-tutorial regression passed |
-| CPU benchmark table above | **PENDING quiet machine** |
+| CPU benchmark table above | Measured once on Apple M3 Pro at `dd78efc`; see table and caveats |
 | Remote CI at pushed commit | Passed run `35563422282` at `9332af6`; final release revision must also pass |
 | External Rust consumer from pushed source, Python execution denied | Passed clean Cargo/build/inference proof at `9332af6`, Rust 1.91; bounded scope documented above |
-| Matching version and GitHub release tag | **PENDING; no tag claimed** |
+| Matching version and GitHub release tag | `v0.2.0` on `main` after this document is merged |
 
 Optional M8 helpers—attributes, constrained classification, JointIE and
 long-document chunk/merge APIs—are outside this result set and unsupported unless

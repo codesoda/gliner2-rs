@@ -20,7 +20,7 @@ you; see [Tags & versioning](#tags--versioning) for what's available.
 ```toml
 # Cargo.toml
 [dependencies]
-gliner2-rs = { git = "https://github.com/codesoda/gliner2-rs", tag = "v0.1.0" }
+gliner2-rs = { git = "https://github.com/codesoda/gliner2-rs", tag = "v0.2.0" }
 ```
 
 You'll also need the ONNX model files locally — they're not part of the
@@ -57,7 +57,7 @@ extraction, relation extraction, validators, and LoRA adapters.
 
 ### Runtime compatibility
 
-The current branch uses `ort` **2.0.0-rc.13** directly (native ONNX Runtime
+`v0.2.0` uses `ort` **2.0.0-rc.13** directly (native ONNX Runtime
 **1.28**), without ORP. It requires Rust **1.91+** (the locked Hugging Face/Xet
 transitive dependencies require newer APIs than ORT's own Rust 1.88 floor).
 Existing inference methods and public `ndarray` **0.16** types are retained.
@@ -146,7 +146,7 @@ python3 scripts/download_models.py --model base
 python3 scripts/download_models.py --model large
 ```
 
-### GLiNER2.5 downloads (current branch; not v0.1.0)
+### GLiNER2.5 downloads (v0.2.0 and later)
 
 Selectors are `base`, `large`, `2.5-small`, `2.5-base`, `2.5-multi` and `all`.
 Boundary and `all` downloads require an explicit immutable publication revision:
@@ -200,15 +200,15 @@ cargo run --release --example tutorial_1_classification
 Most examples accept `--model <path-to-onnx-dir>` to point at a specific
 downloaded model bundle (see `examples/common/mod.rs`).
 
-### GLiNER2.5 boundary API (unreleased)
+### GLiNER2.5 boundary API (v0.2.0)
 
 M0–M6 and public explicit-span scoring passed their development gates. Fresh
 small/base/multi bundles each passed seven source/ONNX stages and 32 native cases,
 and have been published and independently downloaded. A clean remote-Git
 consumer built and ran both architectures on Rust 1.91 with Python-named
-execution denied ([proof](docs/evidence/m7-consumer.json)). Final benchmarking
-still gates the release. The existing `v0.1.0` tag does not contain this API;
-do not pin a nonexistent release tag.
+execution denied ([proof](docs/evidence/m7-consumer.json)). One CPU latency
+run is recorded in [RESULTS-gliner2.5.md](docs/RESULTS-gliner2.5.md) with its
+caveats. `v0.1.0` does not contain this API; pin `v0.2.0` or later.
 
 Use architecture-aware loading when either family may be selected:
 
