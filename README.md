@@ -368,3 +368,9 @@ them from the repo root, e.g.:
 ```bash
 python3 scripts/export/export_encoder.py --model-dir models/gliner2-base-v1 --out-dir onnx/gliner2-base-v1
 ```
+
+## License
+
+Apache License 2.0, the same license as the upstream
+[GLiNER2](https://github.com/fastino-ai/GLiNER2) project this crate ports.
+See [LICENSE](LICENSE) and [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

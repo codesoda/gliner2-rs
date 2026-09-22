@@ -3,6 +3,9 @@ name = "gliner2-rs"
 version = "0.2.0"
 edition = "2024"
 rust-version = "1.91"
+license = "Apache-2.0"
+repository = "https://github.com/codesoda/gliner2-rs"
+description = "Rust inference for GLiNER2 and GLiNER2.5 through ONNX Runtime"
 
 [dependencies]
 anyhow = "1"
